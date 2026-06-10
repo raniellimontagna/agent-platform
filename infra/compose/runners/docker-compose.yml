@@ -14,6 +14,7 @@ services:
       LITELLM_BASE_URL: ${LITELLM_BASE_URL}
       LITELLM_API_KEY: ${LITELLM_API_KEY}
       ORCHESTRATOR_BASE_URL: ${ORCHESTRATOR_BASE_URL}
+      RUNNER_AUTH_TOKEN: ${RUNNER_AUTH_TOKEN}
     volumes:
       - /srv/agent-runners/worktrees:/srv/agent-runners/worktrees
       - /srv/agent-runners/artifacts:/srv/agent-runners/artifacts
