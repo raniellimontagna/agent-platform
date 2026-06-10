@@ -35,12 +35,11 @@ qm create $VMID \
   --agent enabled=1 \
   --onboot 1
 
-# Importar disco cloud
+# Importar e anexar disco cloud em um passo (storage-agnostic, Proxmox 8+)
 echo "==> Importando disco..."
-qm importdisk $VMID "$CLOUD_IMAGE" "$STORAGE"
 qm set $VMID \
   --scsihw virtio-scsi-pci \
-  --scsi0 "$STORAGE:vm-$VMID-disk-0,size=${DISK}G" \
+  --scsi0 "$STORAGE:0,import-from=$CLOUD_IMAGE" \
   --ide2 "$STORAGE:cloudinit" \
   --boot "order=scsi0" \
   --serial0 socket \
