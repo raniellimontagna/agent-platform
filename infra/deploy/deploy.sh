@@ -11,7 +11,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../proxmox/config.sh"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-REMOTE_BASE="/opt/agent-platform"
 
 SERVICE="${1:-}"
 case "$SERVICE" in
@@ -21,6 +20,13 @@ case "$SERVICE" in
   runners)       KIND=vm;  ID=$VMID_RUNNERS; IP="${IP_RUNNERS%/*}"; SSH_USER=runner; MODE=build; SUBDIR=runners ;;
   *) echo "uso: deploy.sh <gateway|orchestrator|runners|observability>"; exit 1 ;;
 esac
+
+# LXC: /opt (root via pct). VM: home do runner (sem sudo, runner é dono).
+if [ "$KIND" = vm ]; then
+  REMOTE_BASE="/home/$SSH_USER/agent-platform"
+else
+  REMOTE_BASE="/opt/agent-platform"
+fi
 
 # ---- camada de transporte (lxc via pct, vm via ssh) ----------------------
 remote_exec() {
