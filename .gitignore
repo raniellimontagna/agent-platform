@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+
+# Drizzle
+drizzle/meta/_journal.json.bak
+
+# OS / editor
+.DS_Store
+.idea/
+*.swp
+
+# RTK
+.rtk/gain.json
