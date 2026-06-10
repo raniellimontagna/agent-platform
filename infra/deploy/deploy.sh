@@ -1,0 +1,129 @@
+#!/bin/bash
+# Deploy de um serviço para sua VM/LXC. Roda no host Proxmox.
+# Uso: bash infra/deploy/deploy.sh <gateway|orchestrator|runners|observability>
+#
+# LXC  -> arquivos via `pct push`, comandos via `pct exec` (sem SSH).
+# VM   -> arquivos via tar+ssh, comandos via ssh (runner@IP).
+#
+# Códigos de saída: 0 = ok | 1 = erro | 2 = bloqueado (faltam secrets no .env)
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../proxmox/config.sh"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+REMOTE_BASE="/opt/agent-platform"
+
+SERVICE="${1:-}"
+case "$SERVICE" in
+  observability) KIND=lxc; ID=$CTID_OBSERVABILITY;  MODE=image; SUBDIR=observability ;;
+  gateway)       KIND=lxc; ID=$CTID_GATEWAY;        MODE=image; SUBDIR=gateway ;;
+  orchestrator)  KIND=lxc; ID=$CTID_ORCHESTRATOR;   MODE=build; SUBDIR=orchestrator ;;
+  runners)       KIND=vm;  ID=$VMID_RUNNERS; IP="${IP_RUNNERS%/*}"; SSH_USER=runner; MODE=build; SUBDIR=runners ;;
+  *) echo "uso: deploy.sh <gateway|orchestrator|runners|observability>"; exit 1 ;;
+esac
+
+# ---- camada de transporte (lxc via pct, vm via ssh) ----------------------
+remote_exec() {
+  if [ "$KIND" = lxc ]; then
+    pct exec "$ID" -- bash -lc "$1"
+  else
+    ssh -o StrictHostKeyChecking=no "$SSH_USER@$IP" "$1"
+  fi
+}
+
+remote_push_dir() { # $1 = dir local, $2 = dir remoto
+  local src="$1" dst="$2"
+  if [ "$KIND" = lxc ]; then
+    local tmp; tmp="$(mktemp)"
+    tar -C "$src" -czf "$tmp" .
+    pct exec "$ID" -- mkdir -p "$dst"
+    pct push "$ID" "$tmp" /tmp/deploy.tgz
+    pct exec "$ID" -- tar -C "$dst" -xzf /tmp/deploy.tgz
+    pct exec "$ID" -- rm -f /tmp/deploy.tgz
+    rm -f "$tmp"
+  else
+    ssh -o StrictHostKeyChecking=no "$SSH_USER@$IP" "mkdir -p $dst"
+    tar -C "$src" -czf - . | ssh -o StrictHostKeyChecking=no "$SSH_USER@$IP" "tar -C $dst -xzf -"
+  fi
+}
+
+remote_file_exists() { # $1 = caminho remoto
+  remote_exec "test -f '$1'" 2>/dev/null
+}
+
+# ---- .env: garante presença e bloqueia se ainda tiver placeholders -------
+ensure_env() { # $1 = dir remoto do compose
+  local dir="$1"
+  if remote_file_exists "$dir/.env"; then
+    echo "==> .env já existe em $dir (mantido)"
+  else
+    echo "==> Criando .env a partir de .env.example"
+    remote_exec "cp '$dir/.env.example' '$dir/.env'"
+    if [ "$SERVICE" = observability ]; then
+      # Observability não tem secret externo: gera senha do Grafana.
+      local pass; pass="$(openssl rand -hex 16)"
+      remote_exec "sed -i 's/^GRAFANA_PASSWORD=.*/GRAFANA_PASSWORD=$pass/' '$dir/.env'"
+      echo "==> Grafana admin password gerada: $pass"
+    fi
+  fi
+
+  # Gateway/orchestrator exigem secrets reais antes de subir.
+  if [ "$SERVICE" = gateway ] || [ "$SERVICE" = orchestrator ]; then
+    if remote_exec "grep -q 'change-me' '$dir/.env'" 2>/dev/null; then
+      echo ""
+      echo "  BLOQUEADO: $dir/.env ainda contém 'change-me'."
+      echo "  Preencha os secrets reais e rode de novo:"
+      echo "    LXC: pct exec $ID -- nano $dir/.env"
+      echo ""
+      exit 2
+    fi
+  fi
+}
+
+echo "================================================"
+echo " Deploy: $SERVICE  ($KIND $ID, modo $MODE)"
+echo "================================================"
+
+if [ "$MODE" = image ]; then
+  # Serviços só-imagem: empurra o dir do compose e sobe.
+  DEST="$REMOTE_BASE/$SUBDIR"
+  echo "==> Enviando infra/compose/$SUBDIR -> $DEST"
+  remote_push_dir "$REPO_ROOT/infra/compose/$SUBDIR" "$DEST"
+  ensure_env "$DEST"
+  echo "==> docker compose up -d"
+  remote_exec "cd '$DEST' && docker compose up -d"
+else
+  # Serviços de build: precisam do repo inteiro para o build context.
+  DEST="$REMOTE_BASE/repo"
+  COMPOSE_DIR="$DEST/infra/compose/$SUBDIR"
+  echo "==> Enviando repositório -> $DEST (sem node_modules/.git/dist)"
+  TMP_REPO="$(mktemp -d)"
+  tar -C "$REPO_ROOT" \
+    --exclude='./node_modules' --exclude='*/node_modules' \
+    --exclude='./.git' --exclude='*/dist' --exclude='*.log' \
+    -czf "$TMP_REPO/repo.tgz" .
+  if [ "$KIND" = lxc ]; then
+    remote_exec "mkdir -p '$DEST'"
+    pct push "$ID" "$TMP_REPO/repo.tgz" /tmp/repo.tgz
+    remote_exec "tar -C '$DEST' -xzf /tmp/repo.tgz && rm -f /tmp/repo.tgz"
+  else
+    ssh -o StrictHostKeyChecking=no "$SSH_USER@$IP" "mkdir -p $DEST"
+    cat "$TMP_REPO/repo.tgz" | ssh -o StrictHostKeyChecking=no "$SSH_USER@$IP" "tar -C $DEST -xzf -"
+  fi
+  rm -rf "$TMP_REPO"
+
+  ensure_env "$COMPOSE_DIR"
+
+  if [ "$SERVICE" = orchestrator ]; then
+    echo "==> Subindo Postgres/Redis e aplicando migrations"
+    remote_exec "cd '$COMPOSE_DIR' && docker compose up -d postgres redis"
+    remote_exec "cd '$COMPOSE_DIR' && timeout 60 bash -c 'until docker compose exec -T postgres pg_isready; do sleep 2; done'"
+    remote_exec "cd '$COMPOSE_DIR' && docker compose build api && docker compose run --rm api node dist/db/migrate.js"
+  fi
+
+  echo "==> docker compose up -d --build"
+  remote_exec "cd '$COMPOSE_DIR' && docker compose up -d --build"
+fi
+
+echo ""
+echo "✓ $SERVICE deployado."
