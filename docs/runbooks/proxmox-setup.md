@@ -39,13 +39,22 @@ Variáveis a ajustar:
 | `BRIDGE` | `vmbr1` | Bridge interna (criar no passo 2) |
 | `GATEWAY_IP` | `<bridge-ip>` | IP do host Proxmox na nova bridge |
 | `DNS` | `<lan-dns-ip>` | Pi-hole ou DNS da sua LAN |
-| `STORAGE` | `local-lvm` | Storage para discos das VMs |
+| `STORAGE_GATEWAY` | `local-lvm` | Storage do agent-gateway |
+| `STORAGE_ORCHESTRATOR` | `local-lvm` | Storage do agent-orchestrator |
+| `STORAGE_RUNNERS` | `backup-hd` | Storage do agent-runners (carga grande) |
+| `STORAGE_OBSERVABILITY` | `backup-hd` | Storage da observability (logs) |
 | `IP_GATEWAY` | `<agent-gateway-ip>/24` | IP do agent-gateway |
 | `IP_ORCHESTRATOR` | `<agent-orchestrator-ip>/24` | IP do agent-orchestrator |
 | `IP_RUNNERS` | `<agent-runners-ip>/24` | IP do agent-runners |
 | `IP_OBSERVABILITY` | `<agent-observability-ip>/24` | IP do agent-observability |
 | `CTID_GATEWAY` | `200` | ID do container no Proxmox |
 | `SSH_KEY_PATH` | `~/.ssh/id_ed25519.pub` | Chave pública para cloud-init (runners) |
+
+> **Storage:** o `local-lvm` (SSD) costuma ser thin e pequeno; cargas grandes
+> (runners, logs) vão para um storage maior tipo `backup-hd`. Esse storage
+> precisa ter os content types **Disk image** e **Container** habilitados em
+> **Datacenter → Storage → [storage] → Edit → Content**, senão `pct`/`qm`
+> recusam criar disco ali.
 
 ---
 
