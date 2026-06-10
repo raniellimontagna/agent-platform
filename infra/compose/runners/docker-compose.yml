@@ -2,8 +2,8 @@ services:
   runner-api:
     image: agent-platform/worker-code:latest
     build:
-      context: ../../../apps/worker-code
-      dockerfile: Dockerfile
+      context: ../../..
+      dockerfile: apps/worker-code/Dockerfile
     restart: unless-stopped
     ports:
       - "8080:8080"

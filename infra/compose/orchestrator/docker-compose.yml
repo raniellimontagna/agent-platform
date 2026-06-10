@@ -2,8 +2,8 @@ services:
   api:
     image: agent-platform/orchestrator-api:latest
     build:
-      context: ../../../apps/orchestrator-api
-      dockerfile: Dockerfile
+      context: ../../..
+      dockerfile: apps/orchestrator-api/Dockerfile
     restart: unless-stopped
     ports:
       - "3000:3000"
