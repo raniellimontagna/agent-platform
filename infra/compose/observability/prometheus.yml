@@ -1,0 +1,22 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: orchestrator
+    static_configs:
+      - targets: ["192.168.1.11:3000"]
+        labels:
+          service: orchestrator-api
+
+  - job_name: gateway
+    static_configs:
+      - targets: ["192.168.1.10:4000"]
+        labels:
+          service: litellm-gateway
+
+  - job_name: runners
+    static_configs:
+      - targets: ["192.168.1.12:8080"]
+        labels:
+          service: agent-runners
