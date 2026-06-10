@@ -58,3 +58,12 @@ OBSERVABILITY_CORES=1;  OBSERVABILITY_MEMORY=2048;  OBSERVABILITY_DISK=16
 
 # SSH key para cloud-init (runners VM)
 SSH_KEY_PATH="$HOME/.ssh/id_ed25519.pub"
+
+# Aborta se a bridge ainda não foi criada (Passo 2 do runbook).
+require_bridge() {
+  if ! ip link show "$BRIDGE" >/dev/null 2>&1; then
+    echo "ERRO: bridge '$BRIDGE' não existe."
+    echo "Rode primeiro no host: bash infra/proxmox/setup-network.sh"
+    exit 1
+  fi
+}
