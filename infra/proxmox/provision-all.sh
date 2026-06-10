@@ -4,16 +4,20 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/config.sh"
 
 echo "================================================"
 echo " agent-platform — Provisionamento completo"
 echo "================================================"
 echo ""
+TOTAL_DISK=$((GATEWAY_DISK + ORCHESTRATOR_DISK + RUNNERS_DISK + OBSERVABILITY_DISK))
 echo "Isso criará:"
-echo "  LXC 100 — agent-gateway       (2 vCPU, 4GB, 40GB)"
-echo "  LXC 101 — agent-orchestrator  (4 vCPU, 8GB, 100GB)"
-echo "  VM  102 — agent-runners       (8 vCPU, 16GB, 200GB)"
-echo "  LXC 103 — agent-observability (4 vCPU, 8GB, 150GB)"
+echo "  LXC $CTID_GATEWAY        — agent-gateway       (${GATEWAY_CORES} vCPU, ${GATEWAY_MEMORY}MB, ${GATEWAY_DISK}GB)"
+echo "  LXC $CTID_ORCHESTRATOR   — agent-orchestrator  (${ORCHESTRATOR_CORES} vCPU, ${ORCHESTRATOR_MEMORY}MB, ${ORCHESTRATOR_DISK}GB)"
+echo "  VM  $VMID_RUNNERS        — agent-runners       (${RUNNERS_CORES} vCPU, ${RUNNERS_MEMORY}MB, ${RUNNERS_DISK}GB)"
+echo "  LXC $CTID_OBSERVABILITY  — agent-observability (${OBSERVABILITY_CORES} vCPU, ${OBSERVABILITY_MEMORY}MB, ${OBSERVABILITY_DISK}GB)"
+echo ""
+echo "  Disco total: ${TOTAL_DISK}GB"
 echo ""
 read -p "Continuar? [y/N] " -n 1 -r
 echo ""
