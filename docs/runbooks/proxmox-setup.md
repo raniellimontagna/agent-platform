@@ -2,6 +2,10 @@
 
 Guia completo para montar o ambiente do agent-platform do zero em um host Proxmox existente.
 
+> **Já provisionado?** Veja [proxmox-estado-atual.md](./proxmox-estado-atual.md) para o
+> estado vivo do ambiente, os gotchas (snapshot em dir storage, nvm no runner),
+> troubleshooting e as pendências de deploy.
+
 ## Pré-requisitos
 
 - Proxmox VE instalado e funcionando
