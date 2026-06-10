@@ -16,19 +16,19 @@ STORAGE=$STORAGE_GATEWAY
 
 echo "==> Provisionando $HOSTNAME (CTID: $CTID)"
 
-# Baixar template Debian se não existir
-if ! pveam list $TEMPLATE_STORAGE | grep -q "debian-13"; then
+# Resolver template Debian 13 (volid completo: storage:vztmpl/pkg)
+TEMPLATE=$(pveam list "$TEMPLATE_STORAGE" 2>/dev/null | awk '$1 ~ /debian-13-standard/ {print $1}' | tail -1)
+if [ -z "$TEMPLATE" ]; then
   echo "==> Baixando template Debian 13..."
   pveam update
-  TEMPLATE=$(pveam available --section system | grep "debian-13-standard" | tail -1 | awk '{print $2}')
-  pveam download $TEMPLATE_STORAGE "$TEMPLATE"
-else
-  TEMPLATE=$(pveam list $TEMPLATE_STORAGE | grep "debian-13-standard" | tail -1 | awk '{print $2}')
+  PKG=$(pveam available --section system | awk '$2 ~ /debian-13-standard/ {print $2}' | tail -1)
+  pveam download "$TEMPLATE_STORAGE" "$PKG"
+  TEMPLATE="$TEMPLATE_STORAGE:vztmpl/$PKG"
 fi
 
 # Criar LXC
 echo "==> Criando LXC..."
-pct create $CTID "$TEMPLATE_STORAGE:vztmpl/$TEMPLATE" \
+pct create $CTID "$TEMPLATE" \
   --hostname "$HOSTNAME" \
   --cores $CORES \
   --memory $MEMORY \
