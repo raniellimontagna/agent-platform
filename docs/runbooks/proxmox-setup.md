@@ -106,21 +106,34 @@ O que cada script faz:
 
 ---
 
-## Passo 4 — Deploy dos serviços
+## Passo 4 — Deploy dos serviços (automatizado)
 
-Para cada VM, copiar o compose correspondente e subir:
+Rodar no host Proxmox. Os scripts usam `pct push`/`pct exec` para os LXC
+(sem SSH) e ssh para a VM runners.
 
 ```bash
-# agent-gateway (10.10.0.10)
-scp -r infra/compose/gateway/ deploy@10.10.0.10:/opt/agent-platform/
-ssh deploy@10.10.0.10
-cd /opt/agent-platform/gateway
-cp .env.example .env
-nano .env          # preencher chaves de API
-docker compose up -d
+# Tudo de uma vez (pula os que faltam secrets)
+bash infra/deploy/deploy-all.sh
+
+# Ou um serviço por vez
+bash infra/deploy/deploy.sh observability   # sobe direto, gera senha Grafana
+bash infra/deploy/deploy.sh runners         # build via SSH no runner
+bash infra/deploy/deploy.sh gateway         # bloqueia até preencher chaves LLM
+bash infra/deploy/deploy.sh orchestrator    # build + migrations + up
 ```
 
-Repetir para `orchestrator`, `runners` e `observability`.
+**Comportamento:**
+- `observability` sobe sem secret externo (senha do Grafana é gerada e impressa).
+- `gateway` e `orchestrator` **bloqueiam** (exit 2) enquanto o `.env` tiver
+  `change-me`. Preencher e rodar de novo:
+  ```bash
+  pct exec 200 -- nano /opt/agent-platform/gateway/.env          # gateway
+  pct exec 201 -- nano /opt/agent-platform/repo/infra/compose/orchestrator/.env
+  ```
+- `orchestrator` sobe Postgres/Redis, espera o banco, aplica as migrations
+  (`node dist/db/migrate.js`) e então sobe a API.
+
+O `.env` existente nunca é sobrescrito por re-deploys.
 
 ---
 
