@@ -96,7 +96,7 @@ sudo chown -R runner:runner /srv/agent-runners
 sudo apt-get install -y ufw -qq
 sudo ufw default deny incoming
 sudo ufw allow 22
-sudo ufw allow from <lan-ip> to any port 8080
+sudo ufw allow from <agent-orchestrator-ip> to any port 8080
 echo "y" | sudo ufw enable
 ENDSSH
 
