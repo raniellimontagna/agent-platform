@@ -20,8 +20,19 @@ BRIDGE_IP="10.10.0.1"          # IP do Proxmox host na bridge interna
 SUBNET="10.10.0.0/24"
 GATEWAY_IP="10.10.0.1"         # Proxmox host faz NAT
 DNS="192.168.0.14"             # Pi-hole da LAN
-STORAGE="local-lvm"
 TEMPLATE_STORAGE="local"
+
+# -------------------------------------------------------------------
+# Storage por VM — split para não lotar o local-lvm (thin pool já em 85%).
+# local-lvm: rápido (SSD), pouco espaço → serviços leves com IOPS.
+# backup-hd: folgado (HDD)  → cargas grandes/efêmeras (runners, logs).
+# IMPORTANTE: backup-hd precisa ter content "Disk image" + "Container"
+# habilitado em Datacenter → Storage antes de rodar.
+# -------------------------------------------------------------------
+STORAGE_GATEWAY="local-lvm"
+STORAGE_ORCHESTRATOR="local-lvm"
+STORAGE_RUNNERS="backup-hd"
+STORAGE_OBSERVABILITY="backup-hd"
 
 # IPs fixos — grupo agent-platform (10.10.0.10-.19 = infra do agent)
 IP_GATEWAY="10.10.0.10/24"         # agent-gateway      (LiteLLM + Caddy)
