@@ -9,9 +9,9 @@ source "$SCRIPT_DIR/config.sh"
 VMID=$VMID_RUNNERS
 HOSTNAME="agent-runners"
 IP=$IP_RUNNERS
-CORES=8
-MEMORY=16384
-DISK=200
+CORES=$RUNNERS_CORES
+MEMORY=$RUNNERS_MEMORY
+DISK=$RUNNERS_DISK
 CLOUD_IMAGE_URL="https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2"
 CLOUD_IMAGE="/tmp/debian-12-genericcloud-amd64.qcow2"
 
