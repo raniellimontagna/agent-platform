@@ -1,5 +1,19 @@
 import { LinearClient } from '@linear/sdk';
 
+/** Retry com backoff p/ chamadas read-only transitórias ao Linear (MAC-33). */
+async function withRetry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
+  let lastErr: unknown;
+  for (let i = 1; i <= attempts; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (i < attempts) await new Promise((r) => setTimeout(r, 500 * 2 ** (i - 1)));
+    }
+  }
+  throw lastErr;
+}
+
 export interface IssueContext {
   id: string;
   identifier: string;
@@ -21,7 +35,8 @@ export function createLinearGateway(apiKey: string): LinearGateway {
 
   return {
     async getIssue(id) {
-      const issue = await client.issue(id);
+      // Read-only → seguro retentar em falha transitória de rede/API (MAC-33).
+      const issue = await withRetry(() => client.issue(id));
       return {
         id: issue.id,
         identifier: issue.identifier,
