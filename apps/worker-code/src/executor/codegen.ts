@@ -1,27 +1,45 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import type { LlmClient } from '@agent-platform/llm';
 import type { Logger } from 'pino';
 import { z } from 'zod';
 import { runCommand } from './worktree.js';
 
-const SYSTEM_PROMPT = `Você é um agente de engenharia de software que escreve código.
+const SELECT_PROMPT = `Você é um agente de engenharia de software.
 Recebe uma issue, um plano aprovado e a lista de arquivos do repositório.
-Produza as alterações de código necessárias para cumprir o plano.
+Decida quais arquivos precisam ser MODIFICADOS (já existem) e quais precisam ser CRIADOS.
 
-Responda APENAS com um objeto JSON válido, sem markdown, no formato:
+Responda APENAS com um objeto JSON válido, sem markdown:
 {
-  "summary": "resumo curto das alterações (1-2 linhas)",
-  "files": [
-    { "path": "caminho/relativo/do/arquivo", "content": "conteúdo COMPLETO do arquivo" }
-  ]
+  "edit": ["caminhos/de/arquivos/existentes/a/modificar"],
+  "create": ["caminhos/de/arquivos/novos/a/criar"]
 }
 
 Regras:
-- "path" é sempre relativo à raiz do repositório, sem "./" e sem caminhos absolutos.
-- "content" é o conteúdo final e completo do arquivo (não um diff/patch).
-- Inclua apenas arquivos que precisam ser criados ou modificados.
-- Mantenha o estilo e as convenções já presentes no repositório.
+- Inclua em "edit" SÓ caminhos que aparecem na lista de arquivos do repositório.
+- Seja cirúrgico: liste apenas o estritamente necessário para cumprir o plano.
+- Caminhos relativos à raiz, sem "./" nem caminhos absolutos.
+- Não escreva nada fora do JSON.`;
+
+const GENERATE_PROMPT = `Você é um agente de engenharia de software que escreve código.
+Recebe a issue, o plano, o conteúdo ATUAL dos arquivos a modificar e a lista de arquivos a criar.
+Produza o conteúdo final de cada arquivo.
+
+Responda APENAS com um objeto JSON válido, sem markdown:
+{
+  "summary": "resumo curto das alterações (1-2 linhas)",
+  "files": [
+    { "path": "caminho/relativo", "content": "conteúdo COMPLETO e final do arquivo" }
+  ]
+}
+
+Regras CRÍTICAS:
+- Ao MODIFICAR um arquivo existente, PRESERVE todo o código não relacionado ao plano.
+  Parta do conteúdo atual fornecido e aplique APENAS as mudanças necessárias.
+  NUNCA remova imports, bootstrap, handlers ou rotas que não fazem parte da tarefa.
+- "content" é o arquivo inteiro e final (não um diff/patch).
+- Mantenha o estilo e as convenções já presentes no repositório (ESM, imports com .js, etc.).
+- Inclua no array só os arquivos realmente alterados/criados.
 - Não escreva nada fora do JSON.`;
 
 const fileSchema = z.object({
@@ -29,10 +47,19 @@ const fileSchema = z.object({
   content: z.string(),
 });
 
+const selectSchema = z.object({
+  edit: z.array(z.string()).default([]),
+  create: z.array(z.string()).default([]),
+});
+
 const responseSchema = z.object({
   summary: z.string().default(''),
   files: z.array(fileSchema).default([]),
 });
+
+/** Limites para não estourar o contexto do modelo ao injetar conteúdo. */
+const MAX_EDIT_FILES = 15;
+const MAX_FILE_CHARS = 20_000;
 
 export interface CodegenResult {
   summary: string;
@@ -80,29 +107,90 @@ function safeJoin(dir: string, relPath: string): string {
   return full;
 }
 
+/** Passo 1: o modelo escolhe quais arquivos modificar/criar. */
+async function selectFiles(
+  llm: LlmClient,
+  ctx: { title: string; description: string; plan: string; fileTree: string },
+): Promise<{ edit: string[]; create: string[] }> {
+  const raw = await llm.complete({
+    alias: 'strong_coder',
+    temperature: 0,
+    messages: [
+      { role: 'system', content: SELECT_PROMPT },
+      {
+        role: 'user',
+        content: [
+          `# Issue: ${ctx.title}`,
+          ctx.description ? `\n${ctx.description}` : '',
+          `\n# Plano aprovado\n${ctx.plan}`,
+          `\n# Arquivos do repositório\n${ctx.fileTree}`,
+        ].join('\n'),
+      },
+    ],
+  });
+  return selectSchema.parse(extractJson(raw));
+}
+
+/** Lê o conteúdo atual dos arquivos a modificar (truncado por segurança). */
+async function readCurrentFiles(
+  dir: string,
+  repoFiles: Set<string>,
+  editPaths: string[],
+): Promise<{ path: string; content: string }[]> {
+  const out: { path: string; content: string }[] = [];
+  for (const rel of editPaths.slice(0, MAX_EDIT_FILES)) {
+    const normalized = rel.replace(/^\/+/, '');
+    // Só lê o que de fato existe no repo (ignora alucinações do modelo).
+    if (!repoFiles.has(normalized)) continue;
+    const content = await readFile(safeJoin(dir, normalized), 'utf8');
+    out.push({
+      path: normalized,
+      content: content.length > MAX_FILE_CHARS ? content.slice(0, MAX_FILE_CHARS) : content,
+    });
+  }
+  return out;
+}
+
 /**
  * Gera o código via alias `strong_coder` e aplica os arquivos no worktree (MAC-17).
- * Retorna o resumo e a lista de arquivos alterados. Lança se a geração for vazia.
+ *
+ * Dois passos: (1) o modelo escolhe os arquivos a editar/criar; (2) injetamos o
+ * conteúdo ATUAL dos arquivos a editar e pedimos a versão final — assim o modelo
+ * altera de forma incremental em vez de reescrever do zero e quebrar o resto.
  */
 export async function generateAndApplyCode(args: CodegenArgs): Promise<CodegenResult> {
   const { llm, dir, title, description, plan, log } = args;
 
-  const files = await listRepoFiles(dir);
-  const fileTree = files.slice(0, 800).join('\n');
+  const repoFiles = await listRepoFiles(dir);
+  const fileTree = repoFiles.slice(0, 800).join('\n');
+  const repoSet = new Set(repoFiles);
 
-  log.info({ fileCount: files.length }, 'requesting code generation');
+  log.info({ fileCount: repoFiles.length }, 'selecting files to change');
+  const selection = await selectFiles(llm, { title, description, plan, fileTree });
+  log.info({ edit: selection.edit, create: selection.create }, 'files selected');
+
+  const current = await readCurrentFiles(dir, repoSet, selection.edit);
+  const currentBlock = current
+    .map((f) => `\n## ${f.path}\n\`\`\`\n${f.content}\n\`\`\``)
+    .join('\n');
+  const createBlock = selection.create.length
+    ? `\n# Arquivos a criar\n${selection.create.join('\n')}`
+    : '';
+
+  log.info('requesting code generation');
   const raw = await llm.complete({
     alias: 'strong_coder',
     temperature: 0.1,
     messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'system', content: GENERATE_PROMPT },
       {
         role: 'user',
         content: [
           `# Issue: ${title}`,
           description ? `\n${description}` : '',
           `\n# Plano aprovado\n${plan}`,
-          `\n# Arquivos do repositório\n${fileTree}`,
+          `\n# Conteúdo atual dos arquivos a modificar${currentBlock || '\n(nenhum)'}`,
+          createBlock,
         ].join('\n'),
       },
     ],
