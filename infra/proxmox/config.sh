@@ -51,7 +51,7 @@ CTID_OBSERVABILITY=203  # LXC — agent-observability
 # Proxmox faz overcommit de CPU, então vCPU é folgado.
 # Aumente se tiver espaço; runners é o que mais precisa (builds + docker).
 # -------------------------------------------------------------------
-GATEWAY_CORES=1;        GATEWAY_MEMORY=1024;        GATEWAY_DISK=8
+GATEWAY_CORES=2;        GATEWAY_MEMORY=3072;        GATEWAY_DISK=8
 ORCHESTRATOR_CORES=2;   ORCHESTRATOR_MEMORY=2048;   ORCHESTRATOR_DISK=20
 RUNNERS_CORES=2;        RUNNERS_MEMORY=4096;        RUNNERS_DISK=40
 OBSERVABILITY_CORES=1;  OBSERVABILITY_MEMORY=2048;  OBSERVABILITY_DISK=16
