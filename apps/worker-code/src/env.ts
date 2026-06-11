@@ -17,6 +17,10 @@ const envSchema = z.object({
   // Autor dos commits gerados pelo agente (MAC-17).
   GIT_AUTHOR_NAME: z.string().min(1).default('agent-platform bot'),
   GIT_AUTHOR_EMAIL: z.string().min(1).default('bot@agent.local'),
+
+  // Allowlist de binários que o runner pode executar (MAC-31), separados por
+  // vírgula. Comandos do job fora disto são bloqueados e auditados.
+  AGENT_COMMAND_ALLOWLIST: z.string().default('pnpm,node,npm,npx,git'),
 });
 
 export type Env = z.infer<typeof envSchema>;
