@@ -3,7 +3,7 @@ import { getAgent } from './agent.js';
 import { env } from './env.js';
 import { isPaused } from './killswitch.js';
 import { logger } from './logger.js';
-import { AGENT_QUEUE, type AgentJobData, agentQueue, connection } from './queue.js';
+import { AGENT_QUEUE, type AgentJobData, JOB_PRIORITY, agentQueue, connection } from './queue.js';
 import {
   type RunStatus,
   findResumableRuns,
@@ -110,8 +110,10 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
   );
 
   worker.on('failed', (job, err) => {
-    logger.error({ jobId: job?.id, err }, 'agent job failed');
-    if (job?.data.runId) {
+    logger.error({ jobId: job?.id, attempt: job?.attemptsMade, err }, 'agent job failed');
+    // Só marca o run como falho na tentativa final (BullMQ ainda vai retentar).
+    const attempts = job?.opts.attempts ?? 1;
+    if (job?.data.runId && (job.attemptsMade ?? 0) >= attempts) {
       void updateRunStatus(job.data.runId, 'failed', { error: String(err?.message ?? err) });
     }
   });
@@ -121,7 +123,11 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
   const resumable = await findResumableRuns();
   for (const r of resumable) {
     logger.warn({ runId: r.id }, 'recuperando run em execução após restart');
-    await agentQueue.add('resume', { kind: 'resume', runId: r.id });
+    await agentQueue.add(
+      'resume',
+      { kind: 'resume', runId: r.id },
+      { priority: JOB_PRIORITY.resume },
+    );
   }
 
   logger.info({ recovered: resumable.length }, 'agent worker started');
