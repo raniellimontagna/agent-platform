@@ -32,11 +32,26 @@ const envSchema = z.object({
 
 export type Env = z.infer<typeof envSchema>;
 
+/** Secrets que não podem subir com valor placeholder (MAC-30). */
+const SECRET_KEYS = [
+  'LITELLM_API_KEY',
+  'LINEAR_API_KEY',
+  'LINEAR_WEBHOOK_SECRET',
+  'GITHUB_TOKEN',
+  'RUNNER_AUTH_TOKEN',
+  'DATABASE_URL',
+] as const;
+
 function loadEnv(): Env {
   const parsed = envSchema.safeParse(process.env);
   if (!parsed.success) {
     const issues = parsed.error.issues.map((i) => `  ${i.path.join('.')}: ${i.message}`).join('\n');
     throw new Error(`Invalid environment variables:\n${issues}`);
+  }
+  // Guard de secret: recusa subir com placeholder (defesa além do deploy.sh).
+  const placeholders = SECRET_KEYS.filter((k) => /change-me/i.test(parsed.data[k]));
+  if (placeholders.length > 0) {
+    throw new Error(`Secrets com placeholder (preencha o .env): ${placeholders.join(', ')}`);
   }
   return parsed.data;
 }
