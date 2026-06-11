@@ -2,8 +2,12 @@
 // (env.ts, logger.ts) validam env no import, então qualquer teste que importe
 // uma rota que puxa esses módulos quebraria sem isto. Só preenche o que falta —
 // não sobrescreve env real (CI/local).
+// Sob vitest, NODE_ENV é sempre `test` — força mesmo quando o container define
+// NODE_ENV=production (caso do runner no sandbox), senão testes que dependem do
+// ambiente de teste falham.
+process.env.NODE_ENV = 'test';
+
 const defaults: Record<string, string> = {
-  NODE_ENV: 'test',
   // orchestrator-api
   DATABASE_URL: 'postgres://user:pass@localhost:5432/test',
   REDIS_URL: 'redis://localhost:6379',
