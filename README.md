@@ -8,7 +8,7 @@ Orquestrador de agentes self-hosted. Issues do Linear com label `ai-ready` dispa
 |---|---|
 | API / Orquestrador | TypeScript + Node LTS + Hono + LangGraph JS/TS |
 | Banco / Fila | Postgres + Redis + BullMQ |
-| LLM Gateway | LiteLLM (aliases: `cheap_fast`, `strong_coder`, `critic`, `research`) |
+| LLM Gateway | LiteLLM (aliases: `cheap_fast`, `research`, `strong_coder`, `heavy_coder`, `critic`) |
 | Infra | Proxmox — 4 VMs na subnet `10.10.0.x` (vmbr1) |
 | Observabilidade | Grafana + Prometheus + Loki |
 | Acesso externo | Tailscale |
@@ -20,7 +20,7 @@ Linear (ai-ready) → Orchestrator API → agent-runners (sandbox)
                                      ↓
                               LiteLLM Gateway
                                      ↓
-                          Verboo / Claude / OpenAI
+                       Verboo / OmniRoute combos
 ```
 
 Visão completa (deploy + fluxo + mapa dos cards): [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
