@@ -3,6 +3,7 @@ import { Hono } from 'hono';
 import { env } from './env.js';
 import { logger } from './logger.js';
 import { health } from './routes/health.js';
+import { ping } from './routes/ping.js';
 import { runsRoute } from './routes/runs.js';
 import { webhooks } from './routes/webhooks.js';
 import { startAgentWorker } from './worker.js';
@@ -10,6 +11,7 @@ import { startAgentWorker } from './worker.js';
 const app = new Hono();
 
 app.route('/', health);
+app.route('/', ping);
 app.route('/', webhooks);
 app.route('/', runsRoute);
 
