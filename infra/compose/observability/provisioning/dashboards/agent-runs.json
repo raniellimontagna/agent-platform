@@ -28,7 +28,10 @@
       "title": "Completos",
       "type": "stat",
       "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
-      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "green" } }, "overrides": [] },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "fixed", "fixedColor": "green" } },
+        "overrides": []
+      },
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
       "targets": [
         {
@@ -44,7 +47,10 @@
       "title": "Falhas",
       "type": "stat",
       "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
-      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "red" } }, "overrides": [] },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "fixed", "fixedColor": "red" } },
+        "overrides": []
+      },
       "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
       "targets": [
         {
