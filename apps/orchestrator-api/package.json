@@ -15,6 +15,7 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@agent-platform/github": "workspace:*",
     "@agent-platform/graph": "workspace:*",
     "@agent-platform/linear": "workspace:*",
     "@agent-platform/llm": "workspace:*",

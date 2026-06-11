@@ -1,3 +1,4 @@
+import { createGithubGateway, parseRepoRef } from '@agent-platform/github';
 import { type AgentGraph, buildAgentGraph, createCheckpointer } from '@agent-platform/graph';
 import { type LinearGateway, createLinearGateway } from '@agent-platform/linear';
 import { createLlmClient } from '@agent-platform/llm';
@@ -29,10 +30,14 @@ async function init(): Promise<Agent> {
   // Injeta a credencial do GitHub na URL de clone (repo pode ser privado).
   const repoUrl = env.REPO_URL.replace('https://', `https://x-access-token:${env.GITHUB_TOKEN}@`);
 
+  // Gateway do GitHub (MAC-26) — owner/repo derivados da URL do repo alvo.
+  const github = createGithubGateway(env.GITHUB_TOKEN, parseRepoRef(env.REPO_URL));
+
   const graph = buildAgentGraph(
     {
       llm,
       linear,
+      github,
       runner: {
         baseUrl: env.RUNNER_BASE_URL,
         authToken: env.RUNNER_AUTH_TOKEN,

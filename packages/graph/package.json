@@ -16,6 +16,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@agent-platform/github": "workspace:*",
     "@agent-platform/linear": "workspace:*",
     "@agent-platform/llm": "workspace:*",
     "@langchain/langgraph": "^0.2.74",

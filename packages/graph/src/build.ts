@@ -1,15 +1,20 @@
+import type { GithubGateway } from '@agent-platform/github';
 import type { LinearGateway } from '@agent-platform/linear';
 import type { LlmClient } from '@agent-platform/llm';
 import { END, START, StateGraph } from '@langchain/langgraph';
 import { PostgresSaver } from '@langchain/langgraph-checkpoint-postgres';
 import { type RunnerConfig, makeCoderNode } from './nodes/coder.js';
 import { makePlannerNode } from './nodes/planner.js';
+import { makePrNode } from './nodes/pr.js';
 import { AgentState } from './state.js';
 
 export interface GraphDeps {
   llm: LlmClient;
   linear: LinearGateway;
   runner: RunnerConfig;
+  github: GithubGateway;
+  /** Branch base dos PRs abertos pelo agente (default: main). */
+  baseBranch?: string;
 }
 
 /**
@@ -23,22 +28,33 @@ export async function createCheckpointer(connectionString: string): Promise<Post
 
 /**
  * Monta a state machine do agente (MAC-14):
- *   START → planning → [⏸ aprovação humana] → coding → END
+ *   START → planning → [⏸ aprovação humana] → coding → pr → END
  *
- * Pausa antes de `coding` aguardando aprovação (MAC-22). Após aprovado, o run
- * é retomado com o mesmo thread_id e segue para o Coder (MAC-17), que despacha
- * ao runner. O checkpointer Postgres persiste e permite retomar (MAC-34).
+ * Pausa antes de `coding` aguardando aprovação (MAC-22). Após aprovado, o run é
+ * retomado com o mesmo thread_id e segue para o Coder (MAC-17), que gera o
+ * código e pusha a branch. Em sucesso, o nó PR (MAC-26) abre o Draft PR; em
+ * falha, encerra. O checkpointer Postgres persiste e permite retomar (MAC-34).
  */
 export function buildAgentGraph(deps: GraphDeps, checkpointer: PostgresSaver) {
   const planning = makePlannerNode(deps);
   const coding = makeCoderNode(deps);
+  const pr = makePrNode({
+    github: deps.github,
+    linear: deps.linear,
+    baseBranch: deps.baseBranch ?? 'main',
+  });
 
   return new StateGraph(AgentState)
     .addNode('planning', planning)
     .addNode('coding', coding)
+    .addNode('pr', pr)
     .addEdge(START, 'planning')
     .addEdge('planning', 'coding')
-    .addEdge('coding', END)
+    .addConditionalEdges('coding', (state) => (state.status === 'failed' ? END : 'pr'), {
+      pr: 'pr',
+      [END]: END,
+    })
+    .addEdge('pr', END)
     .compile({ checkpointer, interruptBefore: ['coding'] });
 }
 

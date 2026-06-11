@@ -17,6 +17,9 @@ importers:
 
   apps/orchestrator-api:
     dependencies:
+      '@agent-platform/github':
+        specifier: workspace:*
+        version: link:../../packages/github
       '@agent-platform/graph':
         specifier: workspace:*
         version: link:../../packages/graph
@@ -95,8 +98,20 @@ importers:
         specifier: ^5.7.3
         version: 5.9.3
 
+  packages/github:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.13.4
+        version: 22.19.20
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+
   packages/graph:
     dependencies:
+      '@agent-platform/github':
+        specifier: workspace:*
+        version: link:../github
       '@agent-platform/linear':
         specifier: workspace:*
         version: link:../linear
