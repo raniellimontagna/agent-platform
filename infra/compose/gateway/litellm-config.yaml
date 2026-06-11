@@ -1,47 +1,79 @@
-# Backend híbrido:
+# Backend híbrido com combo (primário + fallback automático por alias):
 #  - Verboo (API key direta): aliases de alto volume / baixo custo.
-#  - OmniRoute (bridge OAuth das assinaturas): aliases fortes (Claude/GPT).
+#  - OmniRoute (bridge OAuth): Claude / GPT / Gemini das assinaturas.
 #
-# OmniRoute expõe endpoint OpenAI-compatible em http://omniroute:20128/v1
-# (mesma rede do compose). Prefixos de modelo do OmniRoute:
-#   cc/...  = Claude (assinatura Claude Max)
-#   cx/...  = GPT/Codex (assinatura ChatGPT)
-# Confirme os nomes exatos em Dashboard → Models do OmniRoute
-# (http://10.10.0.10:20128) e ajuste abaixo.
+# Os agentes só chamam: cheap_fast, research, strong_coder, critic.
+# As entradas *_fb são alvos de fallback (LiteLLM troca em erro/rate-limit).
+#
+# Via provider 'openai/', o LiteLLM envia tudo após 'openai/' como model id.
+# Ex.: openai/cc/claude-sonnet-4-6 → manda 'cc/claude-sonnet-4-6' ao OmniRoute.
+#   cc/   = Claude Code (assinatura Claude Max)
+#   cx/   = OpenAI Codex (assinatura ChatGPT)
+#   gemini-cli/ = Gemini CLI (OAuth)
 
 model_list:
-  # --- Verboo: alto volume / barato (endpoint OpenAI-compatible) --------
-  # 'openai/<modelo>' faz o LiteLLM tratar como endpoint OpenAI custom.
-  # Ajuste <modelo> e VERBOO_API_BASE conforme a conta Verboo.
+  # --- cheap_fast: Verboo (alto volume) → Gemini flash -----------------
   - model_name: cheap_fast
     litellm_params:
       model: openai/deepseek-v4-flash
       api_key: os.environ/VERBOO_API_KEY
       api_base: os.environ/VERBOO_API_BASE
+  - model_name: cheap_fast_fb
+    litellm_params:
+      model: openai/gemini-cli/gemini-3-flash-preview
+      api_key: os.environ/OMNIROUTE_API_KEY
+      api_base: http://omniroute:20128/v1
 
+  # --- research: Verboo (1M ctx) → Gemini 3.1 pro ----------------------
   - model_name: research
     litellm_params:
       model: openai/mimo-v2.5
       api_key: os.environ/VERBOO_API_KEY
       api_base: os.environ/VERBOO_API_BASE
+  - model_name: research_fb
+    litellm_params:
+      model: openai/gemini-cli/gemini-3.1-pro-preview
+      api_key: os.environ/OMNIROUTE_API_KEY
+      api_base: http://omniroute:20128/v1
 
-  # --- OmniRoute (OAuth): qualidade / código ----------------------------
+  # --- strong_coder: Claude Sonnet → GPT-5.5 → Claude Opus -------------
   - model_name: strong_coder
     litellm_params:
-      model: openai/cc/claude-sonnet
-      api_base: http://omniroute:20128/v1
+      model: openai/cc/claude-sonnet-4-6
       api_key: os.environ/OMNIROUTE_API_KEY
+      api_base: http://omniroute:20128/v1
+  - model_name: strong_coder_fb1
+    litellm_params:
+      model: openai/cx/gpt-5.5
+      api_key: os.environ/OMNIROUTE_API_KEY
+      api_base: http://omniroute:20128/v1
+  - model_name: strong_coder_fb2
+    litellm_params:
+      model: openai/cc/claude-opus-4-8
+      api_key: os.environ/OMNIROUTE_API_KEY
+      api_base: http://omniroute:20128/v1
 
+  # --- critic: GPT-5.5 (família ≠ coder) → Claude Sonnet ---------------
   - model_name: critic
     litellm_params:
-      model: openai/cc/claude-sonnet
-      api_base: http://omniroute:20128/v1
+      model: openai/cx/gpt-5.5
       api_key: os.environ/OMNIROUTE_API_KEY
+      api_base: http://omniroute:20128/v1
+  - model_name: critic_fb
+    litellm_params:
+      model: openai/cc/claude-sonnet-4-6
+      api_key: os.environ/OMNIROUTE_API_KEY
+      api_base: http://omniroute:20128/v1
 
 litellm_settings:
   drop_params: true
   request_timeout: 120
   num_retries: 3
+  fallbacks:
+    - cheap_fast: ["cheap_fast_fb"]
+    - research: ["research_fb"]
+    - strong_coder: ["strong_coder_fb1", "strong_coder_fb2"]
+    - critic: ["critic_fb"]
 
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY
