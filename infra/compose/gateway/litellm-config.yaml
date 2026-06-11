@@ -1,20 +1,29 @@
-# Aliases roteados via OmniRoute (bridge OAuth das assinaturas).
+# Backend híbrido:
+#  - Verboo (API key direta): aliases de alto volume / baixo custo.
+#  - OmniRoute (bridge OAuth das assinaturas): aliases fortes (Claude/GPT).
+#
 # OmniRoute expõe endpoint OpenAI-compatible em http://omniroute:20128/v1
 # (mesma rede do compose). Prefixos de modelo do OmniRoute:
-#   cc/...  = Claude (via assinatura Claude Max)
-#   cx/...  = GPT/Codex (via assinatura ChatGPT)
-#   auto    = roteamento automático do OmniRoute
-#
-# IMPORTANTE: confirme os nomes exatos dos modelos em
-# Dashboard → Models do OmniRoute (http://10.10.0.10:20128) e ajuste abaixo.
+#   cc/...  = Claude (assinatura Claude Max)
+#   cx/...  = GPT/Codex (assinatura ChatGPT)
+# Confirme os nomes exatos em Dashboard → Models do OmniRoute
+# (http://10.10.0.10:20128) e ajuste abaixo.
 
 model_list:
+  # --- Verboo: alto volume / barato -------------------------------------
   - model_name: cheap_fast
     litellm_params:
-      model: openai/cc/claude-haiku
-      api_base: http://omniroute:20128/v1
-      api_key: os.environ/OMNIROUTE_API_KEY
+      model: verboo/verboo-default
+      api_key: os.environ/VERBOO_API_KEY
+      api_base: os.environ/VERBOO_API_BASE
 
+  - model_name: research
+    litellm_params:
+      model: verboo/verboo-default
+      api_key: os.environ/VERBOO_API_KEY
+      api_base: os.environ/VERBOO_API_BASE
+
+  # --- OmniRoute (OAuth): qualidade / código ----------------------------
   - model_name: strong_coder
     litellm_params:
       model: openai/cc/claude-sonnet
@@ -24,12 +33,6 @@ model_list:
   - model_name: critic
     litellm_params:
       model: openai/cc/claude-sonnet
-      api_base: http://omniroute:20128/v1
-      api_key: os.environ/OMNIROUTE_API_KEY
-
-  - model_name: research
-    litellm_params:
-      model: openai/cx/gpt-4o
       api_base: http://omniroute:20128/v1
       api_key: os.environ/OMNIROUTE_API_KEY
 
