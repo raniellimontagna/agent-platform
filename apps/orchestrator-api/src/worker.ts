@@ -3,7 +3,7 @@ import { getAgent } from './agent.js';
 import { isPaused } from './killswitch.js';
 import { logger } from './logger.js';
 import { AGENT_QUEUE, type AgentJobData, agentQueue, connection } from './queue.js';
-import { type RunStatus, updateRunStatus } from './runs.js';
+import { type RunStatus, recordStep, updateRunStatus } from './runs.js';
 
 /**
  * Worker que consome a fila e roda o grafo LangGraph (MAC-14). Cada run usa
@@ -30,6 +30,7 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
         return;
       }
 
+      const startedAt = new Date();
       let result: { status?: string };
       if (job.data.kind === 'plan') {
         const issue = await linear.getIssue(job.data.issueId);
@@ -53,6 +54,14 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
 
       const status = (result.status as RunStatus) ?? 'awaiting_approval';
       await updateRunStatus(runId, status);
+
+      // Registra a etapa com tempo e resultado (MAC-36).
+      await recordStep({
+        runId,
+        type: job.data.kind === 'plan' ? 'plan' : 'code',
+        status: status === 'failed' ? 'failed' : 'succeeded',
+        startedAt,
+      });
       log.info({ status }, 'graph step finished');
     },
     { connection },

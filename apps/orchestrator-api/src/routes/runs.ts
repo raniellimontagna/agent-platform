@@ -1,16 +1,27 @@
 import { Hono } from 'hono';
 import { logger } from '../logger.js';
 import { agentQueue } from '../queue.js';
-import { getRun, updateRunStatus } from '../runs.js';
+import { getRun, listRuns, listSteps, updateRunStatus } from '../runs.js';
 
 // Rede interna (VPN/vmbr1). Aprovação dispara execução de código — quando
 // houver ingress externo (Tailscale), proteger com token de admin.
 export const runsRoute = new Hono();
 
+/** Histórico de execuções (MAC-36). `?limit=` (máx 200). */
+runsRoute.get('/runs', async (c) => {
+  const limit = Math.min(Number(c.req.query('limit')) || 50, 200);
+  return c.json({ runs: await listRuns(limit) });
+});
+
 runsRoute.get('/runs/:id', async (c) => {
   const run = await getRun(c.req.param('id'));
   if (!run) return c.json({ error: 'not found' }, 404);
   return c.json(run);
+});
+
+/** Etapas de um run com tempo/resultado (MAC-36). */
+runsRoute.get('/runs/:id/steps', async (c) => {
+  return c.json({ steps: await listSteps(c.req.param('id')) });
 });
 
 /** Aprova um run pausado e retoma o grafo (MAC-22). */
