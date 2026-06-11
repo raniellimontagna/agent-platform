@@ -20,7 +20,9 @@ services:
     ports:
       - "20128:20128"
     volumes:
-      - /opt/agent-platform/omniroute:/app/data
+      # Volume nomeado (não bind): o OmniRoute roda como não-root e precisa
+      # de permissão de escrita em /app/data, que o bind root:root não dá.
+      - omniroute-data:/app/data
 
   litellm:
     image: ghcr.io/berriai/litellm:main-latest
@@ -55,3 +57,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+volumes:
+  omniroute-data:
