@@ -10,16 +10,18 @@
 # (http://10.10.0.10:20128) e ajuste abaixo.
 
 model_list:
-  # --- Verboo: alto volume / barato -------------------------------------
+  # --- Verboo: alto volume / barato (endpoint OpenAI-compatible) --------
+  # 'openai/<modelo>' faz o LiteLLM tratar como endpoint OpenAI custom.
+  # Ajuste <modelo> e VERBOO_API_BASE conforme a conta Verboo.
   - model_name: cheap_fast
     litellm_params:
-      model: verboo/verboo-default
+      model: openai/verboo-default
       api_key: os.environ/VERBOO_API_KEY
       api_base: os.environ/VERBOO_API_BASE
 
   - model_name: research
     litellm_params:
-      model: verboo/verboo-default
+      model: openai/verboo-default
       api_key: os.environ/VERBOO_API_KEY
       api_base: os.environ/VERBOO_API_BASE
 
