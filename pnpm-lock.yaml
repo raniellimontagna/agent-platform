@@ -32,6 +32,9 @@ importers:
       '@agent-platform/llm':
         specifier: workspace:*
         version: link:../../packages/llm
+      '@agent-platform/policy':
+        specifier: workspace:*
+        version: link:../../packages/policy
       '@hono/node-server':
         specifier: ^1.14.0
         version: 1.19.14(hono@4.12.25)
@@ -121,6 +124,9 @@ importers:
       '@agent-platform/llm':
         specifier: workspace:*
         version: link:../llm
+      '@agent-platform/policy':
+        specifier: workspace:*
+        version: link:../policy
       '@langchain/langgraph':
         specifier: ^0.2.74
         version: 0.2.74(@langchain/core@0.3.80(openai@4.104.0(zod@3.25.76)))(zod-to-json-schema@3.25.2(zod@3.25.76))
@@ -153,6 +159,15 @@ importers:
       openai:
         specifier: ^4.85.0
         version: 4.104.0(zod@3.25.76)
+    devDependencies:
+      '@types/node':
+        specifier: ^22.13.4
+        version: 22.19.20
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+
+  packages/policy:
     devDependencies:
       '@types/node':
         specifier: ^22.13.4
