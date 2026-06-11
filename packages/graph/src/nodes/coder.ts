@@ -21,6 +21,7 @@ interface RunnerResult {
   filesChanged?: string[];
   summary?: string;
   pushed?: boolean;
+  diff?: string;
 }
 
 function slugify(text: string): string {
@@ -88,7 +89,8 @@ export function makeCoderNode(deps: CoderDeps) {
         commitSha: result.commitSha,
         summary: result.summary,
         pushed: result.pushed ?? false,
-        // Mantém `coding` no sucesso → roteia para o nó PR (MAC-26).
+        diff: result.diff,
+        // Mantém `coding` no sucesso → roteia para o nó review (MAC-18) → pr.
         status: ok ? 'coding' : 'failed',
         error: result.error,
       };

@@ -51,3 +51,18 @@ export async function pushBranch(dir: string, branch: string): Promise<void> {
     throw new Error(`git push failed: ${push.stderr || push.stdout}`);
   }
 }
+
+/**
+ * Diff das alterações commitadas vs. a base branch (MAC-18). Trunca para evitar
+ * estourar o contexto do Reviewer; o diff bruto fica no PR de qualquer forma.
+ */
+export async function diffAgainst(
+  dir: string,
+  baseBranch: string,
+  maxChars = 30_000,
+): Promise<string> {
+  const res = await runCommand(`git diff ${baseBranch}`, dir);
+  if (res.exitCode !== 0) return '';
+  const out = res.stdout;
+  return out.length > maxChars ? `${out.slice(0, maxChars)}\n\n[... diff truncado ...]` : out;
+}

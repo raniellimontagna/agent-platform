@@ -21,6 +21,10 @@ export const AgentState = Annotation.Root({
   summary: Annotation<string>(),
   /** Branch foi enviada (push) ao remoto — habilita abrir o PR (MAC-26). */
   pushed: Annotation<boolean>(),
+  /** Diff das alterações vs. base, devolvido pelo runner (MAC-18). */
+  diff: Annotation<string>(),
+  /** Revisão do diff produzida pelo Reviewer com `critic` (MAC-18). */
+  review: Annotation<string>(),
   /** URL do Draft PR aberto pelo nó PR (MAC-26). */
   prUrl: Annotation<string>(),
   /** Status corrente do run (alinha com o enum run_status do banco). */
