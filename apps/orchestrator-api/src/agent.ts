@@ -33,11 +33,17 @@ async function init(): Promise<Agent> {
   // Gateway do GitHub (MAC-26) — owner/repo derivados da URL do repo alvo.
   const github = createGithubGateway(env.GITHUB_TOKEN, parseRepoRef(env.REPO_URL));
 
+  // Comandos de validação no sandbox (MAC-29) — uma linha por comando.
+  const testCommands = env.AGENT_TEST_COMMANDS.split('\n')
+    .map((c) => c.trim())
+    .filter(Boolean);
+
   const graph = buildAgentGraph(
     {
       llm,
       linear,
       github,
+      testCommands,
       runner: {
         baseUrl: env.RUNNER_BASE_URL,
         authToken: env.RUNNER_AUTH_TOKEN,

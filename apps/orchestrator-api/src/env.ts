@@ -21,6 +21,10 @@ const envSchema = z.object({
 
   // Repo alvo que o agente vai modificar (default: o próprio agent-platform).
   REPO_URL: z.string().min(1).default('https://github.com/raniellimontagna/agent-platform.git'),
+
+  // Comandos de validação rodados no sandbox após o push (MAC-29), um por linha.
+  // Default: install + typecheck (pega quebras de build que o codegen possa introduzir).
+  AGENT_TEST_COMMANDS: z.string().default('pnpm install --frozen-lockfile\npnpm -r typecheck'),
 });
 
 export type Env = z.infer<typeof envSchema>;

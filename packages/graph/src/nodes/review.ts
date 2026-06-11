@@ -38,6 +38,9 @@ export function makeReviewNode(deps: ReviewDeps) {
             content: [
               `# Issue ${state.issueIdentifier}: ${state.title}`,
               `\n# Plano\n${state.plan}`,
+              state.testsPassed === undefined
+                ? ''
+                : `\n# Validação no sandbox: ${state.testsPassed ? 'PASSOU' : 'FALHOU'}\n${state.testSummary ?? ''}`,
               `\n# Diff\n\`\`\`diff\n${state.diff}\n\`\`\``,
             ].join('\n'),
           },

@@ -24,9 +24,15 @@ export function makePrNode(deps: PrDeps) {
 
     try {
       const title = `${state.issueIdentifier}: ${state.title}`;
+      const testsLine =
+        state.testsPassed === undefined
+          ? ''
+          : `\n## Validação\n${state.testsPassed ? '✅ passou' : '❌ falhou'}\n${state.testSummary ?? ''}`;
+
       const body = [
         `Closes ${state.issueIdentifier} _(via agent-platform)_.`,
         state.summary ? `\n## Resumo\n${state.summary}` : '',
+        testsLine,
         state.review ? `\n## Revisão automática (critic)\n${state.review}` : '',
         state.plan ? `\n## Plano\n${state.plan}` : '',
         '\n---\n🤖 PR aberto automaticamente pelo agent-platform. Revisão humana necessária.',

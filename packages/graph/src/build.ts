@@ -16,6 +16,8 @@ export interface GraphDeps {
   github: GithubGateway;
   /** Branch base dos PRs abertos pelo agente (default: main). */
   baseBranch?: string;
+  /** Comandos de validação rodados no sandbox após o push (MAC-29). */
+  testCommands?: string[];
 }
 
 /**
@@ -39,7 +41,11 @@ export async function createCheckpointer(connectionString: string): Promise<Post
  */
 export function buildAgentGraph(deps: GraphDeps, checkpointer: PostgresSaver) {
   const planning = makePlannerNode(deps);
-  const coding = makeCoderNode(deps);
+  const coding = makeCoderNode({
+    linear: deps.linear,
+    runner: deps.runner,
+    testCommands: deps.testCommands ?? [],
+  });
   const review = makeReviewNode({ llm: deps.llm, linear: deps.linear });
   const pr = makePrNode({
     github: deps.github,

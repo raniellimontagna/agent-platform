@@ -11,6 +11,15 @@ export interface RunnerConfig {
 export interface CoderDeps {
   linear: LinearGateway;
   runner: RunnerConfig;
+  /** Comandos de validação rodados no sandbox após o push (MAC-29). */
+  testCommands: string[];
+}
+
+interface CommandResult {
+  command: string;
+  exitCode: number;
+  stdout: string;
+  stderr: string;
 }
 
 interface RunnerResult {
@@ -22,6 +31,22 @@ interface RunnerResult {
   summary?: string;
   pushed?: boolean;
   diff?: string;
+  testsPassed?: boolean;
+  commands?: CommandResult[];
+}
+
+/** Resumo curto dos comandos de validação: status + tail do que falhou. */
+function summarizeTests(commands: CommandResult[] = []): string {
+  if (commands.length === 0) return '';
+  return commands
+    .map((c) => {
+      const ok = c.exitCode === 0;
+      const head = `- \`${c.command}\` → ${ok ? '✅' : `❌ exit ${c.exitCode}`}`;
+      if (ok) return head;
+      const tail = (c.stderr || c.stdout || '').trim().slice(-600);
+      return `${head}\n\`\`\`\n${tail}\n\`\`\``;
+    })
+    .join('\n');
 }
 
 function slugify(text: string): string {
@@ -63,7 +88,7 @@ export function makeCoderNode(deps: CoderDeps) {
           title: state.title,
           description: state.description,
           plan: state.plan,
-          commands: [],
+          commands: deps.testCommands,
         }),
       });
 
@@ -78,10 +103,16 @@ export function makeCoderNode(deps: CoderDeps) {
         ? `\n\nArquivos: ${result.filesChanged.map((f) => `\`${f}\``).join(', ')}`
         : '';
 
+      const testSummary = summarizeTests(result.commands);
+      const testsBlock =
+        result.testsPassed === undefined
+          ? ''
+          : `\n\n**Validação:** ${result.testsPassed ? '✅ passou' : '❌ falhou'}\n${testSummary}`;
+
       await deps.linear.comment(
         state.issueId,
         `## 🤖 Execução\nBranch \`${branch}\` — runner: **${result.status}**.` +
-          `${result.summary ? `\n\n${result.summary}` : ''}${files}${errorBlock}`,
+          `${result.summary ? `\n\n${result.summary}` : ''}${files}${testsBlock}${errorBlock}`,
       );
 
       return {
@@ -90,6 +121,8 @@ export function makeCoderNode(deps: CoderDeps) {
         summary: result.summary,
         pushed: result.pushed ?? false,
         diff: result.diff,
+        testsPassed: result.testsPassed,
+        testSummary,
         // Mantém `coding` no sucesso → roteia para o nó review (MAC-18) → pr.
         status: ok ? 'coding' : 'failed',
         error: result.error,
