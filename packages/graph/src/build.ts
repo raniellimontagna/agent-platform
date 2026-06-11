@@ -6,6 +6,7 @@ import { PostgresSaver } from '@langchain/langgraph-checkpoint-postgres';
 import { type RunnerConfig, makeCoderNode } from './nodes/coder.js';
 import { makePlannerNode } from './nodes/planner.js';
 import { makePrNode } from './nodes/pr.js';
+import { makeReportNode } from './nodes/report.js';
 import { makeReviewNode } from './nodes/review.js';
 import { AgentState } from './state.js';
 
@@ -31,13 +32,14 @@ export async function createCheckpointer(connectionString: string): Promise<Post
 
 /**
  * Monta a state machine do agente (MAC-14):
- *   START → planning → [⏸ aprovação humana] → coding → review → pr → END
+ *   START → planning → [⏸ aprovação humana] → coding → reviewing → pr → report → END
  *
  * Pausa antes de `coding` aguardando aprovação (MAC-22). Após aprovado, o run é
  * retomado com o mesmo thread_id e segue para o Coder (MAC-17), que gera o
  * código e pusha a branch. Em sucesso, o Reviewer (MAC-18) revisa o diff com
- * `critic` e o nó PR (MAC-26) abre o Draft PR; em falha do coder, encerra. O
- * checkpointer Postgres persiste e permite retomar (MAC-34).
+ * `critic` e o nó PR (MAC-26) abre o Draft PR; em falha do coder, pula direto
+ * para o report. O nó `report` (MAC-21) posta o resumo final (sucesso ou falha).
+ * O checkpointer Postgres persiste e permite retomar (MAC-34).
  */
 export function buildAgentGraph(deps: GraphDeps, checkpointer: PostgresSaver) {
   const planning = makePlannerNode(deps);
@@ -52,20 +54,27 @@ export function buildAgentGraph(deps: GraphDeps, checkpointer: PostgresSaver) {
     linear: deps.linear,
     baseBranch: deps.baseBranch ?? 'main',
   });
+  const report = makeReportNode({ linear: deps.linear });
 
   return new StateGraph(AgentState)
     .addNode('planning', planning)
     .addNode('coding', coding)
     .addNode('reviewing', review)
     .addNode('pr', pr)
+    .addNode('report', report)
     .addEdge(START, 'planning')
     .addEdge('planning', 'coding')
-    .addConditionalEdges('coding', (state) => (state.status === 'failed' ? END : 'reviewing'), {
-      reviewing: 'reviewing',
-      [END]: END,
-    })
+    .addConditionalEdges(
+      'coding',
+      (state) => (state.status === 'failed' ? 'report' : 'reviewing'),
+      {
+        reviewing: 'reviewing',
+        report: 'report',
+      },
+    )
     .addEdge('reviewing', 'pr')
-    .addEdge('pr', END)
+    .addEdge('pr', 'report')
+    .addEdge('report', END)
     .compile({ checkpointer, interruptBefore: ['coding'] });
 }
 
