@@ -26,11 +26,14 @@ function testsLabel(testsPassed?: boolean): string {
 export function makeReportNode(deps: ReportDeps) {
   return async (state: AgentStateType): Promise<Partial<AgentStateType>> => {
     const ok = state.status === 'completed';
-    const header = ok
-      ? `## ✅ Resultado — ${state.issueIdentifier}`
-      : `## ❌ Resultado — ${state.issueIdentifier}`;
+    const verdict = verdictOf(state.review);
+    const reproved = /REPROVADO/i.test(verdict);
+    const testsFailed = state.testsPassed === false;
+    // ✅ só quando o run terminou E passou na validação E não foi reprovado;
+    // ⚠️ quando terminou mas há falha de validação/revisão; ❌ quando o run falhou.
+    const icon = !ok ? '❌' : reproved || testsFailed ? '⚠️' : '✅';
 
-    const lines = [header, ''];
+    const lines = [`## ${icon} Resultado — ${state.issueIdentifier}`, ''];
     lines.push(`**Status:** \`${state.status}\``);
 
     if (state.prUrl) lines.push(`**PR:** ${state.prUrl}`);
@@ -40,7 +43,7 @@ export function makeReportNode(deps: ReportDeps) {
     }
     if (state.pushed) {
       lines.push(`**Validação:** ${testsLabel(state.testsPassed)}`);
-      lines.push(`**Revisão (critic):** ${verdictOf(state.review)}`);
+      lines.push(`**Revisão (critic):** ${verdict}`);
     }
     if (state.summary) lines.push(`\n${state.summary}`);
     if (!ok && state.error) lines.push(`\n\`\`\`\n${state.error}\n\`\`\``);
