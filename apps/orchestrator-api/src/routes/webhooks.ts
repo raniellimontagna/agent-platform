@@ -3,7 +3,7 @@ import { Hono } from 'hono';
 import { env } from '../env.js';
 import { isPaused } from '../killswitch.js';
 import { logger } from '../logger.js';
-import { agentQueue } from '../queue.js';
+import { JOB_PRIORITY, agentQueue } from '../queue.js';
 import { costLast24hUsd, createRun } from '../runs.js';
 
 export const webhooks = new Hono();
@@ -70,7 +70,7 @@ webhooks.post('/webhooks/linear', async (c) => {
     linearIssueIdentifier: payload.data?.identifier ?? issueId,
     title: payload.data?.title ?? '(sem título)',
   });
-  await agentQueue.add('plan', { kind: 'plan', runId, issueId });
+  await agentQueue.add('plan', { kind: 'plan', runId, issueId }, { priority: JOB_PRIORITY.plan });
 
   logger.info(
     { runId, issue: payload.data?.identifier, action: payload.action },

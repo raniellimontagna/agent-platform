@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { logger } from '../logger.js';
-import { agentQueue } from '../queue.js';
+import { JOB_PRIORITY, agentQueue } from '../queue.js';
 import {
   getRun,
   listApprovals,
@@ -47,7 +47,7 @@ runsRoute.post('/runs/:id/approve', async (c) => {
 
   await resolveApproval(id, 'approved', c.req.query('by') ?? 'human');
   await updateRunStatus(id, 'executing');
-  await agentQueue.add('resume', { kind: 'resume', runId: id });
+  await agentQueue.add('resume', { kind: 'resume', runId: id }, { priority: JOB_PRIORITY.resume });
   logger.info({ runId: id }, 'run approved, resuming');
   return c.json({ ok: true, runId: id, resumed: true });
 });
