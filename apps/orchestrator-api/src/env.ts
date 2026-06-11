@@ -17,6 +17,10 @@ const envSchema = z.object({
   GITHUB_TOKEN: z.string().min(1),
 
   RUNNER_BASE_URL: z.string().url(),
+  RUNNER_AUTH_TOKEN: z.string().min(1),
+
+  // Repo alvo que o agente vai modificar (default: o próprio agent-platform).
+  REPO_URL: z.string().min(1).default('https://github.com/raniellimontagna/agent-platform.git'),
 });
 
 export type Env = z.infer<typeof envSchema>;

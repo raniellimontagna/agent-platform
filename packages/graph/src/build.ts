@@ -2,12 +2,14 @@ import type { LinearGateway } from '@agent-platform/linear';
 import type { LlmClient } from '@agent-platform/llm';
 import { END, START, StateGraph } from '@langchain/langgraph';
 import { PostgresSaver } from '@langchain/langgraph-checkpoint-postgres';
+import { type RunnerConfig, makeCoderNode } from './nodes/coder.js';
 import { makePlannerNode } from './nodes/planner.js';
-import { AgentState, type AgentStateType } from './state.js';
+import { AgentState } from './state.js';
 
 export interface GraphDeps {
   llm: LlmClient;
   linear: LinearGateway;
+  runner: RunnerConfig;
 }
 
 /**
@@ -20,16 +22,16 @@ export async function createCheckpointer(connectionString: string): Promise<Post
 }
 
 /**
- * Monta a state machine do agente (MAC-14). Pausa antes de `coding` aguardando
- * aprovação humana (MAC-22) — retomada por outra invocação com o mesmo thread_id.
+ * Monta a state machine do agente (MAC-14):
+ *   START → planning → [⏸ aprovação humana] → coding → END
+ *
+ * Pausa antes de `coding` aguardando aprovação (MAC-22). Após aprovado, o run
+ * é retomado com o mesmo thread_id e segue para o Coder (MAC-17), que despacha
+ * ao runner. O checkpointer Postgres persiste e permite retomar (MAC-34).
  */
 export function buildAgentGraph(deps: GraphDeps, checkpointer: PostgresSaver) {
   const planning = makePlannerNode(deps);
-
-  // Stub do CODING (MAC-17) — preenchido na próxima fatia.
-  const coding = async (_state: AgentStateType): Promise<Partial<AgentStateType>> => {
-    return { status: 'executing' };
-  };
+  const coding = makeCoderNode(deps);
 
   return new StateGraph(AgentState)
     .addNode('planning', planning)

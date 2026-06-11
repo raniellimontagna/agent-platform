@@ -13,6 +13,8 @@ export const AgentState = Annotation.Root({
   description: Annotation<string>(),
   /** Plano gerado pelo Planner (MAC-16). */
   plan: Annotation<string>(),
+  /** Branch de trabalho criada pelo Coder (MAC-17/25). */
+  branch: Annotation<string>(),
   /** Status corrente do run (alinha com o enum run_status do banco). */
   status: Annotation<string>(),
   /** Mensagem de erro, se o run falhar. */

@@ -24,6 +24,12 @@ export async function createRun(input: NewRunInput): Promise<string> {
   return row!.id;
 }
 
+/** Lê um run pelo id (null se não existir). */
+export async function getRun(id: string) {
+  const [row] = await db.select().from(schema.runs).where(eq(schema.runs.id, id)).limit(1);
+  return row ?? null;
+}
+
 export async function updateRunStatus(
   runId: string,
   status: RunStatus,
