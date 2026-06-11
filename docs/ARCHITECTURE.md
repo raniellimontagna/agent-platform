@@ -26,12 +26,14 @@ flowchart TB
   LINEAR["Linear (cloud)"]
   GH["GitHub"]
   SUBS["Claude Max / ChatGPT<br/>(assinaturas via OAuth)"]
+  VERBOO["Verboo<br/>(API key, alto volume)"]
 
   LINEAR -->|"webhook (label ai-ready)"| ORCH
   ORCH -->|"job HTTP"| RUN
   ORCH -->|"aliases LLM"| GW
   RUN -->|"aliases LLM"| GW
-  GW -->|"OAuth"| SUBS
+  GW -->|"OAuth (strong_coder/critic)"| SUBS
+  GW -->|"API key (cheap_fast/research)"| VERBOO
   ORCH -->|"branch · PR · comentários"| GH
   ORCH -->|"status · comentários"| LINEAR
   ORCH -.métricas/logs.-> OBS
@@ -79,7 +81,8 @@ modelos (Fase 2).
 | Decisões/ADRs | MAC-6 | `docs/decisions/` | ✅ |
 | Infra Proxmox (4 VMs, rede, deploy) | MAC-8/9/10/11 | `infra/proxmox/`, `infra/deploy/` | no ar; deploy parcial |
 | LiteLLM Gateway | MAC-12 | `infra/compose/gateway/` | config pronta; ⏳ deploy |
-| Provider LLM (OmniRoute/OAuth) | MAC-13¹ | `infra/compose/gateway/` + ADR-0006 | config pronta; ⏳ OAuth |
+| Provider Verboo (cheap_fast/research) | MAC-13 | `infra/compose/gateway/litellm-config.yaml` | config pronta; ⏳ key |
+| Provider OmniRoute/OAuth (strong_coder/critic) | MAC-48 | `infra/compose/gateway/` + ADR-0006 | config pronta; ⏳ OAuth |
 | Budgets / Rate limits | MAC-15 | LiteLLM config (a expandir) | ⏳ |
 | API + Webhook Linear | MAC-19 | `apps/orchestrator-api/src/routes/webhooks.ts` | esqueleto ✅ |
 | Fluxo ai-ready | MAC-20 | `apps/orchestrator-api` (enfileirar) | ⏳ stub |
@@ -95,7 +98,7 @@ modelos (Fase 2).
 | Runtime (queue, scheduler, workers, cost, approval) | MAC-37/38/39/40/41 | `apps/orchestrator-api`, `packages/policy` | ⏳ |
 | Escala (registries, artifacts, vector, MCP, multiagente) | MAC-42..47 | `packages/*`, `apps/*` | ⏳ |
 
-¹ MAC-13 era "Integrar Verboo" — **substituído por OmniRoute/OAuth** (ver §5).
+Provider LLM é híbrido: Verboo (MAC-13) + OmniRoute/OAuth (MAC-48) — ver §5 e ADR-0006.
 
 ---
 
@@ -105,7 +108,7 @@ modelos (Fase 2).
 |---|---|---|---|---|
 | 0 | Fundação e decisões | MAC-6 | 16/06 | ✅ |
 | 1 | Infra Proxmox e rede | MAC-8/9/10/11 (+MAC-7¹) | 23/06 | 🏗 no ar; deploy parcial |
-| 2 | Gateway LiteLLM e provedores | MAC-12/13/15 | 30/06 | 🏗 config pronta; deploy ⏳ |
+| 2 | Gateway LiteLLM e provedores | MAC-12/13/48/15 | 30/06 | 🏗 config pronta; deploy ⏳ |
 | 3 | Orquestrador LangGraph | MAC-14/16/17/18/21/22/23/24/33/34 | 10/07 | ⏳ |
 | 4 | Linear, GitHub e Code Runner | MAC-19/20/25/26/27/28/29 | 20/07 | 🏗 worker-code base ✅ |
 | 5 | Segurança e Observabilidade | MAC-30/31/32/35/36 | 10/08 | 🏗 stack obs no ar |
@@ -118,12 +121,11 @@ modelos (Fase 2).
 
 ## 5. Divergências a validar (evitar surpresa)
 
-1. **MAC-7 duplicado.** MAC-7 e MAC-8 são ambos "Provisionar VM Gateway". MAC-8 é
-   o card detalhado que usamos; MAC-7 é stub. **Sugestão:** cancelar MAC-7.
+1. **MAC-7 duplicado.** ✅ Resolvido — MAC-7 cancelado (duplicata de MAC-8).
 
-2. **MAC-13 Verboo → OmniRoute.** O ADR-0006 trocou o backend de Verboo (API paga)
-   por OmniRoute com OAuth das assinaturas. **Sugestão:** renomear MAC-13 para
-   "Integrar OmniRoute (OAuth)" ou cancelar e abrir card novo.
+2. **Provider LLM híbrido.** ✅ Resolvido — Verboo segue como provider de alto
+   volume (MAC-13, aliases `cheap_fast`/`research`) e OmniRoute via OAuth cobre os
+   fortes (MAC-48, `strong_coder`/`critic`). Ver ADR-0006.
 
 3. **Fase 4 antecipada.** O `worker-code` (MAC-27/28/29) já tem base pronta na
    Fase 1, porque o deploy dos runners precisava de um app. Cards continuam na
