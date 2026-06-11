@@ -9,6 +9,12 @@ export const jobSchema = z.object({
   branch: z.string().min(1),
   /** Comandos a rodar após preparar o worktree (ex.: install, test). */
   commands: z.array(z.string()).default([]),
+  /** Título da issue — contexto para a geração de código (MAC-17). */
+  title: z.string().default(''),
+  /** Descrição da issue — contexto para a geração de código. */
+  description: z.string().default(''),
+  /** Plano aprovado (Planner, MAC-16) que guia a geração de código. */
+  plan: z.string().default(''),
 });
 
 export type Job = z.infer<typeof jobSchema>;
@@ -27,4 +33,12 @@ export interface JobResult {
   branch: string;
   commands: CommandResult[];
   error?: string;
+  /** SHA do commit gerado pelo Coder (MAC-17), se houve mudança. */
+  commitSha?: string;
+  /** Arquivos alterados pela geração de código. */
+  filesChanged?: string[];
+  /** Resumo das alterações produzido pelo modelo. */
+  summary?: string;
+  /** Se a branch foi efetivamente enviada (push) ao remoto. */
+  pushed?: boolean;
 }

@@ -66,6 +66,9 @@ importers:
 
   apps/worker-code:
     dependencies:
+      '@agent-platform/llm':
+        specifier: workspace:*
+        version: link:../../packages/llm
       '@hono/node-server':
         specifier: ^1.14.0
         version: 1.19.14(hono@4.12.25)

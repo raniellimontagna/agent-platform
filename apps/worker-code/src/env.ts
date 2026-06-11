@@ -13,6 +13,10 @@ const envSchema = z.object({
 
   ORCHESTRATOR_BASE_URL: z.string().url(),
   RUNNER_AUTH_TOKEN: z.string().min(1),
+
+  // Autor dos commits gerados pelo agente (MAC-17).
+  GIT_AUTHOR_NAME: z.string().min(1).default('agent-platform bot'),
+  GIT_AUTHOR_EMAIL: z.string().min(1).default('bot@agent.local'),
 });
 
 export type Env = z.infer<typeof envSchema>;
