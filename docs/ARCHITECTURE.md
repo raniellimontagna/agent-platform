@@ -96,7 +96,7 @@ modelos (Fase 2).
 | Sandbox Executor / Test Runner | MAC-28/29 | `apps/worker-code` (runJob + allowlist) | ✅ |
 | Observabilidade (painéis, registro) | MAC-35/36 | `infra/compose/observability/provisioning/`, `apps/orchestrator-api` (runs/steps) | registro ✅; painéis provisionados (verificar UI) |
 | Segurança (vault, allowlist, kill switch) | MAC-30/31/32 | `killswitch.ts`, `routes/admin.ts`, `worker-code/.../commandPolicy.ts`, `docs/runbooks/secrets.md` | ✅ |
-| Runtime (queue, scheduler, workers, cost, approval) | MAC-37/38/39/40/41 | `apps/orchestrator-api` (BullMQ), `packages/policy` | queue ✅; cost/scheduler/governança ⏳ |
+| Runtime (queue, scheduler, workers, cost, approval) | MAC-37/38/39/40/41 | `apps/orchestrator-api` (BullMQ + cost guard), `packages/policy` | queue/cost/approval ✅; scheduler(38)/workers(39) ⏳ |
 | Escala (registries, artifacts, vector, MCP, multiagente) | MAC-42..47 | `packages/*`, `apps/*` | ⏳ |
 
 Provider LLM é híbrido: Verboo (MAC-13) + OmniRoute/OAuth (MAC-48) — ver §5 e ADR-0006.
@@ -113,7 +113,7 @@ Provider LLM é híbrido: Verboo (MAC-13) + OmniRoute/OAuth (MAC-48) — ver §5
 | 3 | Orquestrador LangGraph | MAC-14/16/17/18/21/22/23/24/33/34 | 10/07 | 🏗 só MAC-23 (memory) ⏳ |
 | 4 | Linear, GitHub e Code Runner | MAC-19/20/25/26/27/28/29 | 20/07 | ✅ |
 | 5 | Segurança e Observabilidade | MAC-30/31/32/35/36 | 10/08 | ✅ (painéis: verificar UI) |
-| 6 | Runtime e Governança | MAC-37/38/39/40/41 | 24/08 | ⏳ |
+| 6 | Runtime e Governança | MAC-37/38/39/40/41 | 24/08 | 🏗 37/40/41 ✅; 38/39 ⏳ |
 | 7 | Produção e Escala | MAC-42/43/44/45/46/47 | 07/09 | ⏳ |
 
 ¹ MAC-7 e MAC-8 têm o mesmo título "Provisionar VM Gateway" (ver §5).
