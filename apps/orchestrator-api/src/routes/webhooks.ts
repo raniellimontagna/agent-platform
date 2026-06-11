@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { Hono } from 'hono';
 import { env } from '../env.js';
+import { isPaused } from '../killswitch.js';
 import { logger } from '../logger.js';
 import { agentQueue } from '../queue.js';
 import { createRun } from '../runs.js';
@@ -48,6 +49,12 @@ webhooks.post('/webhooks/linear', async (c) => {
   const issueId = payload.data?.id;
   if (!issueId) {
     return c.json({ ok: true, skipped: true, reason: 'no issue id' });
+  }
+
+  // Kill switch (MAC-32): pausado → não cria nem enfileira nada.
+  if (await isPaused()) {
+    logger.warn({ issue: payload.data?.identifier }, 'agents paused; ai-ready ignorado');
+    return c.json({ ok: true, skipped: true, reason: 'agents paused' });
   }
 
   // Cria o run e enfileira; a execução longa roda no worker (MAC-20).
