@@ -88,7 +88,8 @@ export function makeCoderNode(deps: CoderDeps) {
         commitSha: result.commitSha,
         summary: result.summary,
         pushed: result.pushed ?? false,
-        status: ok ? 'completed' : 'failed',
+        // Mantém `coding` no sucesso → roteia para o nó PR (MAC-26).
+        status: ok ? 'coding' : 'failed',
         error: result.error,
       };
     } catch (err) {
