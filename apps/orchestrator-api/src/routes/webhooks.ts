@@ -2,6 +2,8 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { Hono } from 'hono';
 import { env } from '../env.js';
 import { logger } from '../logger.js';
+import { agentQueue } from '../queue.js';
+import { createRun } from '../runs.js';
 
 export const webhooks = new Hono();
 
@@ -43,11 +45,22 @@ webhooks.post('/webhooks/linear', async (c) => {
     return c.json({ ok: true, skipped: true });
   }
 
-  logger.info(
-    { issue: payload.data?.identifier, action: payload.action },
-    'ai-ready issue received, enqueueing run',
-  );
+  const issueId = payload.data?.id;
+  if (!issueId) {
+    return c.json({ ok: true, skipped: true, reason: 'no issue id' });
+  }
 
-  // TODO(MAC-20): enfileirar run no BullMQ e iniciar grafo LangGraph.
-  return c.json({ ok: true, queued: true });
+  // Cria o run e enfileira; a execução longa roda no worker (MAC-20).
+  const runId = await createRun({
+    linearIssueId: issueId,
+    linearIssueIdentifier: payload.data?.identifier ?? issueId,
+    title: payload.data?.title ?? '(sem título)',
+  });
+  await agentQueue.add('plan', { runId, issueId });
+
+  logger.info(
+    { runId, issue: payload.data?.identifier, action: payload.action },
+    'ai-ready issue enqueued',
+  );
+  return c.json({ ok: true, queued: true, runId });
 });
