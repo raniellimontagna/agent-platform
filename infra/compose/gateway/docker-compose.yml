@@ -36,7 +36,7 @@ services:
       VERBOO_API_BASE: ${VERBOO_API_BASE}
       OMNIROUTE_API_KEY: ${OMNIROUTE_API_KEY}
       STORE_MODEL_IN_DB: "true"
-    command: ["--config", "/app/config.yaml", "--port", "4000", "--num_workers", "4"]
+    command: ["--config", "/app/config.yaml", "--port", "4000", "--num_workers", "2"]
     depends_on:
       postgres:
         condition: service_healthy
