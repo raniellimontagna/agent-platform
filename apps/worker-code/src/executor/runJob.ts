@@ -3,7 +3,7 @@ import { env } from '../env.js';
 import { logger } from '../logger.js';
 import type { CommandResult, Job, JobResult } from '../types.js';
 import { generateAndApplyCode } from './codegen.js';
-import { commitAll, pushBranch } from './git.js';
+import { commitAll, diffAgainst, pushBranch } from './git.js';
 import { prepareWorktree, runCommand } from './worktree.js';
 
 const llm = createLlmClient({ baseUrl: env.LITELLM_BASE_URL, apiKey: env.LITELLM_API_KEY });
@@ -48,6 +48,7 @@ export async function runJob(job: Job): Promise<JobResult> {
       }
       base.commitSha = commit.sha;
 
+      base.diff = await diffAgainst(dir, job.baseBranch);
       await pushBranch(dir, job.branch);
       base.pushed = true;
       log.info({ commitSha: commit.sha, branch: job.branch }, 'pushed branch');

@@ -41,4 +41,6 @@ export interface JobResult {
   summary?: string;
   /** Se a branch foi efetivamente enviada (push) ao remoto. */
   pushed?: boolean;
+  /** Diff das alterações vs. base branch (para o Reviewer, MAC-18). */
+  diff?: string;
 }
