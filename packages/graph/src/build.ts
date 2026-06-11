@@ -50,15 +50,15 @@ export function buildAgentGraph(deps: GraphDeps, checkpointer: PostgresSaver) {
   return new StateGraph(AgentState)
     .addNode('planning', planning)
     .addNode('coding', coding)
-    .addNode('review', review)
+    .addNode('reviewing', review)
     .addNode('pr', pr)
     .addEdge(START, 'planning')
     .addEdge('planning', 'coding')
-    .addConditionalEdges('coding', (state) => (state.status === 'failed' ? END : 'review'), {
-      review: 'review',
+    .addConditionalEdges('coding', (state) => (state.status === 'failed' ? END : 'reviewing'), {
+      reviewing: 'reviewing',
       [END]: END,
     })
-    .addEdge('review', 'pr')
+    .addEdge('reviewing', 'pr')
     .addEdge('pr', END)
     .compile({ checkpointer, interruptBefore: ['coding'] });
 }
