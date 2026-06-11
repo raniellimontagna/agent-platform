@@ -27,8 +27,7 @@ export async function runJob(job: Job): Promise<JobResult> {
       branch: job.branch,
     });
 
-    // Geração de código só quando há plano aprovado (MAC-17). Sem plano, mantém
-    // o ciclo antigo (clonar → comandos) para validação de infra.
+    // Fluxo de code-gen (MAC-17): há plano aprovado.
     if (job.plan.trim()) {
       const gen = await generateAndApplyCode({
         llm,
@@ -52,8 +51,23 @@ export async function runJob(job: Job): Promise<JobResult> {
       await pushBranch(dir, job.branch);
       base.pushed = true;
       log.info({ commitSha: commit.sha, branch: job.branch }, 'pushed branch');
+
+      // Test Runner (MAC-29): roda a validação NÃO-fatal — testes falhando não
+      // derrubam o run; viram sinal no PR/revisão para a decisão humana.
+      for (const cmd of job.commands) {
+        log.info({ cmd }, 'running validation command');
+        const result = await runCommand(cmd, dir);
+        commands.push(result);
+        if (result.exitCode !== 0)
+          log.warn({ cmd, exitCode: result.exitCode }, 'validation failed');
+      }
+      base.testsPassed = commands.every((c) => c.exitCode === 0);
+      log.info({ testsPassed: base.testsPassed }, 'validation finished');
+
+      return { ...base, status: 'succeeded' };
     }
 
+    // Fluxo de validação de infra (sem plano): comandos são FATAIS (ciclo antigo).
     for (const cmd of job.commands) {
       log.info({ cmd }, 'running command');
       const result = await runCommand(cmd, dir);

@@ -25,6 +25,10 @@ export const AgentState = Annotation.Root({
   diff: Annotation<string>(),
   /** Revisão do diff produzida pelo Reviewer com `critic` (MAC-18). */
   review: Annotation<string>(),
+  /** Resultado da validação no sandbox (MAC-29). undefined = não rodou. */
+  testsPassed: Annotation<boolean>(),
+  /** Resumo dos comandos de validação (cmd + exit code + tail). */
+  testSummary: Annotation<string>(),
   /** URL do Draft PR aberto pelo nó PR (MAC-26). */
   prUrl: Annotation<string>(),
   /** Status corrente do run (alinha com o enum run_status do banco). */
