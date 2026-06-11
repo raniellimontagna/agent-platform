@@ -17,6 +17,10 @@ interface RunnerResult {
   status: 'succeeded' | 'failed';
   branch: string;
   error?: string;
+  commitSha?: string;
+  filesChanged?: string[];
+  summary?: string;
+  pushed?: boolean;
 }
 
 function slugify(text: string): string {
@@ -31,11 +35,12 @@ function slugify(text: string): string {
 
 /**
  * Nó CODING (MAC-17): cria a branch de trabalho e despacha o job para o runner
- * (worker-code) de forma síncrona. O runner clona um worktree isolado, roda os
- * comandos e devolve o resultado. Reporta no Linear (MAC-21).
+ * (worker-code) de forma síncrona, passando o plano aprovado. O runner clona um
+ * worktree isolado, gera o código via `strong_coder`, commita e pusha a branch,
+ * roda as validações e devolve o resultado. Reporta no Linear (MAC-21).
  *
- * TODO(Fase 4): inserir a etapa de geração de código via `strong_coder` antes
- * dos testes. Por ora o runner só valida o ciclo clonar → comandos → resultado.
+ * Em sucesso, mantém o status `coding` e marca `pushed` para o nó PR (MAC-26)
+ * abrir o Draft PR em seguida.
  */
 export function makeCoderNode(deps: CoderDeps) {
   return async (state: AgentStateType): Promise<Partial<AgentStateType>> => {
@@ -54,6 +59,9 @@ export function makeCoderNode(deps: CoderDeps) {
           repoUrl: deps.runner.repoUrl,
           baseBranch: 'main',
           branch,
+          title: state.title,
+          description: state.description,
+          plan: state.plan,
           commands: [],
         }),
       });
@@ -65,13 +73,24 @@ export function makeCoderNode(deps: CoderDeps) {
       const result = (await res.json()) as RunnerResult;
       const ok = result.status === 'succeeded';
       const errorBlock = result.error ? `\n\n\`\`\`\n${result.error}\n\`\`\`` : '';
+      const files = result.filesChanged?.length
+        ? `\n\nArquivos: ${result.filesChanged.map((f) => `\`${f}\``).join(', ')}`
+        : '';
 
       await deps.linear.comment(
         state.issueId,
-        `## 🤖 Execução\nBranch \`${branch}\` — runner: **${result.status}**.${errorBlock}`,
+        `## 🤖 Execução\nBranch \`${branch}\` — runner: **${result.status}**.` +
+          `${result.summary ? `\n\n${result.summary}` : ''}${files}${errorBlock}`,
       );
 
-      return { branch, status: ok ? 'completed' : 'failed', error: result.error };
+      return {
+        branch,
+        commitSha: result.commitSha,
+        summary: result.summary,
+        pushed: result.pushed ?? false,
+        status: ok ? 'completed' : 'failed',
+        error: result.error,
+      };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       await deps.linear.comment(
