@@ -97,6 +97,23 @@ if [ "$MODE" = image ]; then
   DEST="$REMOTE_BASE/$SUBDIR"
   echo "==> Enviando infra/compose/$SUBDIR -> $DEST"
   remote_push_dir "$REPO_ROOT/infra/compose/$SUBDIR" "$DEST"
+
+  # Gateway: OmniRoute precisa subir antes do gate, para fazer o OAuth e
+  # obter a OMNIROUTE_API_KEY que o LiteLLM vai usar.
+  if [ "$SERVICE" = gateway ]; then
+    remote_exec "test -f '$DEST/.env' || cp '$DEST/.env.example' '$DEST/.env'"
+    echo "==> Subindo OmniRoute (bridge OAuth)"
+    remote_exec "cd '$DEST' && docker compose up -d omniroute"
+    echo ""
+    echo "  >> Configure o OmniRoute antes de seguir:"
+    echo "     1. Abra http://${IP_GATEWAY%/*}:20128"
+    echo "     2. Providers -> conecte Claude Max e ChatGPT via OAuth"
+    echo "     3. Endpoints -> copie a API key"
+    echo "     4. Ponha em OMNIROUTE_API_KEY no .env e rode de novo:"
+    echo "        pct exec $ID -- nano $DEST/.env"
+    echo ""
+  fi
+
   ensure_env "$DEST"
   echo "==> docker compose up -d"
   remote_exec "cd '$DEST' && docker compose up -d"
