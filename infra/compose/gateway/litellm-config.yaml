@@ -18,11 +18,15 @@ model_list:
       model: openai/deepseek-v4-flash
       api_key: os.environ/VERBOO_API_KEY
       api_base: os.environ/VERBOO_API_BASE
+      rpm: 30
+      tpm: 60000
   - model_name: cheap_fast_fb_cost_saver
     litellm_params:
       model: openai/combo/cost-saver
       api_key: os.environ/OMNIROUTE_API_KEY
       api_base: http://omniroute:20128/v1
+      rpm: 12
+      tpm: 40000
 
   # --- cost-saver: padrão para leitura, síntese e código comum ----------
   - model_name: research
@@ -30,11 +34,15 @@ model_list:
       model: openai/combo/cost-saver
       api_key: os.environ/OMNIROUTE_API_KEY
       api_base: http://omniroute:20128/v1
+      rpm: 12
+      tpm: 80000
   - model_name: strong_coder
     litellm_params:
       model: openai/combo/cost-saver
       api_key: os.environ/OMNIROUTE_API_KEY
       api_base: http://omniroute:20128/v1
+      rpm: 8
+      tpm: 60000
 
   # --- high-availability: tarefas críticas e revisão final -------------
   - model_name: heavy_coder
@@ -42,16 +50,22 @@ model_list:
       model: openai/combo/high-availability
       api_key: os.environ/OMNIROUTE_API_KEY
       api_base: http://omniroute:20128/v1
+      rpm: 4
+      tpm: 50000
   - model_name: critic
     litellm_params:
       model: openai/combo/high-availability
       api_key: os.environ/OMNIROUTE_API_KEY
       api_base: http://omniroute:20128/v1
+      rpm: 6
+      tpm: 50000
 
 litellm_settings:
   drop_params: true
   request_timeout: 120
   num_retries: 3
+  max_budget: 25.0
+  budget_duration: 30d
   fallbacks:
     - cheap_fast: ["cheap_fast_fb_cost_saver"]
 
