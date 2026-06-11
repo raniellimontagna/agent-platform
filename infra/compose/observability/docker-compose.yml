@@ -8,9 +8,13 @@ services:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_USER}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
       GF_USERS_ALLOW_SIGN_UP: "false"
+      # Credenciais do Postgres do orchestrator p/ o datasource (MAC-35).
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - /opt/agent-platform/grafana/data:/var/lib/grafana
-      - /opt/agent-platform/grafana/provisioning:/etc/grafana/provisioning
+      - ./provisioning:/etc/grafana/provisioning
     depends_on:
       - prometheus
       - loki
