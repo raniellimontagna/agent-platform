@@ -15,13 +15,13 @@ model_list:
   # Ajuste <modelo> e VERBOO_API_BASE conforme a conta Verboo.
   - model_name: cheap_fast
     litellm_params:
-      model: openai/verboo-default
+      model: openai/deepseek-v4-flash
       api_key: os.environ/VERBOO_API_KEY
       api_base: os.environ/VERBOO_API_BASE
 
   - model_name: research
     litellm_params:
-      model: openai/verboo-default
+      model: openai/mimo-v2.5
       api_key: os.environ/VERBOO_API_KEY
       api_base: os.environ/VERBOO_API_BASE
 
