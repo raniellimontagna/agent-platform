@@ -4,6 +4,7 @@ import { env } from './env.js';
 import { logger } from './logger.js';
 import { health } from './routes/health.js';
 import { webhooks } from './routes/webhooks.js';
+import { startAgentWorker } from './worker.js';
 
 const app = new Hono();
 
@@ -19,4 +20,9 @@ app.onError((err, c) => {
 
 serve({ fetch: app.fetch, port: env.PORT }, (info) => {
   logger.info(`orchestrator-api listening on :${info.port}`);
+});
+
+// Sobe o worker do grafo no mesmo processo (MVP). Falha aqui não derruba a API.
+startAgentWorker().catch((err) => {
+  logger.error({ err }, 'failed to start agent worker');
 });
