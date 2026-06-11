@@ -87,11 +87,11 @@ modelos (Fase 2).
 | API + Webhook Linear | MAC-19 | `apps/orchestrator-api/src/routes/webhooks.ts` | esqueleto ✅ |
 | Fluxo ai-ready | MAC-20 | `apps/orchestrator-api` (enfileirar) | ⏳ stub |
 | State Machine | MAC-14 | `packages/graph` + schema `runs/run_steps` | schema ✅; grafo ⏳ |
-| Planner / Coder / Reviewer / Reporter | MAC-16/17/18/21 | `packages/agents` | ⏳ |
+| Planner / Coder / Reviewer / Reporter | MAC-16/17/18/21 | `packages/graph/src/nodes`, `apps/worker-code` (code-gen) | planner+coder ✅; reviewer/reporter ⏳ |
 | Human Approval Node | MAC-22 | `packages/graph` + tabela `approvals` | schema ✅; nó ⏳ |
 | Context Builder / Memory | MAC-24/23 | `packages/memory`, `packages/linear`, `packages/github` | ⏳ |
 | Retry / Persistence | MAC-33/34 | `packages/graph` (checkpointer LangGraph) | ⏳ |
-| Branch / PR / Worktree | MAC-25/26/27 | `packages/github`, `apps/worker-code/src/executor/worktree.ts` | worktree ✅; resto ⏳ |
+| Branch / PR / Worktree | MAC-25/26/27 | `packages/github`, `packages/graph/src/nodes/pr.ts`, `apps/worker-code/src/executor/worktree.ts` | worktree ✅; branch+Draft PR ✅ |
 | Sandbox Executor / Test Runner | MAC-28/29 | `apps/worker-code` | executor ✅; testes parcial |
 | Observabilidade (painéis, registro) | MAC-35/36 | `infra/compose/observability/` | stack no ar; dashboards ⏳ |
 | Segurança (vault, allowlist, kill switch) | MAC-30/31/32 | `packages/policy` | ⏳ |
