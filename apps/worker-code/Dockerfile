@@ -16,8 +16,8 @@ COPY apps/worker-code ./apps/worker-code
 RUN pnpm --filter @agent-platform/worker-code build
 
 FROM base AS deploy
-# git é necessário para clonar/preparar worktrees em runtime
-RUN apt-get update && apt-get install -y --no-install-recommends git \
+# git + ca-certificates para clonar via HTTPS (validação do cert TLS do GitHub)
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/worker-code/package.json ./apps/worker-code/
