@@ -16,5 +16,6 @@
     "isolatedModules": true,
     "declaration": true,
     "sourceMap": true
-  }
+  },
+  "exclude": ["**/*.test.ts", "**/*.spec.ts"]
 }
