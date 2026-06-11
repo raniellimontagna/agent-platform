@@ -7,8 +7,9 @@
 ## Contexto
 
 O ADR-0003 previa providers via API key paga (Verboo + Claude/OpenAI). Decidimos
-usar as **assinaturas existentes** (Claude Max + ChatGPT) em vez de créditos de
-API, já que é a mesma conta sendo consumida.
+**não** comprar créditos de API da Anthropic/OpenAI e usar as **assinaturas
+existentes** (Claude Max + ChatGPT) para os modelos fortes. O **Verboo continua**
+como provider de alto volume / baixo custo (é onde há mais tokens disponíveis).
 
 Assinaturas não dão acesso direto à API — só às UIs. O acesso programático se dá
 por um **bridge OAuth** que segura a sessão da assinatura e expõe um endpoint
@@ -16,19 +17,21 @@ OpenAI-compatible.
 
 ## Decisão
 
-Manter o **LiteLLM como gateway** (ADR-0003 segue válido), mas o backend dos
-aliases passa a ser o **OmniRoute** (`diegosouzapw/omniroute`), rodando como
-container no `agent-gateway`:
+Manter o **LiteLLM como gateway** (ADR-0003 segue válido) com backend **híbrido**:
 
 ```
-agente → LiteLLM (aliases) → OmniRoute (OAuth) → Claude Max / ChatGPT
+                    ┌→ Verboo (API key)        → cheap_fast, research
+agente → LiteLLM ───┤
+                    └→ OmniRoute (OAuth) → Claude Max / ChatGPT → strong_coder, critic
 ```
 
-- OmniRoute na porta `20128`, web UI para o OAuth dos providers.
-- LiteLLM chama `http://omniroute:20128/v1` (OpenAI-compatible) com `OMNIROUTE_API_KEY`.
-- Prefixos de modelo: `cc/...` (Claude), `cx/...` (GPT), `auto` (roteamento).
+- **Verboo** (MAC-13): API key direta, aliases de alto volume `cheap_fast` e `research`.
+- **OmniRoute** (MAC-48): `diegosouzapw/omniroute`, container no `agent-gateway`,
+  porta `20128`, web UI para o OAuth. LiteLLM chama `http://omniroute:20128/v1`
+  (OpenAI-compatible) com `OMNIROUTE_API_KEY`. Modelos fortes `strong_coder` e `critic`.
+- Prefixos de modelo OmniRoute: `cc/...` (Claude), `cx/...` (GPT), `auto`.
 - Aliases (`cheap_fast`, `strong_coder`, `critic`, `research`) inalterados para
-  os agentes — só a origem mudou.
+  os agentes — só a origem de cada um muda.
 
 ## Trade-offs
 
