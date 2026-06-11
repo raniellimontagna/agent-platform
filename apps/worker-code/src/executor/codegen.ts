@@ -3,6 +3,7 @@ import { dirname, join, resolve } from 'node:path';
 import type { LlmClient } from '@agent-platform/llm';
 import type { Logger } from 'pino';
 import { z } from 'zod';
+import { buildExamples, readConventions } from './context.js';
 import { runCommand } from './worktree.js';
 
 const SELECT_PROMPT = `Você é um agente de engenharia de software.
@@ -39,6 +40,8 @@ Regras CRÍTICAS:
   NUNCA remova imports, bootstrap, handlers ou rotas que não fazem parte da tarefa.
 - "content" é o arquivo inteiro e final (não um diff/patch).
 - Mantenha o estilo e as convenções já presentes no repositório (ESM, imports com .js, etc.).
+- Siga os ARQUIVOS-EXEMPLO (vizinhos) e as CONVENÇÕES fornecidas: mesmo padrão de
+  imports, estrutura e libs. NÃO adicione imports/dependências que os exemplos não usam.
 - Inclua no array só os arquivos realmente alterados/criados.
 - Não escreva nada fora do JSON.`;
 
@@ -139,7 +142,7 @@ function safeJoin(dir: string, relPath: string): string {
 /** Passo 1: o modelo escolhe quais arquivos modificar/criar. */
 async function selectFiles(
   llm: LlmClient,
-  ctx: { title: string; description: string; plan: string; fileTree: string },
+  ctx: { title: string; description: string; plan: string; fileTree: string; conventions: string },
   log: Logger,
 ): Promise<{ edit: string[]; create: string[] }> {
   return completeJson(
@@ -154,6 +157,7 @@ async function selectFiles(
             `# Issue: ${ctx.title}`,
             ctx.description ? `\n${ctx.description}` : '',
             `\n# Plano aprovado\n${ctx.plan}`,
+            ctx.conventions ? `\n# Convenções do projeto\n${ctx.conventions}` : '',
             `\n# Arquivos do repositório\n${ctx.fileTree}`,
           ].join('\n'),
         },
@@ -198,8 +202,15 @@ export async function generateAndApplyCode(args: CodegenArgs): Promise<CodegenRe
   const fileTree = repoFiles.slice(0, 800).join('\n');
   const repoSet = new Set(repoFiles);
 
+  // Context Builder (MAC-24): convenções do projeto guiam ambos os passos.
+  const conventions = await readConventions(dir, repoSet);
+
   log.info({ fileCount: repoFiles.length }, 'selecting files to change');
-  const selection = await selectFiles(llm, { title, description, plan, fileTree }, log);
+  const selection = await selectFiles(
+    llm,
+    { title, description, plan, fileTree, conventions },
+    log,
+  );
   log.info({ edit: selection.edit, create: selection.create }, 'files selected');
 
   const current = await readCurrentFiles(dir, repoSet, selection.edit);
@@ -209,6 +220,13 @@ export async function generateAndApplyCode(args: CodegenArgs): Promise<CodegenRe
   const createBlock = selection.create.length
     ? `\n# Arquivos a criar\n${selection.create.join('\n')}`
     : '';
+
+  // Arquivos-exemplo vizinhos dos alvos a criar — o modelo espelha o padrão real.
+  const examples = await buildExamples(dir, repoFiles, selection);
+  log.info(
+    { hasConventions: Boolean(conventions), hasExamples: Boolean(examples) },
+    'context built',
+  );
 
   log.info('requesting code generation');
   const parsed = await completeJson(
@@ -223,6 +241,8 @@ export async function generateAndApplyCode(args: CodegenArgs): Promise<CodegenRe
             `# Issue: ${title}`,
             description ? `\n${description}` : '',
             `\n# Plano aprovado\n${plan}`,
+            conventions ? `\n# Convenções do projeto\n${conventions}` : '',
+            examples ? `\n# Arquivos-exemplo (siga este padrão)${examples}` : '',
             `\n# Conteúdo atual dos arquivos a modificar${currentBlock || '\n(nenhum)'}`,
             createBlock,
           ].join('\n'),
