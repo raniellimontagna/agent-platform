@@ -62,6 +62,8 @@ ensure_env() { # $1 = dir remoto do compose
   local dir="$1"
   if remote_file_exists "$dir/.env"; then
     echo "==> .env já existe em $dir (mantido)"
+    # Auto-completa chaves novas do .env.example que faltem no .env atual.
+    remote_exec "while IFS= read -r l; do case \"\$l\" in ''|\\#*) continue;; esac; k=\"\${l%%=*}\"; grep -q \"^\$k=\" '$dir/.env' || { printf '%s\\n' \"\$l\" >> '$dir/.env'; echo \"   + chave nova adicionada ao .env: \$k\"; }; done < '$dir/.env.example'"
   else
     echo "==> Criando .env a partir de .env.example"
     remote_exec "cp '$dir/.env.example' '$dir/.env'"
