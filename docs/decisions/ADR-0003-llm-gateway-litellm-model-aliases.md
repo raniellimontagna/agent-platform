@@ -1,7 +1,11 @@
 # ADR-0003 — LLM Gateway: LiteLLM e Model Aliases
 
-**Status:** Accepted  
+**Status:** Accepted (backend de providers revisado pelo [ADR-0006](./ADR-0006-llm-via-omniroute-oauth.md))
 **Date:** 2026-06-10
+
+> **Nota:** o gateway LiteLLM e os aliases seguem como descritos aqui. A origem
+> dos modelos mudou de API keys diretas (Verboo/Claude/OpenAI) para **OmniRoute
+> com OAuth de assinaturas** — ver [ADR-0006](./ADR-0006-llm-via-omniroute-oauth.md).
 
 ## Contexto
 

@@ -12,6 +12,16 @@ services:
     depends_on:
       - litellm
 
+  # Bridge OAuth: segura as assinaturas (Claude Max, ChatGPT) e expõe um
+  # endpoint OpenAI-compatible. OAuth feito na web UI (porta 20128).
+  omniroute:
+    image: diegosouzapw/omniroute:latest
+    restart: unless-stopped
+    ports:
+      - "20128:20128"
+    volumes:
+      - /opt/agent-platform/omniroute:/app/data
+
   litellm:
     image: ghcr.io/berriai/litellm:main-latest
     restart: unless-stopped
@@ -22,6 +32,7 @@ services:
     environment:
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      OMNIROUTE_API_KEY: ${OMNIROUTE_API_KEY}
       STORE_MODEL_IN_DB: "true"
     command: ["--config", "/app/config.yaml", "--port", "4000", "--num_workers", "4"]
     depends_on:
