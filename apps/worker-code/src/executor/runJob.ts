@@ -64,6 +64,7 @@ export async function runJob(job: Job): Promise<JobResult> {
       });
       base.summary = gen.summary;
       base.filesChanged = gen.filesChanged;
+      base.costUsd = gen.costUsd;
 
       const message = buildCommitMessage(job, gen.summary);
       const commit = await commitAll(dir, message);

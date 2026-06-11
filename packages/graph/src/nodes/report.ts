@@ -45,6 +45,8 @@ export function makeReportNode(deps: ReportDeps) {
       lines.push(`**Validação:** ${testsLabel(state.testsPassed)}`);
       lines.push(`**Revisão (critic):** ${verdict}`);
     }
+    const cost = (state.planCostUsd ?? 0) + (state.codeCostUsd ?? 0) + (state.reviewCostUsd ?? 0);
+    if (cost > 0) lines.push(`**Custo estimado:** ~$${cost.toFixed(4)}`);
     if (state.summary) lines.push(`\n${state.summary}`);
     if (!ok && state.error) lines.push(`\n\`\`\`\n${state.error}\n\`\`\``);
 

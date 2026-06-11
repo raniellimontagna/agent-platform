@@ -31,7 +31,12 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
       }
 
       const startedAt = new Date();
-      let result: { status?: string };
+      let result: {
+        status?: string;
+        planCostUsd?: number;
+        codeCostUsd?: number;
+        reviewCostUsd?: number;
+      };
       if (job.data.kind === 'plan') {
         const issue = await linear.getIssue(job.data.issueId);
         await updateRunStatus(runId, 'planning');
@@ -55,14 +60,21 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
       const status = (result.status as RunStatus) ?? 'awaiting_approval';
       await updateRunStatus(runId, status);
 
-      // Registra a etapa com tempo e resultado (MAC-36).
+      // Registra a etapa com tempo, resultado e custo (MAC-36/40). Cada job
+      // contabiliza só o custo das fases que rodaram nele.
+      const isPlan = job.data.kind === 'plan';
+      const costUsd = isPlan
+        ? result.planCostUsd
+        : (result.codeCostUsd ?? 0) + (result.reviewCostUsd ?? 0);
       await recordStep({
         runId,
-        type: job.data.kind === 'plan' ? 'plan' : 'code',
+        type: isPlan ? 'plan' : 'code',
         status: status === 'failed' ? 'failed' : 'succeeded',
         startedAt,
+        model: isPlan ? 'research' : 'strong_coder+critic',
+        costUsd,
       });
-      log.info({ status }, 'graph step finished');
+      log.info({ status, costUsd }, 'graph step finished');
     },
     { connection },
   );
