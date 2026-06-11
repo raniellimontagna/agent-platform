@@ -3,7 +3,7 @@ import { getAgent } from './agent.js';
 import { isPaused } from './killswitch.js';
 import { logger } from './logger.js';
 import { AGENT_QUEUE, type AgentJobData, agentQueue, connection } from './queue.js';
-import { type RunStatus, recordStep, updateRunStatus } from './runs.js';
+import { type RunStatus, findResumableRuns, recordStep, updateRunStatus } from './runs.js';
 
 /**
  * Worker que consome a fila e roda o grafo LangGraph (MAC-14). Cada run usa
@@ -74,6 +74,14 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
     }
   });
 
-  logger.info('agent worker started');
+  // Resume automático (MAC-34): reenfileira runs órfãos em `executing` que foram
+  // interrompidos por restart — retomam do último checkpoint do LangGraph.
+  const resumable = await findResumableRuns();
+  for (const r of resumable) {
+    logger.warn({ runId: r.id }, 'recuperando run em execução após restart');
+    await agentQueue.add('resume', { kind: 'resume', runId: r.id });
+  }
+
+  logger.info({ recovered: resumable.length }, 'agent worker started');
   return worker;
 }
