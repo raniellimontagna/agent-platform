@@ -70,7 +70,10 @@ function slugify(text: string): string {
  */
 export function makeCoderNode(deps: CoderDeps) {
   return async (state: AgentStateType): Promise<Partial<AgentStateType>> => {
-    const branch = `agent/${state.issueIdentifier.toLowerCase()}-${slugify(state.title)}`;
+    // Sufixo com short runId torna a branch única por run — evita colisão de
+    // push (non-fast-forward) e PR 422 ao re-executar a mesma issue.
+    const shortRun = state.runId.slice(0, 8);
+    const branch = `agent/${state.issueIdentifier.toLowerCase()}-${slugify(state.title)}-${shortRun}`;
 
     try {
       const res = await fetch(`${deps.runner.baseUrl}/jobs/sync`, {
