@@ -1,9 +1,17 @@
 import { Worker } from 'bullmq';
 import { getAgent } from './agent.js';
+import { env } from './env.js';
 import { isPaused } from './killswitch.js';
 import { logger } from './logger.js';
 import { AGENT_QUEUE, type AgentJobData, agentQueue, connection } from './queue.js';
-import { type RunStatus, findResumableRuns, recordStep, updateRunStatus } from './runs.js';
+import {
+  type RunStatus,
+  findResumableRuns,
+  getRun,
+  recordStep,
+  runCostUsd,
+  updateRunStatus,
+} from './runs.js';
 
 /**
  * Worker que consome a fila e roda o grafo LangGraph (MAC-14). Cada run usa
@@ -75,6 +83,19 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
         costUsd,
       });
       log.info({ status, costUsd }, 'graph step finished');
+
+      // Cost Guard (MAC-40): run estourou o limite por task → alerta no Linear.
+      const total = await runCostUsd(runId);
+      if (total > env.AGENT_MAX_COST_PER_RUN_USD) {
+        log.warn({ total, limit: env.AGENT_MAX_COST_PER_RUN_USD }, 'run estourou o orçamento');
+        const run = await getRun(runId);
+        if (run) {
+          await linear.comment(
+            run.linearIssueId,
+            `## 💸 Alerta de custo\nRun excedeu o limite por task: ~$${total.toFixed(4)} > $${env.AGENT_MAX_COST_PER_RUN_USD}.`,
+          );
+        }
+      }
     },
     { connection },
   );

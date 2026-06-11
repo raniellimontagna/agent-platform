@@ -4,7 +4,7 @@ import { env } from '../env.js';
 import { isPaused } from '../killswitch.js';
 import { logger } from '../logger.js';
 import { agentQueue } from '../queue.js';
-import { createRun } from '../runs.js';
+import { costLast24hUsd, createRun } from '../runs.js';
 
 export const webhooks = new Hono();
 
@@ -55,6 +55,13 @@ webhooks.post('/webhooks/linear', async (c) => {
   if (await isPaused()) {
     logger.warn({ issue: payload.data?.identifier }, 'agents paused; ai-ready ignorado');
     return c.json({ ok: true, skipped: true, reason: 'agents paused' });
+  }
+
+  // Cost Guard (MAC-40): limite de sessão (24h) estourado → bloqueia novos runs.
+  const spent = await costLast24hUsd();
+  if (spent >= env.AGENT_MAX_COST_PER_DAY_USD) {
+    logger.warn({ spent, limit: env.AGENT_MAX_COST_PER_DAY_USD }, 'orçamento diário estourado');
+    return c.json({ ok: true, skipped: true, reason: 'daily cost budget exceeded' });
   }
 
   // Cria o run e enfileira; a execução longa roda no worker (MAC-20).
