@@ -39,15 +39,41 @@ export interface ChatMessage {
   content: string;
 }
 
+export interface TokenUsage {
+  promptTokens: number;
+  completionTokens: number;
+}
+
 export interface CompleteOptions {
   alias: ModelAlias;
   messages: ChatMessage[];
   temperature?: number;
   maxTokens?: number;
+  /** Callback com o uso de tokens da chamada — base do cost tracking (MAC-40). */
+  onUsage?: (usage: TokenUsage) => void;
 }
 
 export interface LlmClient {
   complete(opts: CompleteOptions): Promise<string>;
+}
+
+/**
+ * Preço ESTIMATIVO por alias em USD por 1M de tokens (entrada/saída). Os combos
+ * via OmniRoute usam assinatura (custo fixo), então isto é o equivalente em API
+ * — serve para tracking relativo, não cobrança real (MAC-40).
+ */
+export const MODEL_PRICING: Record<ModelAlias, { inUsdPerM: number; outUsdPerM: number }> = {
+  cheap_fast: { inUsdPerM: 0.1, outUsdPerM: 0.3 },
+  research: { inUsdPerM: 3, outUsdPerM: 15 },
+  strong_coder: { inUsdPerM: 3, outUsdPerM: 15 },
+  heavy_coder: { inUsdPerM: 3, outUsdPerM: 15 },
+  critic: { inUsdPerM: 3, outUsdPerM: 15 },
+};
+
+/** Estima o custo (USD) de uma chamada a partir do uso de tokens (MAC-40). */
+export function estimateCostUsd(alias: ModelAlias, usage: TokenUsage): number {
+  const p = MODEL_PRICING[alias];
+  return (usage.promptTokens * p.inUsdPerM + usage.completionTokens * p.outUsdPerM) / 1_000_000;
 }
 
 /**
@@ -68,13 +94,19 @@ export function createLlmClient(config: LlmConfig): LlmClient {
   });
 
   return {
-    async complete({ alias, messages, temperature, maxTokens }) {
+    async complete({ alias, messages, temperature, maxTokens, onUsage }) {
       const res = await client.chat.completions.create({
         model: alias,
         messages,
         temperature,
         max_tokens: maxTokens,
       });
+      if (onUsage && res.usage) {
+        onUsage({
+          promptTokens: res.usage.prompt_tokens ?? 0,
+          completionTokens: res.usage.completion_tokens ?? 0,
+        });
+      }
       return res.choices[0]?.message?.content ?? '';
     },
   };

@@ -1,6 +1,6 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
-import type { LlmClient } from '@agent-platform/llm';
+import { type LlmClient, type TokenUsage, estimateCostUsd } from '@agent-platform/llm';
 import type { Logger } from 'pino';
 import { z } from 'zod';
 import { buildExamples, readConventions } from './context.js';
@@ -67,6 +67,8 @@ const MAX_FILE_CHARS = 20_000;
 export interface CodegenResult {
   summary: string;
   filesChanged: string[];
+  /** Custo estimado das chamadas LLM do codegen em USD (MAC-40). */
+  costUsd: number;
 }
 
 export interface CodegenArgs {
@@ -107,7 +109,11 @@ export function extractJson(raw: string): unknown {
  */
 async function completeJson<S extends z.ZodTypeAny>(
   llm: LlmClient,
-  opts: { messages: { role: 'system' | 'user'; content: string }[]; temperature: number },
+  opts: {
+    messages: { role: 'system' | 'user'; content: string }[];
+    temperature: number;
+    onUsage?: (usage: TokenUsage) => void;
+  },
   schema: S,
   log: Logger,
   attempts = 2,
@@ -118,6 +124,7 @@ async function completeJson<S extends z.ZodTypeAny>(
       alias: 'strong_coder',
       temperature: opts.temperature,
       messages: opts.messages,
+      onUsage: opts.onUsage,
     });
     try {
       return schema.parse(extractJson(raw));
@@ -144,11 +151,13 @@ async function selectFiles(
   llm: LlmClient,
   ctx: { title: string; description: string; plan: string; fileTree: string; conventions: string },
   log: Logger,
+  onUsage?: (usage: TokenUsage) => void,
 ): Promise<{ edit: string[]; create: string[] }> {
   return completeJson(
     llm,
     {
       temperature: 0,
+      onUsage,
       messages: [
         { role: 'system', content: SELECT_PROMPT },
         {
@@ -205,11 +214,19 @@ export async function generateAndApplyCode(args: CodegenArgs): Promise<CodegenRe
   // Context Builder (MAC-24): convenções do projeto guiam ambos os passos.
   const conventions = await readConventions(dir, repoSet);
 
+  // Acumula o uso de tokens das 2 chamadas p/ estimar o custo (MAC-40).
+  const usage: TokenUsage = { promptTokens: 0, completionTokens: 0 };
+  const addUsage = (u: TokenUsage) => {
+    usage.promptTokens += u.promptTokens;
+    usage.completionTokens += u.completionTokens;
+  };
+
   log.info({ fileCount: repoFiles.length }, 'selecting files to change');
   const selection = await selectFiles(
     llm,
     { title, description, plan, fileTree, conventions },
     log,
+    addUsage,
   );
   log.info({ edit: selection.edit, create: selection.create }, 'files selected');
 
@@ -233,6 +250,7 @@ export async function generateAndApplyCode(args: CodegenArgs): Promise<CodegenRe
     llm,
     {
       temperature: 0.1,
+      onUsage: addUsage,
       messages: [
         { role: 'system', content: GENERATE_PROMPT },
         {
@@ -265,8 +283,9 @@ export async function generateAndApplyCode(args: CodegenArgs): Promise<CodegenRe
     filesChanged.push(file.path.replace(/^\/+/, ''));
   }
 
-  log.info({ filesChanged }, 'applied generated files');
-  return { summary: parsed.summary, filesChanged };
+  const costUsd = estimateCostUsd('strong_coder', usage);
+  log.info({ filesChanged, usage, costUsd }, 'applied generated files');
+  return { summary: parsed.summary, filesChanged, costUsd };
 }
 
 /** Caminho absoluto de um arquivo do worktree (exportado p/ testes futuros). */

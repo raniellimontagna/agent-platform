@@ -29,6 +29,10 @@ export const AgentState = Annotation.Root({
   testsPassed: Annotation<boolean>(),
   /** Resumo dos comandos de validação (cmd + exit code + tail). */
   testSummary: Annotation<string>(),
+  /** Custo estimado por fase em USD (MAC-40). */
+  planCostUsd: Annotation<number>(),
+  codeCostUsd: Annotation<number>(),
+  reviewCostUsd: Annotation<number>(),
   /** URL do Draft PR aberto pelo nó PR (MAC-26). */
   prUrl: Annotation<string>(),
   /** Status corrente do run (alinha com o enum run_status do banco). */
