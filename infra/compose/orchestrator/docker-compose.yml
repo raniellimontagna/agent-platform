@@ -17,6 +17,8 @@ services:
       LINEAR_API_KEY: ${LINEAR_API_KEY}
       GITHUB_TOKEN: ${GITHUB_TOKEN}
       RUNNER_BASE_URL: ${RUNNER_BASE_URL}
+      RUNNER_AUTH_TOKEN: ${RUNNER_AUTH_TOKEN}
+      REPO_URL: ${REPO_URL}
     volumes:
       - /opt/agent-platform/orchestrator:/app/data
       - /opt/agent-platform/logs:/app/logs

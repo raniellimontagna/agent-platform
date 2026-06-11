@@ -56,7 +56,7 @@ webhooks.post('/webhooks/linear', async (c) => {
     linearIssueIdentifier: payload.data?.identifier ?? issueId,
     title: payload.data?.title ?? '(sem título)',
   });
-  await agentQueue.add('plan', { runId, issueId });
+  await agentQueue.add('plan', { kind: 'plan', runId, issueId });
 
   logger.info(
     { runId, issue: payload.data?.identifier, action: payload.action },

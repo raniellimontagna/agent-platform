@@ -13,10 +13,10 @@ export const connection: ConnectionOptions = {
   maxRetriesPerRequest: null,
 };
 
-export interface AgentJobData {
-  runId: string;
-  issueId: string;
-}
+/** `plan`: roda planning e pausa na aprovação. `resume`: retoma após aprovado. */
+export type AgentJobData =
+  | { kind: 'plan'; runId: string; issueId: string }
+  | { kind: 'resume'; runId: string };
 
 export const AGENT_QUEUE = 'agent-runs';
 
