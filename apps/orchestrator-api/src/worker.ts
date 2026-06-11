@@ -8,6 +8,7 @@ import {
   type RunStatus,
   findResumableRuns,
   getRun,
+  recordApproval,
   recordStep,
   runCostUsd,
   updateRunStatus,
@@ -44,6 +45,7 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
         planCostUsd?: number;
         codeCostUsd?: number;
         reviewCostUsd?: number;
+        approvalReasons?: string[];
       };
       if (job.data.kind === 'plan') {
         const issue = await linear.getIssue(job.data.issueId);
@@ -67,6 +69,13 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
 
       const status = (result.status as RunStatus) ?? 'awaiting_approval';
       await updateRunStatus(runId, status);
+
+      // Approval Policies (MAC-41): ao pausar p/ aprovação, registra a solicitação
+      // com os motivos detectados no plano (auditoria/governança).
+      if (status === 'awaiting_approval') {
+        const reasons = result.approvalReasons ?? ['plan'];
+        await recordApproval(runId, reasons, `Motivos: ${reasons.join(', ')}`);
+      }
 
       // Registra a etapa com tempo, resultado e custo (MAC-36/40). Cada job
       // contabiliza só o custo das fases que rodaram nele.

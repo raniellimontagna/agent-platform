@@ -1,5 +1,6 @@
 import type { LinearGateway } from '@agent-platform/linear';
 import { type LlmClient, type TokenUsage, estimateCostUsd } from '@agent-platform/llm';
+import { criticalReasons, detectApprovalReasons, reasonLabel } from '@agent-platform/policy';
 import type { AgentStateType } from '../state.js';
 
 const SYSTEM_PROMPT = `Você é um agente planejador de engenharia de software.
@@ -37,11 +38,23 @@ export function makePlannerNode(deps: PlannerDeps) {
       ],
     });
 
+    // Approval Policies (MAC-41): classifica o plano em motivos de aprovação.
+    const reasons = detectApprovalReasons(plan);
+    const critical = criticalReasons(reasons);
+    const criticalBlock = critical.length
+      ? `\n\n**⚠️ Aprovação obrigatória — mudanças sensíveis:** ${critical.map(reasonLabel).join(', ')}.`
+      : '';
+
     await deps.linear.comment(
       state.issueId,
-      `## 🤖 Plano do agente\n\n${plan}\n\n---\n_Aguardando aprovação humana para executar._`,
+      `## 🤖 Plano do agente\n\n${plan}${criticalBlock}\n\n---\n_Aguardando aprovação humana para executar._`,
     );
 
-    return { plan, status: 'awaiting_approval', planCostUsd: estimateCostUsd('research', usage) };
+    return {
+      plan,
+      approvalReasons: reasons,
+      status: 'awaiting_approval',
+      planCostUsd: estimateCostUsd('research', usage),
+    };
   };
 }
