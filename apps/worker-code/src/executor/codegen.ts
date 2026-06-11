@@ -97,6 +97,35 @@ function extractJson(raw: string): unknown {
   return JSON.parse(candidate.slice(start, end + 1));
 }
 
+/**
+ * Chama o modelo e faz parse do JSON da resposta, com retry — o modelo às vezes
+ * devolve prosa em vez de JSON limpo (flakiness). Loga a resposta crua truncada
+ * na última falha para diagnóstico.
+ */
+async function completeJson<S extends z.ZodTypeAny>(
+  llm: LlmClient,
+  opts: { messages: { role: 'system' | 'user'; content: string }[]; temperature: number },
+  schema: S,
+  log: Logger,
+  attempts = 2,
+): Promise<z.infer<S>> {
+  let lastErr: unknown;
+  for (let i = 1; i <= attempts; i++) {
+    const raw = await llm.complete({
+      alias: 'strong_coder',
+      temperature: opts.temperature,
+      messages: opts.messages,
+    });
+    try {
+      return schema.parse(extractJson(raw));
+    } catch (err) {
+      lastErr = err;
+      log.warn({ attempt: i, raw: raw.slice(0, 500) }, 'falha ao parsear JSON do modelo');
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error('resposta do modelo não contém JSON');
+}
+
 /** Garante que o caminho não escapa do worktree (defesa contra path traversal). */
 function safeJoin(dir: string, relPath: string): string {
   const normalized = relPath.replace(/^\/+/, '');
@@ -111,24 +140,28 @@ function safeJoin(dir: string, relPath: string): string {
 async function selectFiles(
   llm: LlmClient,
   ctx: { title: string; description: string; plan: string; fileTree: string },
+  log: Logger,
 ): Promise<{ edit: string[]; create: string[] }> {
-  const raw = await llm.complete({
-    alias: 'strong_coder',
-    temperature: 0,
-    messages: [
-      { role: 'system', content: SELECT_PROMPT },
-      {
-        role: 'user',
-        content: [
-          `# Issue: ${ctx.title}`,
-          ctx.description ? `\n${ctx.description}` : '',
-          `\n# Plano aprovado\n${ctx.plan}`,
-          `\n# Arquivos do repositório\n${ctx.fileTree}`,
-        ].join('\n'),
-      },
-    ],
-  });
-  return selectSchema.parse(extractJson(raw));
+  return completeJson(
+    llm,
+    {
+      temperature: 0,
+      messages: [
+        { role: 'system', content: SELECT_PROMPT },
+        {
+          role: 'user',
+          content: [
+            `# Issue: ${ctx.title}`,
+            ctx.description ? `\n${ctx.description}` : '',
+            `\n# Plano aprovado\n${ctx.plan}`,
+            `\n# Arquivos do repositório\n${ctx.fileTree}`,
+          ].join('\n'),
+        },
+      ],
+    },
+    selectSchema,
+    log,
+  );
 }
 
 /** Lê o conteúdo atual dos arquivos a modificar (truncado por segurança). */
@@ -166,7 +199,7 @@ export async function generateAndApplyCode(args: CodegenArgs): Promise<CodegenRe
   const repoSet = new Set(repoFiles);
 
   log.info({ fileCount: repoFiles.length }, 'selecting files to change');
-  const selection = await selectFiles(llm, { title, description, plan, fileTree });
+  const selection = await selectFiles(llm, { title, description, plan, fileTree }, log);
   log.info({ edit: selection.edit, create: selection.create }, 'files selected');
 
   const current = await readCurrentFiles(dir, repoSet, selection.edit);
@@ -178,25 +211,28 @@ export async function generateAndApplyCode(args: CodegenArgs): Promise<CodegenRe
     : '';
 
   log.info('requesting code generation');
-  const raw = await llm.complete({
-    alias: 'strong_coder',
-    temperature: 0.1,
-    messages: [
-      { role: 'system', content: GENERATE_PROMPT },
-      {
-        role: 'user',
-        content: [
-          `# Issue: ${title}`,
-          description ? `\n${description}` : '',
-          `\n# Plano aprovado\n${plan}`,
-          `\n# Conteúdo atual dos arquivos a modificar${currentBlock || '\n(nenhum)'}`,
-          createBlock,
-        ].join('\n'),
-      },
-    ],
-  });
+  const parsed = await completeJson(
+    llm,
+    {
+      temperature: 0.1,
+      messages: [
+        { role: 'system', content: GENERATE_PROMPT },
+        {
+          role: 'user',
+          content: [
+            `# Issue: ${title}`,
+            description ? `\n${description}` : '',
+            `\n# Plano aprovado\n${plan}`,
+            `\n# Conteúdo atual dos arquivos a modificar${currentBlock || '\n(nenhum)'}`,
+            createBlock,
+          ].join('\n'),
+        },
+      ],
+    },
+    responseSchema,
+    log,
+  );
 
-  const parsed = responseSchema.parse(extractJson(raw));
   if (parsed.files.length === 0) {
     throw new Error('modelo não retornou nenhum arquivo para alterar');
   }
