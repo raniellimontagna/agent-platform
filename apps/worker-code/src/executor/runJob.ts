@@ -1,12 +1,37 @@
 import { createLlmClient } from '@agent-platform/llm';
+import type { Logger } from 'pino';
 import { env } from '../env.js';
 import { logger } from '../logger.js';
 import type { CommandResult, Job, JobResult } from '../types.js';
 import { generateAndApplyCode } from './codegen.js';
+import { checkCommand } from './commandPolicy.js';
 import { commitAll, diffAgainst, pushBranch } from './git.js';
 import { prepareWorktree, runCommand } from './worktree.js';
 
 const llm = createLlmClient({ baseUrl: env.LITELLM_BASE_URL, apiKey: env.LITELLM_API_KEY });
+
+const COMMAND_ALLOWLIST = env.AGENT_COMMAND_ALLOWLIST.split(',')
+  .map((b) => b.trim())
+  .filter(Boolean);
+
+/**
+ * Roda um comando do job aplicando a allowlist (MAC-31). Comando bloqueado não
+ * executa: devolve um CommandResult de auditoria (exitCode 126) com o motivo.
+ */
+async function runGuarded(command: string, dir: string, log: Logger): Promise<CommandResult> {
+  const check = checkCommand(command, COMMAND_ALLOWLIST);
+  if (!check.allowed) {
+    log.warn({ command, reason: check.reason }, 'comando bloqueado pela allowlist');
+    return {
+      command,
+      exitCode: 126,
+      stdout: '',
+      stderr: `bloqueado: ${check.reason}`,
+      durationMs: 0,
+    };
+  }
+  return runCommand(command, dir);
+}
 
 /**
  * Executa um job em sandbox: prepara worktree, gera código via `strong_coder`
@@ -56,7 +81,7 @@ export async function runJob(job: Job): Promise<JobResult> {
       // derrubam o run; viram sinal no PR/revisão para a decisão humana.
       for (const cmd of job.commands) {
         log.info({ cmd }, 'running validation command');
-        const result = await runCommand(cmd, dir);
+        const result = await runGuarded(cmd, dir, log);
         commands.push(result);
         if (result.exitCode !== 0)
           log.warn({ cmd, exitCode: result.exitCode }, 'validation failed');
@@ -70,7 +95,7 @@ export async function runJob(job: Job): Promise<JobResult> {
     // Fluxo de validação de infra (sem plano): comandos são FATAIS (ciclo antigo).
     for (const cmd of job.commands) {
       log.info({ cmd }, 'running command');
-      const result = await runCommand(cmd, dir);
+      const result = await runGuarded(cmd, dir, log);
       commands.push(result);
       if (result.exitCode !== 0) {
         log.warn({ cmd, exitCode: result.exitCode }, 'command failed');
