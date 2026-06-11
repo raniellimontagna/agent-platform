@@ -1,5 +1,5 @@
 {
-  "name": "@agent-platform/graph",
+  "name": "@agent-platform/policy",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -14,14 +14,6 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@agent-platform/github": "workspace:*",
-    "@agent-platform/linear": "workspace:*",
-    "@agent-platform/llm": "workspace:*",
-    "@agent-platform/policy": "workspace:*",
-    "@langchain/langgraph": "^0.2.74",
-    "@langchain/langgraph-checkpoint-postgres": "^0.0.5"
   },
   "devDependencies": {
     "@types/node": "^22.13.4",

@@ -1,9 +1,10 @@
-import { desc, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 import { db, schema } from './db/client.js';
 
 export type RunStatus = (typeof schema.runStatus.enumValues)[number];
 export type StepType = (typeof schema.stepType.enumValues)[number];
 export type StepStatus = (typeof schema.stepStatus.enumValues)[number];
+export type ApprovalReason = (typeof schema.approvalReason.enumValues)[number];
 
 export interface NewRunInput {
   linearIssueId: string;
@@ -98,6 +99,37 @@ export async function costLast24hUsd(): Promise<number> {
     .from(schema.runSteps)
     .where(sql`${schema.runSteps.createdAt} >= now() - interval '24 hours'`);
   return Number(row?.total ?? 0);
+}
+
+/**
+ * Registra a solicitação de aprovação de um run (MAC-41). `reason` é o motivo
+ * crítico principal (ou `plan`); o `summary` lista todos os motivos detectados.
+ */
+export async function recordApproval(
+  runId: string,
+  reasons: string[],
+  summary: string,
+): Promise<void> {
+  const critical = reasons.find((r) => r !== 'plan');
+  const reason = (critical ?? 'plan') as ApprovalReason;
+  await db.insert(schema.approvals).values({ runId, reason, summary, status: 'pending' });
+}
+
+/** Resolve a aprovação pendente de um run (MAC-41/22). */
+export async function resolveApproval(
+  runId: string,
+  status: 'approved' | 'rejected',
+  resolvedBy: string,
+): Promise<void> {
+  await db
+    .update(schema.approvals)
+    .set({ status, resolvedAt: new Date(), resolvedBy })
+    .where(and(eq(schema.approvals.runId, runId), eq(schema.approvals.status, 'pending')));
+}
+
+/** Aprovações de um run (MAC-41). */
+export async function listApprovals(runId: string) {
+  return db.select().from(schema.approvals).where(eq(schema.approvals.runId, runId));
 }
 
 /** Etapas de um run, em ordem de criação (MAC-36). */

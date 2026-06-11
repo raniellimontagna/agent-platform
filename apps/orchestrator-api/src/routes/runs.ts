@@ -1,7 +1,14 @@
 import { Hono } from 'hono';
 import { logger } from '../logger.js';
 import { agentQueue } from '../queue.js';
-import { getRun, listRuns, listSteps, updateRunStatus } from '../runs.js';
+import {
+  getRun,
+  listApprovals,
+  listRuns,
+  listSteps,
+  resolveApproval,
+  updateRunStatus,
+} from '../runs.js';
 
 // Rede interna (VPN/vmbr1). Aprovação dispara execução de código — quando
 // houver ingress externo (Tailscale), proteger com token de admin.
@@ -24,7 +31,12 @@ runsRoute.get('/runs/:id/steps', async (c) => {
   return c.json({ steps: await listSteps(c.req.param('id')) });
 });
 
-/** Aprova um run pausado e retoma o grafo (MAC-22). */
+/** Aprovações de um run e seus motivos (MAC-41). */
+runsRoute.get('/runs/:id/approvals', async (c) => {
+  return c.json({ approvals: await listApprovals(c.req.param('id')) });
+});
+
+/** Aprova um run pausado e retoma o grafo (MAC-22/41). */
 runsRoute.post('/runs/:id/approve', async (c) => {
   const id = c.req.param('id');
   const run = await getRun(id);
@@ -33,6 +45,7 @@ runsRoute.post('/runs/:id/approve', async (c) => {
     return c.json({ error: `run não está aguardando aprovação (status: ${run.status})` }, 409);
   }
 
+  await resolveApproval(id, 'approved', c.req.query('by') ?? 'human');
   await updateRunStatus(id, 'executing');
   await agentQueue.add('resume', { kind: 'resume', runId: id });
   logger.info({ runId: id }, 'run approved, resuming');
@@ -45,6 +58,7 @@ runsRoute.post('/runs/:id/reject', async (c) => {
   const run = await getRun(id);
   if (!run) return c.json({ error: 'not found' }, 404);
 
+  await resolveApproval(id, 'rejected', c.req.query('by') ?? 'human');
   await updateRunStatus(id, 'cancelled');
   logger.info({ runId: id }, 'run rejected');
   return c.json({ ok: true, runId: id, cancelled: true });

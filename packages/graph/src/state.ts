@@ -13,6 +13,8 @@ export const AgentState = Annotation.Root({
   description: Annotation<string>(),
   /** Plano gerado pelo Planner (MAC-16). */
   plan: Annotation<string>(),
+  /** Motivos de aprovação detectados no plano (MAC-41). */
+  approvalReasons: Annotation<string[]>(),
   /** Branch de trabalho criada pelo Coder (MAC-17/25). */
   branch: Annotation<string>(),
   /** SHA do commit gerado pelo Coder (MAC-17). */
