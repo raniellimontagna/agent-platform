@@ -87,9 +87,9 @@ async function listRepoFiles(dir: string): Promise<string[]> {
 
 /**
  * Extrai o JSON da resposta do modelo, tolerando cercas de código (```json ... ```)
- * ou texto ao redor. Lança se não encontrar um objeto JSON.
+ * ou texto ao redor. Lança se não encontrar um objeto JSON. Exportado p/ teste.
  */
-function extractJson(raw: string): unknown {
+export function extractJson(raw: string): unknown {
   const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
   const candidate = (fenced?.[1] ?? raw).trim();
   const start = candidate.indexOf('{');
