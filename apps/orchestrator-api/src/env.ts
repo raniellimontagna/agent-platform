@@ -28,6 +28,11 @@ const envSchema = z.object({
   AGENT_TEST_COMMANDS: z
     .string()
     .default('pnpm install --frozen-lockfile\npnpm -r build\npnpm test'),
+
+  // Cost Guard (MAC-40), em USD estimado. Limite por run (alerta) e por sessão
+  // (24h — bloqueia novos runs).
+  AGENT_MAX_COST_PER_RUN_USD: z.coerce.number().default(2),
+  AGENT_MAX_COST_PER_DAY_USD: z.coerce.number().default(20),
 });
 
 export type Env = z.infer<typeof envSchema>;

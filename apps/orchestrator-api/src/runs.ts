@@ -1,4 +1,4 @@
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, sql } from 'drizzle-orm';
 import { db, schema } from './db/client.js';
 
 export type RunStatus = (typeof schema.runStatus.enumValues)[number];
@@ -80,6 +80,24 @@ export async function recordStep(input: {
     model: input.model,
     costUsd: input.costUsd !== undefined ? input.costUsd.toFixed(4) : undefined,
   });
+}
+
+/** Custo total (USD) de um run, somando os steps (MAC-40). */
+export async function runCostUsd(runId: string): Promise<number> {
+  const [row] = await db
+    .select({ total: sql<string>`coalesce(sum(${schema.runSteps.costUsd}), 0)` })
+    .from(schema.runSteps)
+    .where(eq(schema.runSteps.runId, runId));
+  return Number(row?.total ?? 0);
+}
+
+/** Custo total (USD) das últimas 24h — limite de sessão do Cost Guard (MAC-40). */
+export async function costLast24hUsd(): Promise<number> {
+  const [row] = await db
+    .select({ total: sql<string>`coalesce(sum(${schema.runSteps.costUsd}), 0)` })
+    .from(schema.runSteps)
+    .where(sql`${schema.runSteps.createdAt} >= now() - interval '24 hours'`);
+  return Number(row?.total ?? 0);
 }
 
 /** Etapas de um run, em ordem de criação (MAC-36). */
