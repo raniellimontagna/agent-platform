@@ -32,8 +32,8 @@ flowchart TB
   ORCH -->|"job HTTP"| RUN
   ORCH -->|"aliases LLM"| GW
   RUN -->|"aliases LLM"| GW
-  GW -->|"OAuth (strong_coder/critic)"| SUBS
-  GW -->|"API key (cheap_fast/research)"| VERBOO
+  GW -->|"OAuth combos (research/strong_coder/heavy_coder/critic)"| SUBS
+  GW -->|"API key (cheap_fast)"| VERBOO
   ORCH -->|"branch · PR · comentários"| GH
   ORCH -->|"status · comentários"| LINEAR
   ORCH -.métricas/logs.-> OBS
@@ -81,8 +81,8 @@ modelos (Fase 2).
 | Decisões/ADRs | MAC-6 | `docs/decisions/` | ✅ |
 | Infra Proxmox (4 VMs, rede, deploy) | MAC-8/9/10/11 | `infra/proxmox/`, `infra/deploy/` | no ar; deploy parcial |
 | LiteLLM Gateway | MAC-12 | `infra/compose/gateway/` | config pronta; ⏳ deploy |
-| Provider Verboo (cheap_fast/research) | MAC-13 | `infra/compose/gateway/litellm-config.yaml` | config pronta; ⏳ key |
-| Provider OmniRoute/OAuth (strong_coder/critic) | MAC-48 | `infra/compose/gateway/` + ADR-0006 | config pronta; ⏳ OAuth |
+| Provider Verboo (`cheap_fast`) | MAC-13 | `infra/compose/gateway/litellm-config.yaml` | config pronta; ⏳ key |
+| Provider OmniRoute/OAuth (`research`/`strong_coder`/`heavy_coder`/`critic`) | MAC-48 | `infra/compose/gateway/` + ADR-0006 | config pronta; ⏳ OAuth |
 | Budgets / Rate limits | MAC-15 | LiteLLM config (a expandir) | ⏳ |
 | API + Webhook Linear | MAC-19 | `apps/orchestrator-api/src/routes/webhooks.ts` | esqueleto ✅ |
 | Fluxo ai-ready | MAC-20 | `apps/orchestrator-api` (enfileirar) | ⏳ stub |
@@ -124,8 +124,9 @@ Provider LLM é híbrido: Verboo (MAC-13) + OmniRoute/OAuth (MAC-48) — ver §5
 1. **MAC-7 duplicado.** ✅ Resolvido — MAC-7 cancelado (duplicata de MAC-8).
 
 2. **Provider LLM híbrido.** ✅ Resolvido — Verboo segue como provider de alto
-   volume (MAC-13, aliases `cheap_fast`/`research`) e OmniRoute via OAuth cobre os
-   fortes (MAC-48, `strong_coder`/`critic`). Ver ADR-0006.
+   volume trivial (MAC-13, alias `cheap_fast`) e OmniRoute via OAuth cobre os
+   combos `cost-saver` (`research`/`strong_coder`) e `high-availability`
+   (`heavy_coder`/`critic`). Ver ADR-0006.
 
 3. **Fase 4 antecipada.** O `worker-code` (MAC-27/28/29) já tem base pronta na
    Fase 1, porque o deploy dos runners precisava de um app. Cards continuam na

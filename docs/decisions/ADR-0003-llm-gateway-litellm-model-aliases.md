@@ -28,10 +28,11 @@ Agentes não devem depender de providers LLM específicos. Precisamos de um gate
 
 | Alias | Uso |
 |---|---|
-| `cheap_fast` | Tarefas simples, alto volume, baixo custo |
-| `strong_coder` | Geração e revisão de código |
-| `critic` | Revisão de diff, avaliação de planos |
-| `research` | Busca, síntese, raciocínio longo |
+| `cheap_fast` | Tarefas triviais, alto volume, baixo custo |
+| `research` | Busca, leitura de contexto, síntese e planejamento |
+| `strong_coder` | Geração e alteração de código comum |
+| `heavy_coder` | Código difícil, correção após falha e tarefas críticas |
+| `critic` | Revisão final de diff, avaliação de planos |
 | `local_private` | Dados sensíveis (futuro) |
 
 ## Consequências
