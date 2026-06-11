@@ -84,18 +84,19 @@ modelos (Fase 2).
 | Provider Verboo (`cheap_fast`) | MAC-13 | `infra/compose/gateway/litellm-config.yaml` | config pronta; ⏳ key |
 | Provider OmniRoute/OAuth (`research`/`strong_coder`/`heavy_coder`/`critic`) | MAC-48 | `infra/compose/gateway/` + ADR-0006 | config pronta; ⏳ OAuth |
 | Budgets / Rate limits | MAC-15 | `litellm-config.yaml` + `docs/runbooks/litellm-guardrails.md` | config pronta; ⏳ aplicar chaves virtuais |
-| API + Webhook Linear | MAC-19 | `apps/orchestrator-api/src/routes/webhooks.ts` | esqueleto ✅ |
-| Fluxo ai-ready | MAC-20 | `apps/orchestrator-api` (enfileirar) | ⏳ stub |
-| State Machine | MAC-14 | `packages/graph` + schema `runs/run_steps` | schema ✅; grafo ⏳ |
-| Planner / Coder / Reviewer / Reporter | MAC-16/17/18/21 | `packages/graph/src/nodes`, `apps/worker-code` (code-gen) | planner+coder ✅; reviewer/reporter ⏳ |
-| Human Approval Node | MAC-22 | `packages/graph` + tabela `approvals` | schema ✅; nó ⏳ |
-| Context Builder / Memory | MAC-24/23 | `packages/memory`, `packages/linear`, `packages/github` | ⏳ |
-| Retry / Persistence | MAC-33/34 | `packages/graph` (checkpointer LangGraph) | ⏳ |
-| Branch / PR / Worktree | MAC-25/26/27 | `packages/github`, `packages/graph/src/nodes/pr.ts`, `apps/worker-code/src/executor/worktree.ts` | worktree ✅; branch+Draft PR ✅ |
-| Sandbox Executor / Test Runner | MAC-28/29 | `apps/worker-code` | executor ✅; testes parcial |
-| Observabilidade (painéis, registro) | MAC-35/36 | `infra/compose/observability/` | stack no ar; dashboards ⏳ |
-| Segurança (vault, allowlist, kill switch) | MAC-30/31/32 | `packages/policy` | ⏳ |
-| Runtime (queue, scheduler, workers, cost, approval) | MAC-37/38/39/40/41 | `apps/orchestrator-api`, `packages/policy` | ⏳ |
+| API + Webhook Linear | MAC-19 | `apps/orchestrator-api/src/routes/webhooks.ts` | ✅ |
+| Fluxo ai-ready | MAC-20 | `apps/orchestrator-api` (enfileirar) | ✅ |
+| State Machine | MAC-14 | `packages/graph` + schema `runs/run_steps` | ✅ (planning→coding→reviewing→pr→report) |
+| Planner / Coder / Reviewer / Reporter | MAC-16/17/18/21 | `packages/graph/src/nodes`, `apps/worker-code` (code-gen) | ✅ |
+| Human Approval Node | MAC-22 | `packages/graph` (interruptBefore) + tabela `approvals` | ✅ |
+| Context Builder | MAC-24 | `apps/worker-code/src/executor/context.ts` | ✅ (convenções + arquivos-exemplo) |
+| Memory Layer | MAC-23 | `packages/memory` | ⏳ |
+| Retry / Persistence | MAC-33/34 | `packages/llm` (retry), `packages/graph` (checkpointer), `worker.ts` (resume) | ✅ |
+| Branch / PR / Worktree | MAC-25/26/27 | `packages/github`, `packages/graph/src/nodes/pr.ts`, `apps/worker-code/src/executor/worktree.ts` | ✅ |
+| Sandbox Executor / Test Runner | MAC-28/29 | `apps/worker-code` (runJob + allowlist) | ✅ |
+| Observabilidade (painéis, registro) | MAC-35/36 | `infra/compose/observability/provisioning/`, `apps/orchestrator-api` (runs/steps) | registro ✅; painéis provisionados (verificar UI) |
+| Segurança (vault, allowlist, kill switch) | MAC-30/31/32 | `killswitch.ts`, `routes/admin.ts`, `worker-code/.../commandPolicy.ts`, `docs/runbooks/secrets.md` | ✅ |
+| Runtime (queue, scheduler, workers, cost, approval) | MAC-37/38/39/40/41 | `apps/orchestrator-api` (BullMQ), `packages/policy` | queue ✅; cost/scheduler/governança ⏳ |
 | Escala (registries, artifacts, vector, MCP, multiagente) | MAC-42..47 | `packages/*`, `apps/*` | ⏳ |
 
 Provider LLM é híbrido: Verboo (MAC-13) + OmniRoute/OAuth (MAC-48) — ver §5 e ADR-0006.
@@ -108,10 +109,10 @@ Provider LLM é híbrido: Verboo (MAC-13) + OmniRoute/OAuth (MAC-48) — ver §5
 |---|---|---|---|---|
 | 0 | Fundação e decisões | MAC-6 | 16/06 | ✅ |
 | 1 | Infra Proxmox e rede | MAC-8/9/10/11 (+MAC-7¹) | 23/06 | 🏗 no ar; deploy parcial |
-| 2 | Gateway LiteLLM e provedores | MAC-12/13/48/15 | 30/06 | 🏗 config pronta; deploy ⏳ |
-| 3 | Orquestrador LangGraph | MAC-14/16/17/18/21/22/23/24/33/34 | 10/07 | ⏳ |
-| 4 | Linear, GitHub e Code Runner | MAC-19/20/25/26/27/28/29 | 20/07 | 🏗 worker-code base ✅ |
-| 5 | Segurança e Observabilidade | MAC-30/31/32/35/36 | 10/08 | 🏗 stack obs no ar |
+| 2 | Gateway LiteLLM e provedores | MAC-12/13/48/15 | 30/06 | 🏗 no ar; OAuth feito |
+| 3 | Orquestrador LangGraph | MAC-14/16/17/18/21/22/23/24/33/34 | 10/07 | 🏗 só MAC-23 (memory) ⏳ |
+| 4 | Linear, GitHub e Code Runner | MAC-19/20/25/26/27/28/29 | 20/07 | ✅ |
+| 5 | Segurança e Observabilidade | MAC-30/31/32/35/36 | 10/08 | ✅ (painéis: verificar UI) |
 | 6 | Runtime e Governança | MAC-37/38/39/40/41 | 24/08 | ⏳ |
 | 7 | Produção e Escala | MAC-42/43/44/45/46/47 | 07/09 | ⏳ |
 
