@@ -6,5 +6,7 @@ export default defineConfig({
     passWithNoTests: true,
     include: ['**/*.test.ts'],
     exclude: ['**/node_modules/**', '**/dist/**'],
+    // Popula env dummy antes dos testes (módulos validam env no import).
+    setupFiles: ['./vitest.setup.ts'],
   },
 });
