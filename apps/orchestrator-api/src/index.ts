@@ -2,6 +2,7 @@ import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { env } from './env.js';
 import { logger } from './logger.js';
+import { adminRoute } from './routes/admin.js';
 import { health } from './routes/health.js';
 import { runsRoute } from './routes/runs.js';
 import { webhooks } from './routes/webhooks.js';
@@ -12,6 +13,7 @@ const app = new Hono();
 app.route('/', health);
 app.route('/', webhooks);
 app.route('/', runsRoute);
+app.route('/', adminRoute);
 
 app.notFound((c) => c.json({ error: 'not found' }, 404));
 

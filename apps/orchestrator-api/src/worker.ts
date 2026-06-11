@@ -1,7 +1,8 @@
 import { Worker } from 'bullmq';
 import { getAgent } from './agent.js';
+import { isPaused } from './killswitch.js';
 import { logger } from './logger.js';
-import { AGENT_QUEUE, type AgentJobData, connection } from './queue.js';
+import { AGENT_QUEUE, type AgentJobData, agentQueue, connection } from './queue.js';
 import { type RunStatus, updateRunStatus } from './runs.js';
 
 /**
@@ -20,6 +21,14 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
       const { runId } = job.data;
       const log = logger.child({ runId, kind: job.data.kind });
       const config = { configurable: { thread_id: runId } };
+
+      // Kill switch (MAC-32): pausado → reenfileira com atraso e não processa.
+      // Interrupção segura: o passo em andamento termina, nenhum novo começa.
+      if (await isPaused()) {
+        log.warn('agents paused; deferring job');
+        await agentQueue.add(job.name, job.data, { delay: 30_000 });
+        return;
+      }
 
       let result: { status?: string };
       if (job.data.kind === 'plan') {
