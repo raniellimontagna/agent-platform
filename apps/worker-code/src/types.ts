@@ -43,4 +43,6 @@ export interface JobResult {
   pushed?: boolean;
   /** Diff das alterações vs. base branch (para o Reviewer, MAC-18). */
   diff?: string;
+  /** Todos os comandos de validação passaram (MAC-29). undefined = não rodou. */
+  testsPassed?: boolean;
 }
