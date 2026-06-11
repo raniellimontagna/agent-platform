@@ -48,6 +48,18 @@ export async function listRuns(limit = 50) {
   return db.select().from(schema.runs).orderBy(desc(schema.runs.createdAt)).limit(limit);
 }
 
+/**
+ * Runs órfãos em `executing` (interrompidos por restart) — têm checkpoint e
+ * podem retomar com segurança via resume (MAC-34). `awaiting_approval` espera
+ * humano; `planning` é deixado de fora pra não duplicar o comentário do plano.
+ */
+export async function findResumableRuns(): Promise<{ id: string }[]> {
+  return db
+    .select({ id: schema.runs.id })
+    .from(schema.runs)
+    .where(eq(schema.runs.status, 'executing'));
+}
+
 /** Registra uma etapa executada com tempo e resultado (MAC-36). */
 export async function recordStep(input: {
   runId: string;
