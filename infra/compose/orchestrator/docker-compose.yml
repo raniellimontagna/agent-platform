@@ -35,6 +35,9 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
+    # Exposto na subnet isolada vmbr1 p/ o Grafana (.13) ler runs/run_steps (MAC-35).
+    ports:
+      - "5432:5432"
     volumes:
       - /opt/agent-platform/postgres:/var/lib/postgresql/data
     healthcheck:

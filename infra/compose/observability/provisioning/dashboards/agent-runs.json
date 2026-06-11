@@ -1,0 +1,104 @@
+{
+  "uid": "agent-runs",
+  "title": "Agent Platform — Execuções",
+  "tags": ["agent-platform"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-7d", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Total de runs",
+      "type": "stat",
+      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT count(*) AS total FROM runs;"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Completos",
+      "type": "stat",
+      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "green" } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT count(*) AS completos FROM runs WHERE status = 'completed';"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Falhas",
+      "type": "stat",
+      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "red" } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT count(*) AS falhas FROM runs WHERE status = 'failed';"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Duração média das etapas (s)",
+      "type": "stat",
+      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT round(avg(extract(epoch FROM (finished_at - started_at)))::numeric, 1) AS media_s FROM run_steps WHERE finished_at IS NOT NULL;"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Runs por status (por hora)",
+      "type": "timeseries",
+      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 4 },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT date_trunc('hour', created_at) AS time, status AS metric, count(*) AS value FROM runs WHERE $__timeFilter(created_at) GROUP BY 1, 2 ORDER BY 1;"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Execuções recentes",
+      "type": "table",
+      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 12 },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT created_at, linear_issue_identifier AS issue, title, status, branch, pr_url FROM runs ORDER BY created_at DESC LIMIT 50;"
+        }
+      ]
+    }
+  ]
+}
