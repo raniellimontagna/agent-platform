@@ -1,5 +1,5 @@
 import type { LinearGateway } from '@agent-platform/linear';
-import type { LlmClient } from '@agent-platform/llm';
+import { type LlmClient, type TokenUsage, estimateCostUsd } from '@agent-platform/llm';
 import type { AgentStateType } from '../state.js';
 
 const SYSTEM_PROMPT = `Você é um revisor de código sênior e crítico.
@@ -28,9 +28,13 @@ export function makeReviewNode(deps: ReviewDeps) {
     }
 
     try {
+      let usage: TokenUsage = { promptTokens: 0, completionTokens: 0 };
       const review = await deps.llm.complete({
         alias: 'critic',
         temperature: 0.2,
+        onUsage: (u) => {
+          usage = u;
+        },
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
           {
@@ -50,7 +54,7 @@ export function makeReviewNode(deps: ReviewDeps) {
       await deps.linear.comment(state.issueId, `## 🔎 Revisão do agente (critic)\n\n${review}`);
 
       // Mantém `coding` → roteia para o nó PR (MAC-26).
-      return { review, status: 'coding' };
+      return { review, status: 'coding', reviewCostUsd: estimateCostUsd('critic', usage) };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       // Falha na revisão não derruba o run: segue para o PR sem parecer.

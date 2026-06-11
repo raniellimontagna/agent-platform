@@ -60,13 +60,15 @@ export async function findResumableRuns(): Promise<{ id: string }[]> {
     .where(eq(schema.runs.status, 'executing'));
 }
 
-/** Registra uma etapa executada com tempo e resultado (MAC-36). */
+/** Registra uma etapa executada com tempo, resultado e custo (MAC-36/40). */
 export async function recordStep(input: {
   runId: string;
   type: StepType;
   status: StepStatus;
   startedAt: Date;
   error?: string;
+  model?: string;
+  costUsd?: number;
 }): Promise<void> {
   await db.insert(schema.runSteps).values({
     runId: input.runId,
@@ -75,6 +77,8 @@ export async function recordStep(input: {
     startedAt: input.startedAt,
     finishedAt: new Date(),
     error: input.error,
+    model: input.model,
+    costUsd: input.costUsd !== undefined ? input.costUsd.toFixed(4) : undefined,
   });
 }
 

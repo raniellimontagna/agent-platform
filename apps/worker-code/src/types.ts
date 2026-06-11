@@ -45,4 +45,6 @@ export interface JobResult {
   diff?: string;
   /** Todos os comandos de validação passaram (MAC-29). undefined = não rodou. */
   testsPassed?: boolean;
+  /** Custo estimado das chamadas LLM do codegen em USD (MAC-40). */
+  costUsd?: number;
 }
