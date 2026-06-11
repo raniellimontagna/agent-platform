@@ -23,7 +23,8 @@ Linear (ai-ready) → Orchestrator API → agent-runners (sandbox)
                           Verboo / Claude / OpenAI
 ```
 
-Fluxo completo: [`docs/decisions/FLOW-agent-workflow.md`](docs/decisions/FLOW-agent-workflow.md)
+Visão completa (deploy + fluxo + mapa dos cards): [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+Fluxo detalhado do agente: [`docs/decisions/FLOW-agent-workflow.md`](docs/decisions/FLOW-agent-workflow.md)
 
 ## VMs
 
