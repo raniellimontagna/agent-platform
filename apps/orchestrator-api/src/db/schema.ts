@@ -1,4 +1,3 @@
-import { sql } from 'drizzle-orm';
 import { jsonb, numeric, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 /**
@@ -63,7 +62,7 @@ export const runs = pgTable('runs', {
   updatedAt: timestamp('updated_at', { withTimezone: true })
     .notNull()
     .defaultNow()
-    .$onUpdate(() => sql`now()`),
+    .$onUpdate(() => new Date()),
 });
 
 export const runSteps = pgTable('run_steps', {
