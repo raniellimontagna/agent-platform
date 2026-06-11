@@ -20,18 +20,22 @@ OpenAI-compatible.
 Manter o **LiteLLM como gateway** (ADR-0003 segue válido) com backend **híbrido**:
 
 ```
-                    ┌→ Verboo (API key)        → cheap_fast, research
+                    ┌→ Verboo (API key)        → cheap_fast
 agente → LiteLLM ───┤
-                    └→ OmniRoute (OAuth) → Claude Max / ChatGPT → strong_coder, critic
+                    └→ OmniRoute (OAuth) → combos cost-saver/high-availability
 ```
 
-- **Verboo** (MAC-13): API key direta, aliases de alto volume `cheap_fast` e `research`.
+- **Verboo** (MAC-13): API key direta para alto volume trivial via `cheap_fast`.
 - **OmniRoute** (MAC-48): `diegosouzapw/omniroute`, container no `agent-gateway`,
   porta `20128`, web UI para o OAuth. LiteLLM chama `http://omniroute:20128/v1`
-  (OpenAI-compatible) com `OMNIROUTE_API_KEY`. Modelos fortes `strong_coder` e `critic`.
-- Prefixos de modelo OmniRoute: `cc/...` (Claude), `cx/...` (GPT), `auto`.
-- Aliases (`cheap_fast`, `strong_coder`, `critic`, `research`) inalterados para
-  os agentes — só a origem de cada um muda.
+  (OpenAI-compatible) com `OMNIROUTE_API_KEY`.
+- Combos OmniRoute: `cost-saver` concentra modelos custo-benefício para
+  `research` e `strong_coder`; `high-availability` concentra modelos fortes e
+  múltiplos providers para `heavy_coder` e `critic`.
+- Prefixos/targets de modelo OmniRoute continuam encapsulados dentro dos combos
+  (`cc/...`, `cx/...`, `gemini-cli/...`, `antigravity/...`, `auto`, etc.).
+- Aliases (`cheap_fast`, `research`, `strong_coder`, `heavy_coder`, `critic`)
+  seguem estáveis para os agentes — só a origem de cada um muda.
 
 ## Trade-offs
 

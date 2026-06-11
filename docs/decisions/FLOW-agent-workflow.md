@@ -56,7 +56,13 @@
 
 | Alias | Quando usar |
 |---|---|
-| `cheap_fast` | Tarefas simples / alto volume |
-| `strong_coder` | Geração e alteração de código |
-| `critic` | Revisão de diff e planos |
-| `research` | Leitura de contexto / síntese |
+| `cheap_fast` | Tarefas triviais / alto volume; Verboo direto com fallback para `cost-saver` |
+| `research` | Leitura de contexto, síntese e planejamento; usa o combo OmniRoute `cost-saver` |
+| `strong_coder` | Geração e alteração de código comum; usa o combo OmniRoute `cost-saver` |
+| `heavy_coder` | Código difícil, correção após falha e tarefas críticas; usa o combo OmniRoute `high-availability` |
+| `critic` | Revisão final de diff e planos; usa o combo OmniRoute `high-availability` |
+
+`cost-saver` deve priorizar modelos custo-benefício e contexto longo, com Gemini
+como bom candidato para research/síntese. `high-availability` concentra os
+modelos mais fortes e múltiplos providers para preservar execução em tarefas
+críticas.
