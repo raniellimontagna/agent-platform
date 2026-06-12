@@ -46,6 +46,22 @@ Regras CRÍTICAS:
 - Inclua no array só os arquivos realmente alterados/criados.
 - Não escreva nada fora do JSON.`;
 
+const FIX_PROMPT = `Você é um agente de engenharia de software corrigindo uma falha de validação.
+Recebe os arquivos que você acabou de escrever e a saída do comando que FALHOU (build/test/lint).
+Corrija a CAUSA do erro preservando todo o código correto.
+
+Responda APENAS com um objeto JSON válido, sem markdown:
+{
+  "summary": "o que você corrigiu (1 linha)",
+  "files": [ { "path": "caminho/relativo", "content": "conteúdo COMPLETO e final do arquivo corrigido" } ]
+}
+
+Regras CRÍTICAS:
+- "content" é o arquivo inteiro e final (não um diff/patch).
+- Inclua só os arquivos que você precisou alterar para corrigir o erro.
+- NÃO adicione dependências/imports que o repositório não tem.
+- Não escreva nada fora do JSON.`;
+
 const fileSchema = z.object({
   path: z.string().min(1),
   content: z.string(),
@@ -206,6 +222,18 @@ async function readCurrentFiles(
   return out;
 }
 
+/** Escreve os arquivos no worktree e devolve os caminhos aplicados (DRY codegen/fix). */
+async function applyFiles(dir: string, files: { path: string; content: string }[]): Promise<string[]> {
+  const applied: string[] = [];
+  for (const file of files) {
+    const full = safeJoin(dir, file.path);
+    await mkdir(dirname(full), { recursive: true });
+    await writeFile(full, file.content, 'utf8');
+    applied.push(file.path.replace(/^\/+/, ''));
+  }
+  return applied;
+}
+
 /**
  * Gera o código via alias `strong_coder` e aplica os arquivos no worktree (MAC-17).
  *
@@ -285,17 +313,83 @@ export async function generateAndApplyCode(args: CodegenArgs): Promise<CodegenRe
     throw new Error('modelo não retornou nenhum arquivo para alterar');
   }
 
-  const filesChanged: string[] = [];
-  for (const file of parsed.files) {
-    const full = safeJoin(dir, file.path);
-    await mkdir(dirname(full), { recursive: true });
-    await writeFile(full, file.content, 'utf8');
-    filesChanged.push(file.path.replace(/^\/+/, ''));
-  }
+  const filesChanged = await applyFiles(dir, parsed.files);
 
   const costUsd = estimateCostUsd('strong_coder', usage);
   log.info({ filesChanged, usage, costUsd }, 'applied generated files');
   return { summary: parsed.summary, filesChanged, prTitle: parsed.prTitle, costUsd };
+}
+
+export interface FixArgs {
+  llm: LlmClient;
+  dir: string;
+  /** Arquivos que o coder tocou na geração — candidatos a corrigir. */
+  filesChanged: string[];
+  /** Saída do comando de validação que falhou (de summarizeFailureTail). */
+  failureTail: string;
+  plan: string;
+  title: string;
+  log: Logger;
+}
+
+export interface FixResult {
+  summary: string;
+  filesChanged: string[];
+  costUsd: number;
+}
+
+/**
+ * Self-correction (fix dirigido): após uma falha de validação, relê os arquivos
+ * que o coder tocou + o erro do comando que falhou e pede a versão corrigida via
+ * `strong_coder`. Reaplica no worktree. Não re-seleciona arquivos.
+ */
+export async function applyFix(args: FixArgs): Promise<FixResult> {
+  const { llm, dir, filesChanged, failureTail, plan, title, log } = args;
+
+  // Relê on-disk os arquivos tocados (recém-escritos; arquivos novos podem não
+  // estar no git ls-files, então lemos direto, sem filtro de tracking).
+  const current: { path: string; content: string }[] = [];
+  for (const rel of filesChanged.slice(0, MAX_EDIT_FILES)) {
+    try {
+      const content = await readFile(safeJoin(dir, rel), 'utf8');
+      current.push({ path: rel, content: content.slice(0, MAX_FILE_CHARS) });
+    } catch {
+      // arquivo sumiu entre escrita e releitura — ignora.
+    }
+  }
+  const currentBlock = current.map((f) => `\n## ${f.path}\n\`\`\`\n${f.content}\n\`\`\``).join('\n');
+
+  const usage: TokenUsage = { promptTokens: 0, completionTokens: 0 };
+  log.info({ files: filesChanged.length }, 'requesting fix');
+  const parsed = await completeJson(
+    llm,
+    {
+      temperature: 0.1,
+      onUsage: (u) => {
+        usage.promptTokens += u.promptTokens;
+        usage.completionTokens += u.completionTokens;
+      },
+      messages: [
+        { role: 'system', content: FIX_PROMPT },
+        {
+          role: 'user',
+          content: [
+            `# Issue: ${title}`,
+            `\n# Plano aprovado\n${plan}`,
+            `\n# Arquivos que você escreveu${currentBlock || '\n(nenhum)'}`,
+            `\n# Saída do comando que FALHOU\n\`\`\`\n${failureTail}\n\`\`\``,
+          ].join('\n'),
+        },
+      ],
+    },
+    responseSchema,
+    log,
+  );
+
+  const applied = await applyFiles(dir, parsed.files);
+  const costUsd = estimateCostUsd('strong_coder', usage);
+  log.info({ filesChanged: applied, costUsd }, 'applied fix');
+  return { summary: parsed.summary, filesChanged: applied, costUsd };
 }
 
 /** Caminho absoluto de um arquivo do worktree (exportado p/ testes futuros). */
