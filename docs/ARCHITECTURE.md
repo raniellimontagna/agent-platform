@@ -100,7 +100,7 @@ Engine** (MAC-33), **Workflow Persistence** (MAC-34) e o gateway de modelos (Fas
 | Observabilidade (painéis, registro) | MAC-35/36 | `infra/compose/observability/provisioning/`, `apps/orchestrator-api` (runs/steps) | registro ✅; 3 dashboards (Execuções, Custo & Governança, Qualidade & Memória) — verificar UI |
 | Segurança (vault, allowlist, kill switch) | MAC-30/31/32 | `killswitch.ts`, `routes/admin.ts`, `worker-code/.../commandPolicy.ts`, `docs/runbooks/secrets.md` | ✅ |
 | Runtime (queue, scheduler, workers, cost, approval) | MAC-37/38/39/40/41 | `apps/orchestrator-api` (BullMQ + cost guard), `packages/policy` | queue/cost/approval ✅; scheduler(38)/workers(39) ⏳ |
-| Escala (registries, artifacts, vector, MCP, multiagente) | MAC-42..47 | `packages/*`, `apps/*` | ⏳ |
+| Escala (registries, artifacts, vector, MCP, multiagente) | MAC-42..47 | `apps/mcp-server`, `packages/*` | MCP server ✅ (`apps/mcp-server`); registries/artifacts/vector/multiagente ⏳ |
 
 Provider LLM é híbrido: Verboo (MAC-13) + OmniRoute/OAuth (MAC-48) — ver §5 e ADR-0006.
 
