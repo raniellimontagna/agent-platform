@@ -35,6 +35,8 @@ export const AgentState = Annotation.Root({
   planCostUsd: Annotation<number>(),
   codeCostUsd: Annotation<number>(),
   reviewCostUsd: Annotation<number>(),
+  /** Título Conventional Commits (inglês) do PR (MAC-26). */
+  prTitle: Annotation<string>(),
   /** URL do Draft PR aberto pelo nó PR (MAC-26). */
   prUrl: Annotation<string>(),
   /** Status corrente do run (alinha com o enum run_status do banco). */

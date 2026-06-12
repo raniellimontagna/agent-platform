@@ -47,4 +47,6 @@ export interface JobResult {
   testsPassed?: boolean;
   /** Custo estimado das chamadas LLM do codegen em USD (MAC-40). */
   costUsd?: number;
+  /** Título Conventional Commits em inglês p/ o PR (MAC-26). */
+  prTitle?: string;
 }

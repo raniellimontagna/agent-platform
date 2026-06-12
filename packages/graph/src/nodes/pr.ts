@@ -23,7 +23,10 @@ export function makePrNode(deps: PrDeps) {
     }
 
     try {
-      const title = `${state.issueIdentifier}: ${state.title}`;
+      // Título Conventional Commits em inglês (MAC-26); fallback p/ id+título.
+      const title = state.prTitle?.trim()
+        ? `${state.prTitle} (${state.issueIdentifier})`
+        : `${state.issueIdentifier}: ${state.title}`;
       const testsLine =
         state.testsPassed === undefined
           ? ''
