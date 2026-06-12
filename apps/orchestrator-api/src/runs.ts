@@ -1,10 +1,19 @@
-import { and, desc, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import { db, schema } from './db/client.js';
 
 export type RunStatus = (typeof schema.runStatus.enumValues)[number];
 export type StepType = (typeof schema.stepType.enumValues)[number];
 export type StepStatus = (typeof schema.stepStatus.enumValues)[number];
 export type ApprovalReason = (typeof schema.approvalReason.enumValues)[number];
+
+/** Status não-terminais — um run nesses ainda está em andamento. */
+const ACTIVE_STATUSES: RunStatus[] = [
+  'pending',
+  'planning',
+  'awaiting_approval',
+  'executing',
+  'reviewing',
+];
 
 export interface NewRunInput {
   linearIssueId: string;
@@ -25,6 +34,18 @@ export async function createRun(input: NewRunInput): Promise<string> {
     .returning({ id: schema.runs.id });
   // biome-ignore lint/style/noNonNullAssertion: insert ... returning sempre retorna a linha
   return row!.id;
+}
+
+/** Já existe um run ativo (não-terminal) para esta issue? Dedup do webhook. */
+export async function hasActiveRunForIssue(linearIssueId: string): Promise<boolean> {
+  const rows = await db
+    .select({ id: schema.runs.id })
+    .from(schema.runs)
+    .where(
+      and(eq(schema.runs.linearIssueId, linearIssueId), inArray(schema.runs.status, ACTIVE_STATUSES)),
+    )
+    .limit(1);
+  return rows.length > 0;
 }
 
 /** Lê um run pelo id (null se não existir). */
