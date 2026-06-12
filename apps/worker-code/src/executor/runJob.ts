@@ -20,6 +20,17 @@ const COMMAND_ALLOWLIST = env.AGENT_COMMAND_ALLOWLIST.split(',')
   .filter(Boolean);
 
 /**
+ * Tail do primeiro comando que falhou: linha do comando + final do stderr (ou
+ * stdout). É o contexto de erro que alimenta o self-correction. Exportado p/ teste.
+ */
+export function summarizeFailureTail(commands: CommandResult[]): string {
+  const failed = commands.find((c) => c.exitCode !== 0);
+  if (!failed) return '';
+  const tail = (failed.stderr || failed.stdout || '').trim().slice(-1500);
+  return `$ ${failed.command}\n${tail}`;
+}
+
+/**
  * Roda um comando do job aplicando a allowlist (MAC-31). Comando bloqueado não
  * executa: devolve um CommandResult de auditoria (exitCode 126) com o motivo.
  */
