@@ -90,7 +90,7 @@ modelos (Fase 2).
 | Planner / Coder / Reviewer / Reporter | MAC-16/17/18/21 | `packages/graph/src/nodes`, `apps/worker-code` (code-gen) | ✅ |
 | Human Approval Node | MAC-22 | `packages/graph` (interruptBefore) + tabela `approvals` | ✅ |
 | Context Builder | MAC-24 | `apps/worker-code/src/executor/context.ts` | ✅ (convenções + arquivos-exemplo) |
-| Memory Layer | MAC-23 | `packages/memory` | ⏳ |
+| Memory Layer | MAC-23 | `packages/memory`, `apps/orchestrator-api` (lessons) | ✅ (feedback learning: lições por repo) |
 | Retry / Persistence | MAC-33/34 | `packages/llm` (retry), `packages/graph` (checkpointer), `worker.ts` (resume) | ✅ |
 | Branch / PR / Worktree | MAC-25/26/27 | `packages/github`, `packages/graph/src/nodes/pr.ts`, `apps/worker-code/src/executor/worktree.ts` | ✅ |
 | Sandbox Executor / Test Runner | MAC-28/29 | `apps/worker-code` (runJob + allowlist) | ✅ |
@@ -110,7 +110,7 @@ Provider LLM é híbrido: Verboo (MAC-13) + OmniRoute/OAuth (MAC-48) — ver §5
 | 0 | Fundação e decisões | MAC-6 | 16/06 | ✅ |
 | 1 | Infra Proxmox e rede | MAC-8/9/10/11 (+MAC-7¹) | 23/06 | 🏗 no ar; deploy parcial |
 | 2 | Gateway LiteLLM e provedores | MAC-12/13/48/15 | 30/06 | 🏗 no ar; OAuth feito |
-| 3 | Orquestrador LangGraph | MAC-14/16/17/18/21/22/23/24/33/34 | 10/07 | 🏗 só MAC-23 (memory) ⏳ |
+| 3 | Orquestrador LangGraph | MAC-14/16/17/18/21/22/23/24/33/34 | 10/07 | ✅ completa |
 | 4 | Linear, GitHub e Code Runner | MAC-19/20/25/26/27/28/29 | 20/07 | ✅ |
 | 5 | Segurança e Observabilidade | MAC-30/31/32/35/36 | 10/08 | ✅ (painéis: verificar UI) |
 | 6 | Runtime e Governança | MAC-37/38/39/40/41 | 24/08 | 🏗 37/40/41 ✅; 38/39 ⏳ |
@@ -133,9 +133,10 @@ Provider LLM é híbrido: Verboo (MAC-13) + OmniRoute/OAuth (MAC-48) — ver §5
    Fase 1, porque o deploy dos runners precisava de um app. Cards continuam na
    Fase 4 — só registrar que a base já existe.
 
-4. **Postgres do orchestrator vs Memory Layer.** Schema `runs/run_steps/approvals`
-   (MAC-14/22) já existe em `apps/orchestrator-api`. MAC-23 (Memory Layer) é
-   camada separada; confirmar fronteira entre os dois.
+4. **Postgres do orchestrator vs Memory Layer.** ✅ Resolvido — `lessons` é tabela
+   separada: conhecimento **destilado, cross-run, por repo**, reinjetado no prompt
+   do codegen. `run_steps` segue como telemetria bruta por etapa (tempo/custo). Sem
+   overlap. Ver `docs/superpowers/specs/2026-06-12-mac-23-memory-layer-design.md`.
 
 ---
 
