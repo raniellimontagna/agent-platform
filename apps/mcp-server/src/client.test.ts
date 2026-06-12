@@ -59,6 +59,7 @@ describe('createClient', () => {
       [(c) => c.getRunApprovals('r1'), 'GET', 'http://orch:3000/runs/r1/approvals'],
       [(c) => c.listLessons('o/r'), 'GET', 'http://orch:3000/lessons?repo=o%2Fr'],
       [(c) => c.agentStatus(), 'GET', 'http://orch:3000/admin/status'],
+      [(c) => c.getStats(), 'GET', 'http://orch:3000/stats'],
       [(c) => c.approveRun('r1'), 'POST', 'http://orch:3000/runs/r1/approve'],
       [(c) => c.rejectRun('r1', 'me'), 'POST', 'http://orch:3000/runs/r1/reject?by=me'],
       [(c) => c.pauseAgents(), 'POST', 'http://orch:3000/admin/pause'],

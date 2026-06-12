@@ -22,6 +22,7 @@ export interface OrchestratorClient {
   getRunApprovals(id: string): Promise<unknown>;
   listLessons(repo: string, limit?: number): Promise<unknown>;
   agentStatus(): Promise<unknown>;
+  getStats(): Promise<unknown>;
   approveRun(id: string, by?: string): Promise<unknown>;
   rejectRun(id: string, by?: string): Promise<unknown>;
   pauseAgents(): Promise<unknown>;
@@ -67,6 +68,7 @@ export function createClient(cfg: ClientConfig): OrchestratorClient {
     getRunApprovals: (runId) => call('GET', `/runs/${id(runId)}/approvals`),
     listLessons: (repo, limit) => call('GET', `/lessons${query({ repo, limit })}`),
     agentStatus: () => call('GET', '/admin/status'),
+    getStats: () => call('GET', '/stats'),
     approveRun: (runId, by) => call('POST', `/runs/${id(runId)}/approve${query({ by })}`),
     rejectRun: (runId, by) => call('POST', `/runs/${id(runId)}/reject${query({ by })}`),
     pauseAgents: () => call('POST', '/admin/pause'),
