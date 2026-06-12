@@ -46,6 +46,8 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
         codeCostUsd?: number;
         reviewCostUsd?: number;
         approvalReasons?: string[];
+        branch?: string;
+        prUrl?: string;
       };
       if (job.data.kind === 'plan') {
         const issue = await linear.getIssue(job.data.issueId);
@@ -68,7 +70,10 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
       }
 
       const status = (result.status as RunStatus) ?? 'awaiting_approval';
-      await updateRunStatus(runId, status);
+      await updateRunStatus(runId, status, {
+        branch: result.branch,
+        prUrl: result.prUrl,
+      });
 
       // Approval Policies (MAC-41): ao pausar p/ aprovação, registra a solicitação
       // com os motivos detectados no plano (auditoria/governança).
