@@ -6,6 +6,16 @@ export type StepType = (typeof schema.stepType.enumValues)[number];
 export type StepStatus = (typeof schema.stepStatus.enumValues)[number];
 export type ApprovalReason = (typeof schema.approvalReason.enumValues)[number];
 
+export interface RunStats {
+  total_runs: number;
+  runs_by_status: Partial<Record<RunStatus, number>>;
+  success_rate: number;
+  total_cost_usd: number;
+  cost_last_24h_usd: number;
+  total_lessons: number;
+  avg_fix_attempts: number;
+}
+
 /** Status não-terminais — um run nesses ainda está em andamento. */
 const ACTIVE_STATUSES: RunStatus[] = [
   'pending',
@@ -104,6 +114,51 @@ export async function updateRunStatus(
 /** Histórico de execuções, mais recentes primeiro (MAC-36). */
 export async function listRuns(limit = 50) {
   return db.select().from(schema.runs).orderBy(desc(schema.runs.createdAt)).limit(limit);
+}
+
+/** Resumo agregado das execuções do agente para dashboards/API. */
+export async function runStats(): Promise<RunStats> {
+  const statusRows = await db
+    .select({
+      status: schema.runs.status,
+      count: sql<string>`count(*)`,
+    })
+    .from(schema.runs)
+    .groupBy(schema.runs.status);
+
+  const [costRow] = await db
+    .select({
+      totalCostUsd: sql<string>`coalesce(sum(${schema.runSteps.costUsd}), 0)`,
+      costLast24hUsd:
+        sql<string>`coalesce(sum(case when ${schema.runSteps.createdAt} >= now() - interval '24 hours' then ${schema.runSteps.costUsd} else 0 end), 0)`,
+    })
+    .from(schema.runSteps);
+
+  const [lessonsRow] = await db
+    .select({ total: sql<string>`count(*)` })
+    .from(schema.lessons);
+
+  const [fixAttemptsRow] = await db
+    .select({ avg: sql<string>`coalesce(avg(${schema.runs.fixAttempts}), 0)` })
+    .from(schema.runs);
+
+  const runsByStatus = statusRows.reduce<Partial<Record<RunStatus, number>>>((acc, row) => {
+    acc[row.status] = Number(row.count);
+    return acc;
+  }, {});
+
+  const totalRuns = Object.values(runsByStatus).reduce((sum, count) => sum + count, 0);
+  const completedRuns = runsByStatus.completed ?? 0;
+
+  return {
+    total_runs: totalRuns,
+    runs_by_status: runsByStatus,
+    success_rate: totalRuns > 0 ? (completedRuns / totalRuns) * 100 : 0,
+    total_cost_usd: Number(costRow?.totalCostUsd ?? 0),
+    cost_last_24h_usd: Number(costRow?.costLast24hUsd ?? 0),
+    total_lessons: Number(lessonsRow?.total ?? 0),
+    avg_fix_attempts: Number(fixAttemptsRow?.avg ?? 0),
+  };
 }
 
 /**
