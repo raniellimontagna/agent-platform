@@ -1,12 +1,13 @@
 import { createGithubGateway, parseRepoRef } from '@agent-platform/github';
 import { type AgentGraph, buildAgentGraph, createCheckpointer } from '@agent-platform/graph';
 import { type LinearGateway, createLinearGateway } from '@agent-platform/linear';
-import { createLlmClient } from '@agent-platform/llm';
+import { type LlmClient, createLlmClient } from '@agent-platform/llm';
 import { env } from './env.js';
 
 export interface Agent {
   graph: AgentGraph;
   linear: LinearGateway;
+  llm: LlmClient;
 }
 
 let agentPromise: Promise<Agent> | null = null;
@@ -53,5 +54,5 @@ async function init(): Promise<Agent> {
     checkpointer,
   );
 
-  return { graph, linear };
+  return { graph, linear, llm };
 }

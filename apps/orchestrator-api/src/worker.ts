@@ -1,7 +1,11 @@
 import { Worker } from 'bullmq';
+import { parseRepoRef } from '@agent-platform/github';
+import { verdictOf } from '@agent-platform/graph';
+import { distillLesson } from '@agent-platform/memory';
 import { getAgent } from './agent.js';
 import { env } from './env.js';
 import { isPaused } from './killswitch.js';
+import { saveLesson } from './lessons.js';
 import { logger } from './logger.js';
 import { AGENT_QUEUE, type AgentJobData, JOB_PRIORITY, agentQueue, connection } from './queue.js';
 import {
@@ -22,7 +26,7 @@ import {
  * - kind `resume`: retoma após aprovação → roda coding (MAC-17) → fim.
  */
 export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, string>> {
-  const { graph, linear } = await getAgent();
+  const { graph, linear, llm } = await getAgent();
 
   const worker = new Worker<AgentJobData, unknown, string>(
     AGENT_QUEUE,
@@ -48,6 +52,9 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
         approvalReasons?: string[];
         branch?: string;
         prUrl?: string;
+        review?: string;
+        testsPassed?: boolean;
+        testSummary?: string;
       };
       if (job.data.kind === 'plan') {
         const issue = await linear.getIssue(job.data.issueId);
@@ -108,6 +115,28 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
             run.linearIssueId,
             `## 💸 Alerta de custo\nRun excedeu o limite por task: ~$${total.toFixed(4)} > $${env.AGENT_MAX_COST_PER_RUN_USD}.`,
           );
+        }
+      }
+
+      // Memory Layer (MAC-23): se o run falhou na revisão ou na validação, destila
+      // a lição e guarda por repo — runs futuros do mesmo repo a recebem no codegen.
+      const reproved = /REPROVADO/i.test(verdictOf(result.review));
+      const testsFailed = result.testsPassed === false;
+      if (reproved || testsFailed) {
+        try {
+          const ref = parseRepoRef(env.REPO_URL);
+          const repo = `${ref.owner}/${ref.repo}`;
+          const text = await distillLesson(llm, {
+            source: reproved ? 'critic' : 'validation',
+            review: result.review,
+            testSummary: result.testSummary,
+          });
+          if (text) {
+            await saveLesson({ repo, source: reproved ? 'critic' : 'validation', text, runId });
+            log.info({ runId, source: reproved ? 'critic' : 'validation' }, 'lição registrada');
+          }
+        } catch (err) {
+          log.warn({ err }, 'falha ao registrar lição (não-fatal)');
         }
       }
     },
