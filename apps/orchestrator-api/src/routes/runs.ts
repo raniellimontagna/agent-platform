@@ -17,8 +17,10 @@ export const runsRoute = new Hono();
 
 /** Histórico de execuções (MAC-36). `?limit=` (máx 200) e `?offset=` (mín 0). */
 runsRoute.get('/runs', async (c) => {
-  const limit = Math.min(Number(c.req.query('limit')) || 50, 200);
-  const offset = Math.max(Number(c.req.query('offset')) || 0, 0);
+  const rawLimit = Number.parseInt(c.req.query('limit') ?? '', 10);
+  const limit = Math.min(Number.isNaN(rawLimit) ? 50 : rawLimit, 200);
+  const rawOffset = Number.parseInt(c.req.query('offset') ?? '', 10);
+  const offset = Math.max(Number.isNaN(rawOffset) ? 0 : rawOffset, 0);
   const runs = await listRuns(limit, offset);
   return c.json({ runs, limit, offset });
 });

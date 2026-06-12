@@ -65,4 +65,13 @@ describe('GET /runs', () => {
     expect(listRuns).toHaveBeenCalledWith(200, 0);
     await expect(res.json()).resolves.toEqual({ runs: [], limit: 200, offset: 0 });
   });
+
+  it('parseia como inteiro, truncando frações e ignorando lixo', async () => {
+    const res = await app.request('/runs?limit=10.9&offset=abc');
+
+    expect(res.status).toBe(200);
+    // limit=10.9 → 10 (parseInt); offset=abc → NaN → default 0.
+    expect(listRuns).toHaveBeenCalledWith(10, 0);
+    await expect(res.json()).resolves.toEqual({ runs: [], limit: 10, offset: 0 });
+  });
 });
