@@ -115,6 +115,16 @@ if [ "$MODE" = image ]; then
   fi
 
   ensure_env "$DEST"
+
+  # Observability: os containers rodam como usuários não-root e precisam escrever
+  # nos volumes bind-montados (senão crash-loop por permission denied).
+  if [ "$SERVICE" = observability ]; then
+    remote_exec "mkdir -p /opt/agent-platform/{grafana,prometheus,loki} \
+      && chown -R 472:472 /opt/agent-platform/grafana \
+      && chown -R 65534:65534 /opt/agent-platform/prometheus \
+      && chown -R 10001:10001 /opt/agent-platform/loki"
+  fi
+
   echo "==> docker compose up -d"
   remote_exec "cd '$DEST' && docker compose up -d"
 else
