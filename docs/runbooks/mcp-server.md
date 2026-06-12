@@ -1,7 +1,37 @@
 # Runbook — MCP Server
 
-Expõe o orchestrator ao Claude Desktop via MCP (stdio). Detalhes e tools:
+Expõe o orchestrator a clientes MCP via stdio. Detalhes e tools:
 [`apps/mcp-server/README.md`](../../apps/mcp-server/README.md).
+
+## Clientes (é client-agnostic)
+
+O server é stdio MCP padrão — funciona em **qualquer cliente MCP**. O comando é
+sempre o mesmo (`node .../dist/index.js` + envs); só o formato da config muda.
+
+### Claude Code (terminal) — recomendado aqui
+```bash
+claude mcp add agent-platform -s user \
+  -e ORCHESTRATOR_BASE_URL=http://localhost:3000 \
+  -e RUNNER_AUTH_TOKEN=<token> \
+  -- node /home/ranni/www/personal/agent-platform/apps/mcp-server/dist/index.js
+```
+Verifica com `claude mcp list` (`agent-platform: ✔ Connected`). Numa sessão, `/mcp`
+lista as tools; elas viram `mcp__agent-platform__list_runs` etc.
+
+### Codex CLI
+`~/.codex/config.toml`:
+```toml
+[mcp_servers.agent-platform]
+command = "node"
+args = ["/home/ranni/www/personal/agent-platform/apps/mcp-server/dist/index.js"]
+env = { ORCHESTRATOR_BASE_URL = "http://localhost:3000", RUNNER_AUTH_TOKEN = "<token>" }
+```
+
+### Claude Desktop
+`claude_desktop_config.json` — ver [`apps/mcp-server/README.md`](../../apps/mcp-server/README.md).
+
+> Qualquer outro cliente que fale MCP (incl. Verboo, se suportar) usa o mesmo
+> comando stdio. Se o cliente não suportar MCP, não dá — não há fallback HTTP no MVP.
 
 ## Reachability
 
