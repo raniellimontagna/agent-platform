@@ -120,12 +120,15 @@ async function completeJson<S extends z.ZodTypeAny>(
 ): Promise<z.infer<S>> {
   let lastErr: unknown;
   for (let i = 1; i <= attempts; i++) {
+    const start = Date.now();
+    log.info({ attempt: i }, 'llm call start');
     const raw = await llm.complete({
       alias: 'strong_coder',
       temperature: opts.temperature,
       messages: opts.messages,
       onUsage: opts.onUsage,
     });
+    log.info({ attempt: i, ms: Date.now() - start }, 'llm call done');
     try {
       return schema.parse(extractJson(raw));
     } catch (err) {
