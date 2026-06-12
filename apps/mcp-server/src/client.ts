@@ -44,10 +44,15 @@ export function createClient(cfg: ClientConfig): OrchestratorClient {
   const base = cfg.baseUrl.replace(/\/+$/, '');
 
   async function call(method: string, path: string): Promise<unknown> {
-    const res = await doFetch(`${base}${path}`, {
-      method,
-      headers: { authorization: `Bearer ${cfg.token}` },
-    });
+    const url = `${base}${path}`;
+    let res: Response;
+    try {
+      res = await doFetch(url, { method, headers: { authorization: `Bearer ${cfg.token}` } });
+    } catch (err) {
+      // Falha de rede (conexão recusada/DNS): status 0 + mensagem clara.
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new ApiError(0, `orchestrator inacessível em ${url}: ${msg}`);
+    }
     const text = await res.text();
     if (!res.ok) throw new ApiError(res.status, text);
     return text ? JSON.parse(text) : {};
