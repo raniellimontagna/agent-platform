@@ -78,7 +78,14 @@ export async function getRun(id: string) {
 export async function updateRunStatus(
   runId: string,
   status: RunStatus,
-  extra?: { error?: string; branch?: string; prUrl?: string },
+  extra?: {
+    error?: string;
+    branch?: string;
+    prUrl?: string;
+    testsPassed?: boolean;
+    verdict?: string;
+    fixAttempts?: number;
+  },
 ): Promise<void> {
   await db
     .update(schema.runs)
@@ -87,6 +94,9 @@ export async function updateRunStatus(
       ...(extra?.error ? { error: extra.error } : {}),
       ...(extra?.branch !== undefined ? { branch: extra.branch } : {}),
       ...(extra?.prUrl !== undefined ? { prUrl: extra.prUrl } : {}),
+      ...(extra?.testsPassed !== undefined ? { testsPassed: extra.testsPassed } : {}),
+      ...(extra?.verdict !== undefined ? { verdict: extra.verdict } : {}),
+      ...(extra?.fixAttempts !== undefined ? { fixAttempts: extra.fixAttempts } : {}),
     })
     .where(eq(schema.runs.id, runId));
 }
