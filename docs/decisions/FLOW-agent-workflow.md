@@ -25,23 +25,35 @@
 │  (agent-runners / VM isolada)                                   │
 │                                                                 │
 │  7. Clona repo em worktree isolado                              │
-│  8. Chama LiteLLM [strong_coder] → gera/altera código          │
-│  9. Roda testes                                                 │
-│  10. Retorna resultado ao orquestrador                          │
+│  8. Monta contexto: convenções + arquivos-exemplo (MAC-24)      │
+│     + lições de runs passados do repo (Memory, MAC-23)          │
+│  9. Chama LiteLLM [strong_coder] → gera/altera código           │
+│  10. Valida no sandbox (install/build/test) ANTES de pushar     │
+│  11. Self-correction (MAC-54): falhou? → fix dirigido →         │
+│      revalida, até AGENT_MAX_FIX_ATTEMPTS (default 2)           │
+│  12. Commita + pusha a branch (estado final, uma vez)           │
+│  13. Retorna resultado (diff, validação, fixAttempts, custo)    │
 └───────────────────────────┬─────────────────────────────────────┘
                             │
                             ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                     ORCHESTRATOR API                            │
 │                                                                 │
-│  11. Chama LiteLLM [critic] → revisa diff                       │
-│  12. Abre Draft PR no GitHub                                    │
-│  13. Comenta resultado + link PR no Linear                      │
-│  14. Atualiza status da issue → In Review                       │
+│  14. Chama LiteLLM [critic] → revisa diff                       │
+│  15. Abre Draft PR no GitHub (título Conventional Commits EN)   │
+│  16. Memory (MAC-23): se critic REPROVA / validação ❌ →        │
+│      destila lição [cheap_fast] e guarda por repo               │
+│  17. Report: comenta resultado consolidado + custo no Linear    │
+│  18. Persiste qualidade no run (validação/veredito/fixAttempts) │
 └─────────────────────────────────────────────────────────────────┘
 
                     ── MERGE É MANUAL ──
 ```
+
+Grafo LangGraph: `planning → [⏸ aprovação] → coding → reviewing → pr → report → END`
+(falha do coder curto-circuita para `report`). O self-correction (passo 11) vive
+dentro do runner — não muda a topologia do grafo. Checkpointer Postgres persiste e
+retoma após restart (MAC-34).
 
 ## VMs e DNS interno
 
@@ -50,7 +62,10 @@
 | agent-gateway | `llm.agent.local` | LiteLLM proxy |
 | agent-orchestrator | `api.agent.local` | Orquestrador + LangGraph |
 | agent-runners | — | Execução isolada de código |
-| agent-observability | `grafana.agent.local` | Logs, métricas, custos |
+| agent-observability | `grafana.agent.local` | Grafana — execuções, custo, qualidade, memória |
+
+`grafana.agent.local` é acessível na LAN via DNAT no host (porta 3000) — ver
+[`runbooks/grafana-lan-access.md`](../runbooks/grafana-lan-access.md).
 
 ## Model Aliases
 

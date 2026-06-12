@@ -1,6 +1,16 @@
 # agent-platform
 
-Orquestrador de agentes self-hosted. Issues do Linear com label `ai-ready` disparam um fluxo autônomo: leitura de contexto → plano → aprovação humana → branch → código → testes → PR.
+Orquestrador de agentes self-hosted. Issues do Linear com label `ai-ready` disparam um fluxo autônomo: leitura de contexto → plano → aprovação humana → branch → código → **validação + auto-correção** → revisão → Draft PR.
+
+O agente **aprende com as próprias falhas** (memória de lições por repo) e **se corrige dentro do run** quando a validação quebra, antes de abrir o PR. Governança embutida: kill switch, cost guard, políticas de aprovação. Observabilidade via Grafana (execuções, custo, qualidade, memória).
+
+## Capacidades
+
+- **Loop autônomo ponta a ponta** — webhook `ai-ready` → plano (LLM) → aprovação humana (label `approved`) → codegen com contexto → validação no sandbox → revisão (critic) → Draft PR → report consolidado no Linear.
+- **Memory Layer (MAC-23)** — falhas (critic REPROVA / validação ❌) viram lições destiladas, guardadas por repo e reinjetadas no codegen de runs futuros.
+- **Self-correction (MAC-54)** — valida antes de pushar; se falha, corrige e revalida até `AGENT_MAX_FIX_ATTEMPTS` (default 2).
+- **Governança** — kill switch (Redis), cost guard (limite por run/24h), approval policies, retry + persistência de runs.
+- **Observabilidade** — 3 dashboards Grafana: Execuções, Custo & Governança, Qualidade & Memória.
 
 ## Stack
 
@@ -90,3 +100,13 @@ agent-platform/
 - [ADR-0003](docs/decisions/ADR-0003-llm-gateway-litellm-model-aliases.md) — LiteLLM + model aliases
 - [ADR-0004](docs/decisions/ADR-0004-security-tailscale-env-human-approval.md) — Segurança + aprovação humana
 - [ADR-0005](docs/decisions/ADR-0005-linear-github-agent-workflow.md) — Workflow Linear + GitHub
+- [ADR-0006](docs/decisions/ADR-0006-llm-via-omniroute-oauth.md) — LLM via OmniRoute (OAuth)
+
+## Runbooks
+
+- [proxmox-setup](docs/runbooks/proxmox-setup.md) — provisionamento das 4 VMs
+- [proxmox-estado-atual](docs/runbooks/proxmox-estado-atual.md) — estado vivo da infra + gotchas
+- [webhook-tailscale](docs/runbooks/webhook-tailscale.md) — webhook real do Linear via Tailscale Funnel
+- [grafana-lan-access](docs/runbooks/grafana-lan-access.md) — acessar o Grafana pela LAN (sem ssh)
+- [litellm-guardrails](docs/runbooks/litellm-guardrails.md) — budgets e rate limits do gateway
+- [secrets](docs/runbooks/secrets.md) — inventário e rotação de secrets

@@ -123,10 +123,15 @@ qm destroy <ID>        # VM
 
 ---
 
-## Status do deploy (pendente)
+## Status do deploy
 
-A infra está provisionada, **mas os serviços ainda NÃO foram deployados**. Pendências
-antes de subir os composes em `infra/compose/<vm>/`:
+> **Atualização 2026-06-12:** as 4 VMs estão deployadas e o loop autônomo rodou
+> ponta a ponta em produção (webhook real do Linear via Tailscale Funnel, codegen,
+> validação + auto-correção, review, Draft PR, memória de lições). A tabela abaixo
+> documenta os bloqueios **originais** de cada serviço (referência histórica) — hoje
+> todos resolvidos. Deploy de cada serviço via `infra/deploy/deploy.sh <svc>`.
+
+Bloqueios originais antes do primeiro deploy dos composes em `infra/compose/<vm>/`:
 
 | Serviço       | Bloqueio                                                                 |
 |---------------|--------------------------------------------------------------------------|
@@ -139,6 +144,8 @@ Passos interativos ainda pendentes (não automatizáveis sem o usuário):
 
 - **Tailscale** em cada VM (`tailscale up` — login interativo).
 - **DNS interno** no Pi-hole (`<lan-dns-ip>`): `llm.agent.local → <agent-gateway-ip>`,
-  `api.agent.local → <agent-orchestrator-ip>`, `grafana.agent.local → <agent-observability-ip>`.
+  `api.agent.local → <agent-orchestrator-ip>`. O `grafana.agent.local` aponta para o **host**
+  (`<proxmox-lan-ip>`), que faz DNAT da porta 3000 para `<agent-observability-ip>` — assim o Grafana
+  é acessível na LAN sem ssh. Ver [`grafana-lan-access.md`](./grafana-lan-access.md).
 
 Sequência de deploy por VM: ver [proxmox-setup.md → Passo 4](./proxmox-setup.md).

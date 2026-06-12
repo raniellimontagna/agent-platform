@@ -4,7 +4,7 @@ Mapa único do sistema: o que está no ar, o fluxo ponta a ponta, e como cada
 card do Linear (projeto **Orquestrador de Agentes com LangGraph**, time `MAC`)
 se encaixa na estrutura. Serve para validar o todo antes de seguir.
 
-> Estado em 2026-06-11. Legenda: ✅ feito · 🏗 no ar/parcial · ⏳ pendente.
+> Estado em 2026-06-12. Legenda: ✅ feito · 🏗 no ar/parcial · ⏳ pendente.
 
 ---
 
@@ -59,18 +59,21 @@ flowchart TD
   G -->|aprovado| H["Branch Manager cria branch<br/>MAC-25"]
   G -->|reprovado| Z["Encerra / aguarda"]
   H --> I["Worktree Manager<br/>MAC-27"]
-  I --> J["Coder Agent altera código<br/>MAC-17"]
+  I --> J["Coder Agent altera código<br/>(contexto + lições) MAC-17/24/23"]
   J --> K["Sandbox Executor<br/>MAC-28"]
-  K --> L["Test Runner<br/>MAC-29"]
-  L --> M["Reviewer Agent revisa diff<br/>MAC-18"]
+  K --> L["Test Runner / valida<br/>MAC-29"]
+  L -->|"falhou"| FX["Self-correction<br/>fix dirigido MAC-54"]
+  FX --> L
+  L -->|"ok ou esgotou retries"| M["Reviewer Agent revisa diff<br/>MAC-18"]
   M --> N["PR Creator abre Draft PR<br/>MAC-26"]
-  N --> O["Reporter comenta resultado no Linear<br/>MAC-21"]
+  N --> Q["Memory: destila lição se falhou<br/>MAC-23"]
+  Q --> O["Reporter comenta resultado no Linear<br/>MAC-21"]
   O --> P["Merge e deploy MANUAIS (MVP)"]
 ```
 
-Atravessando tudo: **Context Builder** (MAC-24), **Memory Layer** (MAC-23),
-**Retry Engine** (MAC-33), **Workflow Persistence** (MAC-34) e o gateway de
-modelos (Fase 2).
+Atravessando tudo: **Context Builder** (MAC-24), **Memory Layer** (MAC-23 — lições
+por repo, reinjetadas), **Self-correction** (MAC-54 — fix intra-run), **Retry
+Engine** (MAC-33), **Workflow Persistence** (MAC-34) e o gateway de modelos (Fase 2).
 
 ---
 
