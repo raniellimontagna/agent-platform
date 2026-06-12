@@ -1,0 +1,106 @@
+{
+  "uid": "quality-memory",
+  "title": "Agent Platform — Qualidade & Memória",
+  "tags": ["agent-platform"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-30d", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Validação verde (%)",
+      "type": "stat",
+      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
+      "fieldConfig": { "defaults": { "unit": "percent", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "yellow", "value": 50 }, { "color": "green", "value": 80 } ] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "targets": [
+        { "refId": "A", "format": "table", "rawQuery": true, "rawSql": "SELECT round(100.0 * count(*) FILTER (WHERE tests_passed) / NULLIF(count(*) FILTER (WHERE tests_passed IS NOT NULL), 0), 1) AS pct FROM runs;" }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Reprovação do critic (%)",
+      "type": "stat",
+      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
+      "fieldConfig": { "defaults": { "unit": "percent", "color": { "mode": "fixed", "fixedColor": "red" } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "targets": [
+        { "refId": "A", "format": "table", "rawQuery": true, "rawSql": "SELECT round(100.0 * count(*) FILTER (WHERE verdict ~* 'REPROVADO') / NULLIF(count(*) FILTER (WHERE verdict IS NOT NULL), 0), 1) AS pct FROM runs;" }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Runs que precisaram de fix (%)",
+      "type": "stat",
+      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
+      "fieldConfig": { "defaults": { "unit": "percent" }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "targets": [
+        { "refId": "A", "format": "table", "rawQuery": true, "rawSql": "SELECT round(100.0 * count(*) FILTER (WHERE fix_attempts > 0) / NULLIF(count(*) FILTER (WHERE fix_attempts IS NOT NULL), 0), 1) AS pct FROM runs;" }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Auto-correção que salvou (%)",
+      "type": "stat",
+      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
+      "fieldConfig": { "defaults": { "unit": "percent", "color": { "mode": "fixed", "fixedColor": "green" } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "targets": [
+        { "refId": "A", "format": "table", "rawQuery": true, "rawSql": "SELECT round(100.0 * count(*) FILTER (WHERE fix_attempts > 0 AND tests_passed) / NULLIF(count(*) FILTER (WHERE fix_attempts > 0), 0), 1) AS pct FROM runs;" }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Distribuição de fix_attempts",
+      "type": "barchart",
+      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "targets": [
+        { "refId": "A", "format": "table", "rawQuery": true, "rawSql": "SELECT fix_attempts::text AS metric, count(*) AS value FROM runs WHERE fix_attempts IS NOT NULL GROUP BY fix_attempts ORDER BY fix_attempts;" }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Lições por source",
+      "type": "barchart",
+      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "targets": [
+        { "refId": "A", "format": "table", "rawQuery": true, "rawSql": "SELECT source AS metric, count(*) AS value FROM lessons GROUP BY source ORDER BY value DESC;" }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Total de lições",
+      "type": "stat",
+      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 12 },
+      "targets": [
+        { "refId": "A", "format": "table", "rawQuery": true, "rawSql": "SELECT count(*) AS total FROM lessons;" }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Lições acumuladas",
+      "type": "timeseries",
+      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
+      "gridPos": { "h": 8, "w": 18, "x": 6, "y": 12 },
+      "targets": [
+        { "refId": "A", "format": "time_series", "rawQuery": true, "rawSql": "SELECT d AS time, sum(c) OVER (ORDER BY d) AS value FROM (SELECT date_trunc('day', created_at) AS d, count(*) AS c FROM lessons GROUP BY 1) s ORDER BY d;" }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Lições recentes",
+      "type": "table",
+      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 20 },
+      "targets": [
+        { "refId": "A", "format": "table", "rawQuery": true, "rawSql": "SELECT created_at, repo, source, text FROM lessons ORDER BY created_at DESC LIMIT 50;" }
+      ]
+    }
+  ]
+}
