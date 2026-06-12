@@ -5,6 +5,7 @@ import { logger } from './logger.js';
 import { adminRoute } from './routes/admin.js';
 import { health } from './routes/health.js';
 import { runsRoute } from './routes/runs.js';
+import { statsRoute } from './routes/stats.js';
 import { webhooks } from './routes/webhooks.js';
 import { startAgentWorker } from './worker.js';
 
@@ -13,6 +14,7 @@ const app = new Hono();
 app.route('/', health);
 app.route('/', webhooks);
 app.route('/', runsRoute);
+app.route('/', statsRoute);
 app.route('/', adminRoute);
 
 app.notFound((c) => c.json({ error: 'not found' }, 404));
