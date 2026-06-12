@@ -35,4 +35,26 @@ export interface DistillInput {
   testSummary?: string;
 }
 
-// formatLessons e distillLesson são implementados em tasks seguintes.
+/** Normaliza o texto p/ comparação de duplicatas (caixa + espaços). */
+function normalize(text: string): string {
+  return text.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+/**
+ * Monta o bloco de lições para o prompt do codegen: dedup textual leve e cap nas
+ * `cap` primeiras (a lista chega ordenada do mais recente). Vazio se não houver.
+ */
+export function formatLessons(lessons: Lesson[], cap: number): string {
+  const seen = new Set<string>();
+  const lines: string[] = [];
+  for (const l of lessons) {
+    const text = l.text.trim();
+    if (!text) continue;
+    const key = normalize(text);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    lines.push(`- ${text}`);
+    if (lines.length >= cap) break;
+  }
+  return lines.join('\n');
+}
