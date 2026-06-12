@@ -1,4 +1,4 @@
-import { jsonb, numeric, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, integer, jsonb, numeric, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 /**
  * Estado de um run — uma execução do agente disparada por uma issue do Linear.
@@ -60,6 +60,9 @@ export const runs = pgTable('runs', {
   branch: text('branch'),
   prUrl: text('pr_url'),
   error: text('error'),
+  testsPassed: boolean('tests_passed'),
+  verdict: text('verdict'),
+  fixAttempts: integer('fix_attempts'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true })
     .notNull()
