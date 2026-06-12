@@ -8,6 +8,10 @@ health.get('/health', (c) => {
   return c.json({ status: 'ok', uptime: process.uptime() });
 });
 
+health.get('/healthz', (c) => {
+  return c.json({ ok: true, uptime: process.uptime() });
+});
+
 health.get('/health/ready', async (c) => {
   try {
     await db.execute(sql`select 1`);
