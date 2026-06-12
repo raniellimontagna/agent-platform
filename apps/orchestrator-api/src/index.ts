@@ -5,12 +5,14 @@ import { logger } from './logger.js';
 import { adminRoute } from './routes/admin.js';
 import { health } from './routes/health.js';
 import { runsRoute } from './routes/runs.js';
+import { statusRoute } from './routes/status.js';
 import { webhooks } from './routes/webhooks.js';
 import { startAgentWorker } from './worker.js';
 
 const app = new Hono();
 
 app.route('/', health);
+app.route('/', statusRoute);
 app.route('/', webhooks);
 app.route('/', runsRoute);
 app.route('/', adminRoute);
