@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ApiError, createClient } from './client.js';
+import { ApiError, type OrchestratorClient, createClient } from './client.js';
 
 function mockFetch(status: number, body: unknown) {
   return vi.fn(async () => ({
@@ -49,5 +49,33 @@ describe('createClient', () => {
   it('lança ApiError em resposta não-2xx', async () => {
     const f = mockFetch(404, 'not found');
     await expect(createClient(cfg(f)).getRun('x')).rejects.toBeInstanceOf(ApiError);
+  });
+
+  it('mapeia cada método para o verbo + rota corretos', async () => {
+    const cases: [(c: OrchestratorClient) => Promise<unknown>, string, string][] = [
+      [(c) => c.listRuns(), 'GET', 'http://orch:3000/runs'],
+      [(c) => c.getRun('r1'), 'GET', 'http://orch:3000/runs/r1'],
+      [(c) => c.getRunSteps('r1'), 'GET', 'http://orch:3000/runs/r1/steps'],
+      [(c) => c.getRunApprovals('r1'), 'GET', 'http://orch:3000/runs/r1/approvals'],
+      [(c) => c.listLessons('o/r'), 'GET', 'http://orch:3000/lessons?repo=o%2Fr'],
+      [(c) => c.agentStatus(), 'GET', 'http://orch:3000/admin/status'],
+      [(c) => c.approveRun('r1'), 'POST', 'http://orch:3000/runs/r1/approve'],
+      [(c) => c.rejectRun('r1', 'me'), 'POST', 'http://orch:3000/runs/r1/reject?by=me'],
+      [(c) => c.pauseAgents(), 'POST', 'http://orch:3000/admin/pause'],
+      [(c) => c.resumeAgents(), 'POST', 'http://orch:3000/admin/resume'],
+    ];
+    for (const [fn, method, url] of cases) {
+      const f = mockFetch(200, {});
+      await fn(createClient(cfg(f)));
+      const call = (f as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls[0];
+      expect([call[1].method, call[0]]).toEqual([method, url]);
+    }
+  });
+
+  it('erro de rede vira ApiError com mensagem clara', async () => {
+    const f = vi.fn(async () => {
+      throw new Error('ECONNREFUSED');
+    }) as unknown as typeof fetch;
+    await expect(createClient(cfg(f)).agentStatus()).rejects.toThrow(/inacessível/);
   });
 });
