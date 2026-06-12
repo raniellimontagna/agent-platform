@@ -112,6 +112,10 @@ export async function runJob(job: Job): Promise<JobResult> {
       // uma vez (best-effort mesmo se ainda falhar — humano decide no PR).
       let validation = await runValidation(job.commands, dir, log);
       let fixAttempts = 0;
+      // Acumula os arquivos tocados ao longo das tentativas — um fix pode criar um
+      // arquivo novo cujo erro só aparece na revalidação seguinte; sem isso a próxima
+      // tentativa releria só o conjunto original e ficaria cega a ele.
+      let touched = gen.filesChanged;
       while (!validation.passed && fixAttempts < env.AGENT_MAX_FIX_ATTEMPTS) {
         fixAttempts++;
         log.info({ attempt: fixAttempts }, 'validação falhou — tentando corrigir');
@@ -119,13 +123,14 @@ export async function runJob(job: Job): Promise<JobResult> {
           const fix = await applyFix({
             llm,
             dir,
-            filesChanged: gen.filesChanged,
+            filesChanged: touched,
             failureTail: validation.failureTail,
             plan: job.plan,
             title: job.title,
             log,
           });
           base.costUsd = (base.costUsd ?? 0) + fix.costUsd;
+          touched = [...new Set([...touched, ...fix.filesChanged])];
         } catch (err) {
           log.warn({ err, attempt: fixAttempts }, 'fix falhou — encerrando o loop');
           break;
