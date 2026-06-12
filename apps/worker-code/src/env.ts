@@ -24,6 +24,8 @@ const envSchema = z.object({
   // Allowlist de binários que o runner pode executar (MAC-31), separados por
   // vírgula. Comandos do job fora disto são bloqueados e auditados.
   AGENT_COMMAND_ALLOWLIST: z.string().default('pnpm,node,npm,npx,git'),
+  // Self-correction: máximo de tentativas de fix após falha de validação.
+  AGENT_MAX_FIX_ATTEMPTS: z.coerce.number().default(2),
 });
 
 export type Env = z.infer<typeof envSchema>;
