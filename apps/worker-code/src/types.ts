@@ -51,4 +51,6 @@ export interface JobResult {
   costUsd?: number;
   /** Título Conventional Commits em inglês p/ o PR (MAC-26). */
   prTitle?: string;
+  /** Quantas correções de auto-fix rodaram após falha de validação (0 = passou de primeira). */
+  fixAttempts?: number;
 }
