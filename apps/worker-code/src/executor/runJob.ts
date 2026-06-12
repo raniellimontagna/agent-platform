@@ -70,8 +70,9 @@ export async function runJob(job: Job): Promise<JobResult> {
       base.summary = gen.summary;
       base.filesChanged = gen.filesChanged;
       base.costUsd = gen.costUsd;
+      base.prTitle = gen.prTitle;
 
-      const message = buildCommitMessage(job, gen.summary);
+      const message = buildCommitMessage(job, gen.prTitle, gen.summary);
       const commit = await commitAll(dir, message);
       if (!commit.committed) {
         throw new Error('geração de código não produziu mudanças commitáveis');
@@ -117,9 +118,11 @@ export async function runJob(job: Job): Promise<JobResult> {
   }
 }
 
-/** Monta a mensagem de commit no padrão Conventional Commits do projeto. */
-function buildCommitMessage(job: Job, summary: string): string {
-  const subject = `feat(${job.issueIdentifier.toLowerCase()}): ${job.title}`.slice(0, 100);
+/** Monta a mensagem de commit (Conventional Commits, título do modelo em inglês). */
+function buildCommitMessage(job: Job, prTitle: string, summary: string): string {
+  const subject = (
+    prTitle.trim() || `chore(${job.issueIdentifier.toLowerCase()}): ${job.title}`
+  ).slice(0, 100);
   const body = summary ? `\n\n${summary}` : '';
   return `${subject}${body}\n\nRef: ${job.issueIdentifier}`;
 }

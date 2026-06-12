@@ -34,6 +34,7 @@ interface RunnerResult {
   testsPassed?: boolean;
   commands?: CommandResult[];
   costUsd?: number;
+  prTitle?: string;
 }
 
 /** Resumo curto dos comandos de validação: status + tail do que falhou. */
@@ -129,6 +130,7 @@ export function makeCoderNode(deps: CoderDeps) {
         testsPassed: result.testsPassed,
         testSummary,
         codeCostUsd: result.costUsd,
+        prTitle: result.prTitle,
         // Mantém `coding` no sucesso → roteia para o nó review (MAC-18) → pr.
         status: ok ? 'coding' : 'failed',
         error: result.error,

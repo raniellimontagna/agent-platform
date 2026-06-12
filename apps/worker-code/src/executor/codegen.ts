@@ -28,6 +28,7 @@ Produza o conteúdo final de cada arquivo.
 
 Responda APENAS com um objeto JSON válido, sem markdown:
 {
+  "prTitle": "Conventional Commits subject in ENGLISH (e.g. 'feat(api): add /status endpoint'), imperative, <= 72 chars",
   "summary": "resumo curto das alterações (1-2 linhas)",
   "files": [
     { "path": "caminho/relativo", "content": "conteúdo COMPLETO e final do arquivo" }
@@ -56,6 +57,7 @@ const selectSchema = z.object({
 });
 
 const responseSchema = z.object({
+  prTitle: z.string().default(''),
   summary: z.string().default(''),
   files: z.array(fileSchema).default([]),
 });
@@ -67,6 +69,8 @@ const MAX_FILE_CHARS = 20_000;
 export interface CodegenResult {
   summary: string;
   filesChanged: string[];
+  /** Título Conventional Commits em inglês p/ commit + PR (MAC-26). */
+  prTitle: string;
   /** Custo estimado das chamadas LLM do codegen em USD (MAC-40). */
   costUsd: number;
 }
@@ -288,7 +292,7 @@ export async function generateAndApplyCode(args: CodegenArgs): Promise<CodegenRe
 
   const costUsd = estimateCostUsd('strong_coder', usage);
   log.info({ filesChanged, usage, costUsd }, 'applied generated files');
-  return { summary: parsed.summary, filesChanged, costUsd };
+  return { summary: parsed.summary, filesChanged, prTitle: parsed.prTitle, costUsd };
 }
 
 /** Caminho absoluto de um arquivo do worktree (exportado p/ testes futuros). */
