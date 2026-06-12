@@ -15,6 +15,8 @@ export const jobSchema = z.object({
   description: z.string().default(''),
   /** Plano aprovado (Planner, MAC-16) que guia a geração de código. */
   plan: z.string().default(''),
+  /** Lições de runs anteriores do repo, já formatadas (Memory Layer, MAC-23). */
+  lessons: z.string().default(''),
 });
 
 export type Job = z.infer<typeof jobSchema>;
