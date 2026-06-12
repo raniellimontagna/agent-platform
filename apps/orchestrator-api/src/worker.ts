@@ -55,6 +55,7 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
         review?: string;
         testsPassed?: boolean;
         testSummary?: string;
+        fixAttempts?: number;
       };
       if (job.data.kind === 'plan') {
         const issue = await linear.getIssue(job.data.issueId);
@@ -80,6 +81,9 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
       await updateRunStatus(runId, status, {
         branch: result.branch,
         prUrl: result.prUrl,
+        testsPassed: result.testsPassed,
+        verdict: result.review ? verdictOf(result.review) : undefined,
+        fixAttempts: result.fixAttempts,
       });
 
       // Approval Policies (MAC-41): ao pausar p/ aprovação, registra a solicitação
