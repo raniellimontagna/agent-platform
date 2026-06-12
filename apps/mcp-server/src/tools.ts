@@ -52,6 +52,13 @@ export function registerTools(server: McpServer, client: OrchestratorClient): vo
   );
 
   server.tool(
+    'get_stats',
+    'Resumo agregado das execuções (runs por status, taxa de sucesso, custo total/24h, lições, média de auto-correção).',
+    {},
+    () => asTool(() => client.getStats()),
+  );
+
+  server.tool(
     'approve_run',
     'Aprova um run pausado e retoma a execução.',
     { id: z.string(), by: z.string().optional() },

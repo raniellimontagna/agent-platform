@@ -13,6 +13,7 @@ Servidor MCP (stdio) que expõe o orchestrator a clientes MCP como o Claude Desk
 | `get_run_approvals` | Aprovações e motivos |
 | `list_lessons` | Lições do Memory Layer por repo |
 | `agent_status` | Pausado/ativo |
+| `get_stats` | Resumo agregado (runs, custo, lições, taxa de sucesso, auto-correção) |
 | `approve_run` | Aprova e retoma um run pausado |
 | `reject_run` | Reprova (encerra) |
 | `pause_agents` | Kill switch — pausa novos runs |
