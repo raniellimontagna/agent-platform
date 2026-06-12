@@ -13,6 +13,8 @@ const envSchema = z.object({
 
   LINEAR_API_KEY: z.string().min(1),
   LINEAR_WEBHOOK_SECRET: z.string().min(1),
+  // ID da label ai-ready no Linear — usado quando o webhook manda labelIds (não nomes).
+  LINEAR_AI_READY_LABEL_ID: z.string().default('ea322be4-50bb-4703-af1c-35636ac2f9dc'),
 
   GITHUB_TOKEN: z.string().min(1),
 
