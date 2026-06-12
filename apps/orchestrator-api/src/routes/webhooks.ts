@@ -35,11 +35,21 @@ webhooks.post('/webhooks/linear', async (c) => {
   const payload = JSON.parse(rawBody) as {
     action: string;
     type: string;
-    data?: { id?: string; identifier?: string; title?: string; labels?: { name: string }[] };
+    data?: {
+      id?: string;
+      identifier?: string;
+      title?: string;
+      labels?: { name: string }[];
+      labelIds?: string[];
+    };
   };
 
-  const labels = payload.data?.labels?.map((l) => l.name) ?? [];
-  const isAiReady = labels.includes(AI_READY_LABEL);
+  // Robusto aos dois formatos do payload do Linear: por nome (`labels[].name`)
+  // ou por id (`labelIds[]` vs LINEAR_AI_READY_LABEL_ID).
+  const labelNames = payload.data?.labels?.map((l) => l.name) ?? [];
+  const labelIds = payload.data?.labelIds ?? [];
+  const isAiReady =
+    labelNames.includes(AI_READY_LABEL) || labelIds.includes(env.LINEAR_AI_READY_LABEL_ID);
 
   // Só reage a issues que ganharam a label ai-ready.
   if (payload.type !== 'Issue' || !isAiReady) {
