@@ -65,6 +65,7 @@ export async function runJob(job: Job): Promise<JobResult> {
         title: job.title,
         description: job.description,
         plan: job.plan,
+        lessons: job.lessons,
         log,
       });
       base.summary = gen.summary;

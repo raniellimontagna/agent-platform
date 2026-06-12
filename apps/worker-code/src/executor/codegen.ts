@@ -81,6 +81,8 @@ export interface CodegenArgs {
   title: string;
   description: string;
   plan: string;
+  /** Lições de runs anteriores do repo, já formatadas (MAC-23). */
+  lessons?: string;
   log: Logger;
 }
 
@@ -212,7 +214,7 @@ async function readCurrentFiles(
  * altera de forma incremental em vez de reescrever do zero e quebrar o resto.
  */
 export async function generateAndApplyCode(args: CodegenArgs): Promise<CodegenResult> {
-  const { llm, dir, title, description, plan, log } = args;
+  const { llm, dir, title, description, plan, lessons, log } = args;
 
   const repoFiles = await listRepoFiles(dir);
   const fileTree = repoFiles.slice(0, 800).join('\n');
@@ -268,6 +270,7 @@ export async function generateAndApplyCode(args: CodegenArgs): Promise<CodegenRe
             `\n# Plano aprovado\n${plan}`,
             conventions ? `\n# Convenções do projeto\n${conventions}` : '',
             examples ? `\n# Arquivos-exemplo (siga este padrão)${examples}` : '',
+            lessons ? `\n# Lições de runs anteriores (evite repetir estes erros)\n${lessons}` : '',
             `\n# Conteúdo atual dos arquivos a modificar${currentBlock || '\n(nenhum)'}`,
             createBlock,
           ].join('\n'),
