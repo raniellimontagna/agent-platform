@@ -105,6 +105,25 @@
           "rawSql": "SELECT created_at, linear_issue_identifier AS issue, title, status, branch, pr_url FROM runs ORDER BY created_at DESC LIMIT 50;"
         }
       ]
+    },
+    {
+      "id": 7,
+      "title": "Taxa de sucesso (%)",
+      "type": "stat",
+      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
+      "fieldConfig": {
+        "defaults": { "unit": "percent", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "yellow", "value": 50 }, { "color": "green", "value": 80 } ] } },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 22 },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT round(100.0 * count(*) FILTER (WHERE status = 'completed') / NULLIF(count(*), 0), 1) AS taxa FROM runs;"
+        }
+      ]
     }
   ]
 }
