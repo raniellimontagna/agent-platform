@@ -149,15 +149,22 @@ else
 
   ensure_env "$COMPOSE_DIR"
 
+  # Build fresco (--no-cache): o cache de layer do Docker servia fonte VELHA mesmo
+  # após o repo mudar (incidente MAC-57 — deploy não pegava o código novo). Mais
+  # lento (refaz pnpm install), mas garante que toda alteração de fonte entra.
+  # Deploy é manual/ocasional. Builda uma vez aqui; o migrate e o up reusam a imagem.
+  echo "==> docker compose build --no-cache"
+  remote_exec "cd '$COMPOSE_DIR' && docker compose build --no-cache"
+
   if [ "$SERVICE" = orchestrator ]; then
     echo "==> Subindo Postgres/Redis e aplicando migrations"
     remote_exec "cd '$COMPOSE_DIR' && docker compose up -d postgres redis"
     remote_exec "cd '$COMPOSE_DIR' && timeout 60 bash -c 'until docker compose exec -T postgres pg_isready; do sleep 2; done'"
-    remote_exec "cd '$COMPOSE_DIR' && docker compose build api && docker compose run --rm api node dist/db/migrate.js"
+    remote_exec "cd '$COMPOSE_DIR' && docker compose run --rm api node dist/db/migrate.js"
   fi
 
-  echo "==> docker compose up -d --build"
-  remote_exec "cd '$COMPOSE_DIR' && docker compose up -d --build"
+  echo "==> docker compose up -d"
+  remote_exec "cd '$COMPOSE_DIR' && docker compose up -d"
 fi
 
 echo ""
