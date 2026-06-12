@@ -112,8 +112,13 @@ export async function updateRunStatus(
 }
 
 /** Histórico de execuções, mais recentes primeiro (MAC-36). */
-export async function listRuns(limit = 50) {
-  return db.select().from(schema.runs).orderBy(desc(schema.runs.createdAt)).limit(limit);
+export async function listRuns(limit = 50, offset = 0) {
+  return db
+    .select()
+    .from(schema.runs)
+    .orderBy(desc(schema.runs.createdAt))
+    .limit(limit)
+    .offset(offset);
 }
 
 /** Resumo agregado das execuções do agente para dashboards/API. */
