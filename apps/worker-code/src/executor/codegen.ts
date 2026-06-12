@@ -129,7 +129,7 @@ export function extractJson(raw: string): unknown {
  * devolve prosa em vez de JSON limpo (flakiness). Loga a resposta crua truncada
  * na última falha para diagnóstico.
  */
-async function completeJson<S extends z.ZodTypeAny>(
+export async function completeJson<S extends z.ZodTypeAny>(
   llm: LlmClient,
   opts: {
     messages: { role: 'system' | 'user'; content: string }[];
@@ -141,6 +141,7 @@ async function completeJson<S extends z.ZodTypeAny>(
   attempts = 2,
 ): Promise<z.infer<S>> {
   let lastErr: unknown;
+  let lastRaw = '';
   for (let i = 1; i <= attempts; i++) {
     const start = Date.now();
     log.info({ attempt: i }, 'llm call start');
@@ -150,12 +151,38 @@ async function completeJson<S extends z.ZodTypeAny>(
       messages: opts.messages,
       onUsage: opts.onUsage,
     });
+    lastRaw = raw;
     log.info({ attempt: i, ms: Date.now() - start }, 'llm call done');
     try {
       return schema.parse(extractJson(raw));
     } catch (err) {
       lastErr = err;
       log.warn({ attempt: i, raw: raw.slice(0, 500) }, 'falha ao parsear JSON do modelo');
+    }
+  }
+  // Passo de "repair" (MAC-57): o modelo às vezes devolve prosa em vez de JSON.
+  // Em vez de desistir, reenvia a última resposta suja pedindo SÓ o objeto JSON.
+  // Model-agnostic (qualquer combo do gateway) e só roda quando os attempts falharam.
+  if (lastRaw.trim()) {
+    try {
+      log.info('repair: re-pedindo JSON limpo');
+      const repaired = await llm.complete({
+        alias: 'strong_coder',
+        temperature: 0,
+        onUsage: opts.onUsage,
+        messages: [
+          {
+            role: 'system',
+            content:
+              'Você extrai JSON. Devolva SOMENTE o objeto JSON válido presente no texto a seguir — sem markdown, sem comentários, sem nada fora do JSON.',
+          },
+          { role: 'user', content: lastRaw },
+        ],
+      });
+      return schema.parse(extractJson(repaired));
+    } catch (err) {
+      lastErr = err;
+      log.warn('repair falhou — sem JSON parseável');
     }
   }
   throw lastErr instanceof Error ? lastErr : new Error('resposta do modelo não contém JSON');
