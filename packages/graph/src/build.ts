@@ -19,6 +19,8 @@ export interface GraphDeps {
   baseBranch?: string;
   /** Comandos de validação rodados no sandbox após o push (MAC-29). */
   testCommands?: string[];
+  /** Carrega as lições do repo já formatadas p/ o prompt do codegen (MAC-23). */
+  loadLessons?: () => Promise<string>;
 }
 
 /**
@@ -47,6 +49,7 @@ export function buildAgentGraph(deps: GraphDeps, checkpointer: PostgresSaver) {
     linear: deps.linear,
     runner: deps.runner,
     testCommands: deps.testCommands ?? [],
+    loadLessons: deps.loadLessons,
   });
   const review = makeReviewNode({ llm: deps.llm, linear: deps.linear });
   const pr = makePrNode({

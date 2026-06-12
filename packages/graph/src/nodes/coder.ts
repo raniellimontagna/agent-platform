@@ -13,6 +13,8 @@ export interface CoderDeps {
   runner: RunnerConfig;
   /** Comandos de validação rodados no sandbox após o push (MAC-29). */
   testCommands: string[];
+  /** Carrega as lições do repo já formatadas p/ o codegen (MAC-23). Opcional. */
+  loadLessons?: () => Promise<string>;
 }
 
 interface CommandResult {
@@ -79,6 +81,8 @@ export function makeCoderNode(deps: CoderDeps) {
     const branch = `agent/${state.issueIdentifier.toLowerCase()}-${slugify(state.title)}-${shortRun}`;
 
     try {
+      const lessons = deps.loadLessons ? await deps.loadLessons() : '';
+
       const res = await fetch(`${deps.runner.baseUrl}/jobs/sync`, {
         method: 'POST',
         headers: {
@@ -95,6 +99,7 @@ export function makeCoderNode(deps: CoderDeps) {
           description: state.description,
           plan: state.plan,
           commands: deps.testCommands,
+          lessons,
         }),
       });
 

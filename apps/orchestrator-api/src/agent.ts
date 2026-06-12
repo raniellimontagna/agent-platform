@@ -2,7 +2,9 @@ import { createGithubGateway, parseRepoRef } from '@agent-platform/github';
 import { type AgentGraph, buildAgentGraph, createCheckpointer } from '@agent-platform/graph';
 import { type LinearGateway, createLinearGateway } from '@agent-platform/linear';
 import { type LlmClient, createLlmClient } from '@agent-platform/llm';
+import { LESSON_CAP, formatLessons } from '@agent-platform/memory';
 import { env } from './env.js';
+import { listLessons } from './lessons.js';
 
 export interface Agent {
   graph: AgentGraph;
@@ -39,12 +41,20 @@ async function init(): Promise<Agent> {
     .map((c) => c.trim())
     .filter(Boolean);
 
+  // Memory Layer (MAC-23): repo alvo e função que entrega as lições já formatadas
+  // para o codegen. Fechamento sobre o repo — single-repo por deploy no MVP.
+  const repoRef = parseRepoRef(env.REPO_URL);
+  const repo = `${repoRef.owner}/${repoRef.repo}`;
+  const loadLessons = async (): Promise<string> =>
+    formatLessons(await listLessons(repo, LESSON_CAP), LESSON_CAP);
+
   const graph = buildAgentGraph(
     {
       llm,
       linear,
       github,
       testCommands,
+      loadLessons,
       runner: {
         baseUrl: env.RUNNER_BASE_URL,
         authToken: env.RUNNER_AUTH_TOKEN,
