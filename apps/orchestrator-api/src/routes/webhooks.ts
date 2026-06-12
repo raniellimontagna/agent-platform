@@ -4,17 +4,50 @@ import { env } from '../env.js';
 import { isPaused } from '../killswitch.js';
 import { logger } from '../logger.js';
 import { JOB_PRIORITY, agentQueue } from '../queue.js';
-import { costLast24hUsd, createRun, hasActiveRunForIssue } from '../runs.js';
+import {
+  costLast24hUsd,
+  createRun,
+  findAwaitingApprovalRun,
+  hasActiveRunForIssue,
+  resolveApproval,
+  updateRunStatus,
+} from '../runs.js';
 
 export const webhooks = new Hono();
 
-/** Label que dispara o fluxo do agente — ver ADR-0005. */
 const AI_READY_LABEL = 'ai-ready';
+const APPROVED_LABEL = 'approved';
 
-/** A issue tem a label ai-ready? (por nome ou por id). */
-function hasAiReady(labels?: { name: string }[], labelIds?: string[]): boolean {
-  const names = labels?.map((l) => l.name) ?? [];
-  return names.includes(AI_READY_LABEL) || (labelIds ?? []).includes(env.LINEAR_AI_READY_LABEL_ID);
+interface IssueData {
+  id?: string;
+  identifier?: string;
+  title?: string;
+  labels?: { name: string }[];
+  labelIds?: string[];
+}
+interface IssuePayload {
+  action: string;
+  type: string;
+  data?: IssueData;
+  updatedFrom?: { labels?: { name: string }[]; labelIds?: string[] };
+}
+
+/** A issue tem a label (por nome ou por id)? */
+function hasLabel(d: IssueData | undefined, name: string, id: string): boolean {
+  const names = d?.labels?.map((l) => l.name) ?? [];
+  return names.includes(name) || (d?.labelIds ?? []).includes(id);
+}
+
+/** A label foi ADICIONADA neste evento? (create com a label, ou update que a acrescentou) */
+function labelJustAdded(p: IssuePayload, name: string, id: string): boolean {
+  if (!hasLabel(p.data, name, id)) return false;
+  if (p.action !== 'update') return true; // create com a label
+  const labelsChanged =
+    p.updatedFrom?.labels !== undefined || p.updatedFrom?.labelIds !== undefined;
+  const had =
+    (p.updatedFrom?.labels?.map((l) => l.name) ?? []).includes(name) ||
+    (p.updatedFrom?.labelIds ?? []).includes(id);
+  return labelsChanged && !had;
 }
 
 /**
@@ -38,53 +71,43 @@ webhooks.post('/webhooks/linear', async (c) => {
     return c.json({ error: 'invalid signature' }, 401);
   }
 
-  const payload = JSON.parse(rawBody) as {
-    action: string;
-    type: string;
-    data?: {
-      id?: string;
-      identifier?: string;
-      title?: string;
-      labels?: { name: string }[];
-      labelIds?: string[];
-    };
-    // Valores ANTERIORES dos campos alterados (só em `update`).
-    updatedFrom?: { labels?: { name: string }[]; labelIds?: string[] };
-  };
+  const payload = JSON.parse(rawBody) as IssuePayload;
 
   if (payload.type !== 'Issue') {
     return c.json({ ok: true, skipped: true });
-  }
-
-  const nowAiReady = hasAiReady(payload.data?.labels, payload.data?.labelIds);
-  if (!nowAiReady) {
-    return c.json({ ok: true, skipped: true });
-  }
-
-  // Só dispara quando a label foi ADICIONADA agora — não em toda edição de uma
-  // issue que já tinha ai-ready. `create` com a label conta; `update` só se a
-  // mudança foi nos labels e antes NÃO tinha ai-ready.
-  if (payload.action === 'update') {
-    const labelsChanged =
-      payload.updatedFrom?.labels !== undefined || payload.updatedFrom?.labelIds !== undefined;
-    const wasAiReady = hasAiReady(payload.updatedFrom?.labels, payload.updatedFrom?.labelIds);
-    if (!labelsChanged || wasAiReady) {
-      return c.json({
-        ok: true,
-        skipped: true,
-        reason: 'ai-ready não foi adicionado neste update',
-      });
-    }
   }
 
   const issueId = payload.data?.id;
   if (!issueId) {
     return c.json({ ok: true, skipped: true, reason: 'no issue id' });
   }
+  const identifier = payload.data?.identifier;
+
+  // Approve via Linear (MAC-22): label `approved` adicionada → retoma o run pausado.
+  if (labelJustAdded(payload, APPROVED_LABEL, env.LINEAR_APPROVED_LABEL_ID)) {
+    const run = await findAwaitingApprovalRun(issueId);
+    if (!run) {
+      return c.json({ ok: true, skipped: true, reason: 'nenhum run aguardando aprovação' });
+    }
+    await resolveApproval(run.id, 'approved', 'linear');
+    await updateRunStatus(run.id, 'executing');
+    await agentQueue.add(
+      'resume',
+      { kind: 'resume', runId: run.id },
+      { priority: JOB_PRIORITY.resume },
+    );
+    logger.info({ runId: run.id, issue: identifier }, 'run approved via Linear, resuming');
+    return c.json({ ok: true, resumed: true, runId: run.id });
+  }
+
+  // ai-ready: dispara um novo run — só quando a label é ADICIONADA (não em toda edição).
+  if (!labelJustAdded(payload, AI_READY_LABEL, env.LINEAR_AI_READY_LABEL_ID)) {
+    return c.json({ ok: true, skipped: true });
+  }
 
   // Dedup: já há um run ativo (não-terminal) para esta issue → ignora duplicata.
   if (await hasActiveRunForIssue(issueId)) {
-    logger.warn({ issue: payload.data?.identifier }, 'run ativo já existe; ignorando duplicata');
+    logger.warn({ issue: identifier }, 'run ativo já existe; ignorando duplicata');
     return c.json({ ok: true, skipped: true, reason: 'active run already exists' });
   }
 
