@@ -10,6 +10,9 @@ const envSchema = z.object({
 
   LITELLM_BASE_URL: z.string().url(),
   LITELLM_API_KEY: z.string().min(1),
+  // Codegen tem prompt grande (arquivos + exemplos) → timeout alto, poucos retries.
+  LLM_TIMEOUT_MS: z.coerce.number().default(180_000),
+  LLM_MAX_RETRIES: z.coerce.number().default(2),
 
   ORCHESTRATOR_BASE_URL: z.string().url(),
   RUNNER_AUTH_TOKEN: z.string().min(1),

@@ -8,7 +8,12 @@ import { checkCommand } from './commandPolicy.js';
 import { commitAll, diffAgainst, pushBranch } from './git.js';
 import { prepareWorktree, runCommand } from './worktree.js';
 
-const llm = createLlmClient({ baseUrl: env.LITELLM_BASE_URL, apiKey: env.LITELLM_API_KEY });
+const llm = createLlmClient({
+  baseUrl: env.LITELLM_BASE_URL,
+  apiKey: env.LITELLM_API_KEY,
+  timeoutMs: env.LLM_TIMEOUT_MS,
+  maxRetries: env.LLM_MAX_RETRIES,
+});
 
 const COMMAND_ALLOWLIST = env.AGENT_COMMAND_ALLOWLIST.split(',')
   .map((b) => b.trim())
