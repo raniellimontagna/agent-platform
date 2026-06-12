@@ -78,11 +78,12 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
       }
 
       const status = (result.status as RunStatus) ?? 'awaiting_approval';
+      const verdict = result.review ? verdictOf(result.review) : undefined;
       await updateRunStatus(runId, status, {
         branch: result.branch,
         prUrl: result.prUrl,
         testsPassed: result.testsPassed,
-        verdict: result.review ? verdictOf(result.review) : undefined,
+        verdict: verdict === '—' ? undefined : verdict,
         fixAttempts: result.fixAttempts,
       });
 
