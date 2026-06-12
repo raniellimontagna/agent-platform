@@ -58,3 +58,32 @@ export function formatLessons(lessons: Lesson[], cap: number): string {
   }
   return lines.join('\n');
 }
+
+const DISTILL_SYSTEM = `Você destila a causa de UMA falha de geração de código numa única regra curta e acionável, para o próximo agente NÃO repetir o erro.
+Formato: uma frase imperativa, até ~140 caracteres, ex.: "Não faça X porque Y" ou "Sempre faça X".
+Se a falha for genérica/ambiental (timeout, rede, dependência ausente do ambiente) e não houver lição de CÓDIGO acionável, responda exatamente: NONE.
+Responda só com a frase (ou NONE), sem markdown nem aspas.`;
+
+/**
+ * Destila uma lição de uma falha via `cheap_fast` (MAC-23). Retorna a regra curta
+ * ou `null` quando não há nada acionável (modelo responde NONE / vazio).
+ */
+export async function distillLesson(llm: LlmClient, input: DistillInput): Promise<string | null> {
+  const context =
+    input.source === 'critic'
+      ? `# Parecer do revisor (REPROVADO)\n${input.review ?? ''}`
+      : `# Falha de validação no sandbox\n${input.testSummary ?? ''}`;
+
+  const reply = await llm.complete({
+    alias: 'cheap_fast',
+    temperature: 0,
+    messages: [
+      { role: 'system', content: DISTILL_SYSTEM },
+      { role: 'user', content: context },
+    ],
+  });
+
+  const text = reply.trim();
+  if (!text || text.toUpperCase() === 'NONE') return null;
+  return text;
+}
