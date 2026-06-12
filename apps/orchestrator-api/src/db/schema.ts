@@ -49,6 +49,8 @@ export const approvalReason = pgEnum('approval_reason', [
 
 export const approvalStatus = pgEnum('approval_status', ['pending', 'approved', 'rejected']);
 
+export const lessonSource = pgEnum('lesson_source', ['critic', 'validation']);
+
 export const runs = pgTable('runs', {
   id: uuid('id').primaryKey().defaultRandom(),
   linearIssueId: text('linear_issue_id').notNull(),
@@ -95,9 +97,21 @@ export const approvals = pgTable('approvals', {
   resolvedBy: text('resolved_by'),
 });
 
+export const lessons = pgTable('lessons', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  repo: text('repo').notNull(),
+  source: lessonSource('source').notNull(),
+  category: text('category'),
+  text: text('text').notNull(),
+  runId: uuid('run_id').references(() => runs.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type Run = typeof runs.$inferSelect;
 export type NewRun = typeof runs.$inferInsert;
 export type RunStep = typeof runSteps.$inferSelect;
 export type NewRunStep = typeof runSteps.$inferInsert;
 export type Approval = typeof approvals.$inferSelect;
 export type NewApproval = typeof approvals.$inferInsert;
+export type LessonRow = typeof lessons.$inferSelect;
+export type NewLessonRow = typeof lessons.$inferInsert;
