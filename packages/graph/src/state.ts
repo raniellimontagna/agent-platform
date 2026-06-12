@@ -31,6 +31,8 @@ export const AgentState = Annotation.Root({
   testsPassed: Annotation<boolean>(),
   /** Resumo dos comandos de validação (cmd + exit code + tail). */
   testSummary: Annotation<string>(),
+  /** Quantas correções de auto-fix rodaram no runner (0 = passou de primeira). */
+  fixAttempts: Annotation<number>(),
   /** Custo estimado por fase em USD (MAC-40). */
   planCostUsd: Annotation<number>(),
   codeCostUsd: Annotation<number>(),
