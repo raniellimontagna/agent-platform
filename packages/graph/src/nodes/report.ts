@@ -5,10 +5,11 @@ export interface ReportDeps {
   linear: LinearGateway;
 }
 
-/** Extrai a linha do veredito do parecer do critic (MAC-18). */
-function verdictOf(review?: string): string {
+/** Extrai a linha do veredito do parecer do critic (MAC-18). Exportado p/ teste. */
+export function verdictOf(review?: string): string {
   if (!review) return '—';
-  const m = review.match(/Veredito\**:?\s*\**\s*([^\n*]+)/i);
+  // Exige os dois-pontos do rótulo "Veredito:" — evita casar a palavra solta.
+  const m = review.match(/Veredito\**\s*:\s*\**\s*([^\n*]+)/i);
   return m?.[1]?.trim() || '—';
 }
 

@@ -50,7 +50,8 @@ function summarizeTests(commands: CommandResult[] = []): string {
     .join('\n');
 }
 
-function slugify(text: string): string {
+/** Normaliza um texto p/ slug de branch (exportado p/ teste). */
+export function slugify(text: string): string {
   return text
     .toLowerCase()
     .normalize('NFD')
