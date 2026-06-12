@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { listLessons } from '../lessons.js';
 import { logger } from '../logger.js';
 import { JOB_PRIORITY, agentQueue } from '../queue.js';
 import {
@@ -34,6 +35,14 @@ runsRoute.get('/runs/:id/steps', async (c) => {
 /** Aprovações de um run e seus motivos (MAC-41). */
 runsRoute.get('/runs/:id/approvals', async (c) => {
   return c.json({ approvals: await listApprovals(c.req.param('id')) });
+});
+
+/** Lições acumuladas de um repo (Memory Layer, MAC-23). `?repo=owner/name`, `?limit=`. */
+runsRoute.get('/lessons', async (c) => {
+  const repo = c.req.query('repo');
+  if (!repo) return c.json({ error: 'query `repo` obrigatória (owner/name)' }, 400);
+  const limit = Math.min(Number(c.req.query('limit')) || 50, 200);
+  return c.json({ lessons: await listLessons(repo, limit) });
 });
 
 /** Aprova um run pausado e retoma o grafo (MAC-22/41). */
