@@ -37,6 +37,7 @@ interface RunnerResult {
   commands?: CommandResult[];
   costUsd?: number;
   prTitle?: string;
+  fixAttempts?: number;
 }
 
 /** Resumo curto dos comandos de validação: status + tail do que falhou. */
@@ -119,11 +120,15 @@ export function makeCoderNode(deps: CoderDeps) {
         result.testsPassed === undefined
           ? ''
           : `\n\n**Validação:** ${result.testsPassed ? '✅ passou' : '❌ falhou'}\n${testSummary}`;
+      const fixBlock =
+        result.fixAttempts && result.fixAttempts > 0
+          ? `\n\n🔧 Auto-correção: ${result.fixAttempts} tentativa(s) antes da validação final.`
+          : '';
 
       await deps.linear.comment(
         state.issueId,
         `## 🤖 Execução\nBranch \`${branch}\` — runner: **${result.status}**.` +
-          `${result.summary ? `\n\n${result.summary}` : ''}${files}${testsBlock}${errorBlock}`,
+          `${result.summary ? `\n\n${result.summary}` : ''}${files}${testsBlock}${fixBlock}${errorBlock}`,
       );
 
       return {
@@ -134,6 +139,7 @@ export function makeCoderNode(deps: CoderDeps) {
         diff: result.diff,
         testsPassed: result.testsPassed,
         testSummary,
+        fixAttempts: result.fixAttempts,
         codeCostUsd: result.costUsd,
         prTitle: result.prTitle,
         // Mantém `coding` no sucesso → roteia para o nó review (MAC-18) → pr.
