@@ -15,10 +15,12 @@ import {
 // houver ingress externo (Tailscale), proteger com token de admin.
 export const runsRoute = new Hono();
 
-/** Histórico de execuções (MAC-36). `?limit=` (máx 200). */
+/** Histórico de execuções (MAC-36). `?limit=` (máx 200) e `?offset=` (mín 0). */
 runsRoute.get('/runs', async (c) => {
   const limit = Math.min(Number(c.req.query('limit')) || 50, 200);
-  return c.json({ runs: await listRuns(limit) });
+  const offset = Math.max(Number(c.req.query('offset')) || 0, 0);
+  const runs = await listRuns(limit, offset);
+  return c.json({ runs, limit, offset });
 });
 
 runsRoute.get('/runs/:id', async (c) => {
