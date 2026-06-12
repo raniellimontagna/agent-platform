@@ -15,6 +15,8 @@ const envSchema = z.object({
   LINEAR_WEBHOOK_SECRET: z.string().min(1),
   // ID da label ai-ready no Linear — usado quando o webhook manda labelIds (não nomes).
   LINEAR_AI_READY_LABEL_ID: z.string().default('ea322be4-50bb-4703-af1c-35636ac2f9dc'),
+  // ID da label `approved` — aprova o run pausado pela própria UI do Linear (MAC-22).
+  LINEAR_APPROVED_LABEL_ID: z.string().default('c574cf55-fb4d-4e19-8898-b5423bb55eff'),
 
   GITHUB_TOKEN: z.string().min(1),
 

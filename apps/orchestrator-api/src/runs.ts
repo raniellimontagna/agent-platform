@@ -42,10 +42,31 @@ export async function hasActiveRunForIssue(linearIssueId: string): Promise<boole
     .select({ id: schema.runs.id })
     .from(schema.runs)
     .where(
-      and(eq(schema.runs.linearIssueId, linearIssueId), inArray(schema.runs.status, ACTIVE_STATUSES)),
+      and(
+        eq(schema.runs.linearIssueId, linearIssueId),
+        inArray(schema.runs.status, ACTIVE_STATUSES),
+      ),
     )
     .limit(1);
   return rows.length > 0;
+}
+
+/** Run em `awaiting_approval` para esta issue — alvo do approve via Linear (MAC-22). */
+export async function findAwaitingApprovalRun(
+  linearIssueId: string,
+): Promise<{ id: string } | null> {
+  const [row] = await db
+    .select({ id: schema.runs.id })
+    .from(schema.runs)
+    .where(
+      and(
+        eq(schema.runs.linearIssueId, linearIssueId),
+        eq(schema.runs.status, 'awaiting_approval'),
+      ),
+    )
+    .orderBy(desc(schema.runs.createdAt))
+    .limit(1);
+  return row ?? null;
 }
 
 /** Lê um run pelo id (null se não existir). */
