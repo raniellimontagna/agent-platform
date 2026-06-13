@@ -37,6 +37,8 @@ const envSchema = z.object({
   // (24h — bloqueia novos runs).
   AGENT_MAX_COST_PER_RUN_USD: z.coerce.number().default(2),
   AGENT_MAX_COST_PER_DAY_USD: z.coerce.number().default(20),
+  // Loop de revisão pelo critic (MAC-59): máximo de voltas de re-revisão.
+  AGENT_MAX_REVIEW_ROUNDS: z.coerce.number().default(1),
 });
 
 export type Env = z.infer<typeof envSchema>;
