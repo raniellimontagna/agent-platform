@@ -38,7 +38,7 @@ export async function createCheckpointer(connectionString: string): Promise<Post
 
 /**
  * Monta a state machine do agente (MAC-14):
- *   START → planning → [⏸ aprovação humana] → coding → reviewing → pr → report → END
+ *   START → planning → [⏸ aprovação] → coding → reviewing → [revisar? → revising → reviewing] → pr → report → END
  *
  * Pausa antes de `coding` aguardando aprovação (MAC-22). Após aprovado, o run é
  * retomado com o mesmo thread_id e segue para o Coder (MAC-17), que gera o
@@ -49,12 +49,14 @@ export async function createCheckpointer(connectionString: string): Promise<Post
  */
 export function buildAgentGraph(deps: GraphDeps, checkpointer: PostgresSaver) {
   const planning = makePlannerNode(deps);
-  const coding = makeCoderNode({
+  const coderDeps = {
     linear: deps.linear,
     runner: deps.runner,
     testCommands: deps.testCommands ?? [],
     loadLessons: deps.loadLessons,
-  });
+  };
+  const coding = makeCoderNode(coderDeps);
+  const revising = makeCoderNode(coderDeps, { revise: true });
   const review = makeReviewNode({
     llm: deps.llm,
     linear: deps.linear,
@@ -71,6 +73,7 @@ export function buildAgentGraph(deps: GraphDeps, checkpointer: PostgresSaver) {
   return new StateGraph(AgentState)
     .addNode('planning', planning)
     .addNode('coding', coding)
+    .addNode('revising', revising)
     .addNode('reviewing', review)
     .addNode('pr', pr)
     .addNode('report', report)
@@ -79,12 +82,20 @@ export function buildAgentGraph(deps: GraphDeps, checkpointer: PostgresSaver) {
     .addConditionalEdges(
       'coding',
       (state) => (state.status === 'failed' ? 'report' : 'reviewing'),
-      {
-        reviewing: 'reviewing',
-        report: 'report',
-      },
+      { reviewing: 'reviewing', report: 'report' },
     )
-    .addEdge('reviewing', 'pr')
+    // MAC-59: o critic decide revisar (volta pro coder em modo revisão) ou seguir.
+    .addConditionalEdges(
+      'reviewing',
+      (state) => (state.nextAfterReview === 'coding' ? 'revising' : 'pr'),
+      { revising: 'revising', pr: 'pr' },
+    )
+    // O nó de revisão (fora do interruptBefore) re-revisa; falha vai pro report.
+    .addConditionalEdges(
+      'revising',
+      (state) => (state.status === 'failed' ? 'report' : 'reviewing'),
+      { reviewing: 'reviewing', report: 'report' },
+    )
     .addEdge('pr', 'report')
     .addEdge('report', END)
     .compile({ checkpointer, interruptBefore: ['coding'] });
