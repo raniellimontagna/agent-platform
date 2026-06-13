@@ -55,6 +55,8 @@ async function init(): Promise<Agent> {
       github,
       testCommands,
       loadLessons,
+      maxReviewRounds: env.AGENT_MAX_REVIEW_ROUNDS,
+      maxCostPerRunUsd: env.AGENT_MAX_COST_PER_RUN_USD,
       runner: {
         baseUrl: env.RUNNER_BASE_URL,
         authToken: env.RUNNER_AUTH_TOKEN,
