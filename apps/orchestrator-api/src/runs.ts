@@ -209,6 +209,25 @@ export async function runCostUsd(runId: string): Promise<number> {
   return Number(row?.total ?? 0);
 }
 
+/** Custos por step de um run, em ordem de criação. */
+export async function listRunStepCosts(
+  runId: string,
+): Promise<Array<{ type: StepType; costUsd: number }>> {
+  const rows = await db
+    .select({
+      type: schema.runSteps.type,
+      costUsd: schema.runSteps.costUsd,
+    })
+    .from(schema.runSteps)
+    .where(eq(schema.runSteps.runId, runId))
+    .orderBy(schema.runSteps.createdAt);
+
+  return rows.map((row) => ({
+    type: row.type,
+    costUsd: Number(row.costUsd ?? 0),
+  }));
+}
+
 /** Custo total (USD) das últimas 24h — limite de sessão do Cost Guard (MAC-40). */
 export async function costLast24hUsd(): Promise<number> {
   const [row] = await db

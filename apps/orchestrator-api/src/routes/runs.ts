@@ -5,6 +5,7 @@ import { JOB_PRIORITY, agentQueue } from '../queue.js';
 import {
   getRun,
   listApprovals,
+  listRunStepCosts,
   listRuns,
   listSteps,
   resolveApproval,
@@ -29,6 +30,28 @@ runsRoute.get('/runs/:id', async (c) => {
   const run = await getRun(c.req.param('id'));
   if (!run) return c.json({ error: 'not found' }, 404);
   return c.json(run);
+});
+
+/** Custo agregado de um run, somando os steps (MAC-60). */
+runsRoute.get('/runs/:id/cost', async (c) => {
+  const runId = c.req.param('id');
+
+  try {
+    const run = await getRun(runId);
+    if (!run) return c.json({ error: 'not found' }, 404);
+
+    const steps = await listRunStepCosts(runId);
+    const totalCostUsd = steps.reduce((sum, step) => sum + step.costUsd, 0);
+
+    return c.json({
+      runId,
+      totalCostUsd,
+      steps,
+    });
+  } catch (err) {
+    logger.error({ err, runId }, 'failed to get run cost');
+    return c.json({ error: 'internal server error' }, 500);
+  }
 });
 
 /** Etapas de um run com tempo/resultado (MAC-36). */
