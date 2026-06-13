@@ -39,6 +39,12 @@ const envSchema = z.object({
   AGENT_MAX_COST_PER_DAY_USD: z.coerce.number().default(20),
   // Loop de revisão pelo critic (MAC-59): máximo de voltas de re-revisão.
   AGENT_MAX_REVIEW_ROUNDS: z.coerce.number().default(1),
+  // Scheduler (MAC-38): time onde as issues agendadas são criadas (obrigatório).
+  LINEAR_TEAM_ID: z.string().min(1),
+  // Timezone default dos agendamentos (cada schedule pode sobrescrever).
+  SCHEDULER_TZ: z.string().default('UTC'),
+  // Label opcional aplicada às issues criadas por agendamento.
+  LINEAR_SCHEDULED_LABEL_ID: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
