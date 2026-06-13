@@ -8,6 +8,8 @@ import { runsRoute } from './routes/runs.js';
 import { statsRoute } from './routes/stats.js';
 import { webhooks } from './routes/webhooks.js';
 import { startAgentWorker } from './worker.js';
+import { schedulesRoute } from './routes/schedules.js';
+import { startScheduleWorker } from './scheduleWorker.js';
 
 const app = new Hono();
 
@@ -16,6 +18,7 @@ app.route('/', webhooks);
 app.route('/', runsRoute);
 app.route('/', statsRoute);
 app.route('/', adminRoute);
+app.route('/', schedulesRoute);
 
 app.notFound((c) => c.json({ error: 'not found' }, 404));
 
@@ -31,4 +34,9 @@ serve({ fetch: app.fetch, port: env.PORT }, (info) => {
 // Sobe o worker do grafo no mesmo processo (MVP). Falha aqui não derruba a API.
 startAgentWorker().catch((err) => {
   logger.error({ err }, 'failed to start agent worker');
+});
+
+// Sobe o worker dos agendamentos (MAC-38) — disparos cron + reconciliação.
+startScheduleWorker().catch((err) => {
+  logger.error({ err }, 'failed to start schedule worker');
 });
