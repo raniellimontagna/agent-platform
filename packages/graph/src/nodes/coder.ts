@@ -74,12 +74,14 @@ export function slugify(text: string): string {
  * Em sucesso, mantém o status `coding` e marca `pushed` para o nó PR (MAC-26)
  * abrir o Draft PR em seguida.
  */
-export function makeCoderNode(deps: CoderDeps) {
+export function makeCoderNode(deps: CoderDeps, opts: { revise?: boolean } = {}) {
   return async (state: AgentStateType): Promise<Partial<AgentStateType>> => {
     // Sufixo com short runId torna a branch única por run — evita colisão de
     // push (non-fast-forward) e PR 422 ao re-executar a mesma issue.
     const shortRun = state.runId.slice(0, 8);
-    const branch = `agent/${state.issueIdentifier.toLowerCase()}-${slugify(state.title)}-${shortRun}`;
+    const branch = opts.revise
+      ? state.branch
+      : `agent/${state.issueIdentifier.toLowerCase()}-${slugify(state.title)}-${shortRun}`;
 
     try {
       const lessons = deps.loadLessons ? await deps.loadLessons() : '';
@@ -101,6 +103,7 @@ export function makeCoderNode(deps: CoderDeps) {
           plan: state.plan,
           commands: deps.testCommands,
           lessons,
+          reviewFeedback: opts.revise ? (state.reviewFeedback ?? '') : '',
         }),
       });
 
@@ -127,7 +130,7 @@ export function makeCoderNode(deps: CoderDeps) {
 
       await deps.linear.comment(
         state.issueId,
-        `## 🤖 Execução\nBranch \`${branch}\` — runner: **${result.status}**.` +
+        `## 🤖 Execução${opts.revise ? ` (revisão ${state.reviewRounds ?? 1})` : ''}\nBranch \`${branch}\` — runner: **${result.status}**.` +
           `${result.summary ? `\n\n${result.summary}` : ''}${files}${testsBlock}${fixBlock}${errorBlock}`,
       );
 
