@@ -48,6 +48,9 @@ export function makeReportNode(deps: ReportDeps) {
       if (state.fixAttempts && state.fixAttempts > 0) {
         lines.push(`**Auto-correção:** ${state.fixAttempts} tentativa(s)`);
       }
+      if (state.reviewRounds && state.reviewRounds > 0) {
+        lines.push(`**Revisões (loop critic):** ${state.reviewRounds} volta(s)`);
+      }
     }
     const cost = (state.planCostUsd ?? 0) + (state.codeCostUsd ?? 0) + (state.reviewCostUsd ?? 0);
     if (cost > 0) lines.push(`**Custo estimado:** ~$${cost.toFixed(4)}`);
