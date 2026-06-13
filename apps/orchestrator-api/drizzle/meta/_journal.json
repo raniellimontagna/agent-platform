@@ -22,6 +22,13 @@
       "when": 1781272097731,
       "tag": "0002_curved_vivisector",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1781363268020,
+      "tag": "0003_nasty_wilson_fisk",
+      "breakpoints": true
     }
   ]
 }
