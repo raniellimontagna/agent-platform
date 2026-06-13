@@ -1,16 +1,12 @@
 import type { LinearGateway } from '@agent-platform/linear';
 import type { AgentStateType } from '../state.js';
 
-export interface RunnerConfig {
-  baseUrl: string;
-  authToken: string;
-  /** URL de clone (já com credencial embutida, se repo privado). */
-  repoUrl: string;
-}
-
 export interface CoderDeps {
   linear: LinearGateway;
-  runner: RunnerConfig;
+  /** URL de clone do repo alvo (vai no body do job). */
+  repoUrl: string;
+  /** Despacha o job pro runner com health/failover (MAC-39). */
+  dispatch: DispatchFn;
   /** Comandos de validação rodados no sandbox após o push (MAC-29). */
   testCommands: string[];
   /** Carrega as lições do repo já formatadas p/ o codegen (MAC-23). Opcional. */
@@ -104,32 +100,19 @@ export function makeCoderNode(deps: CoderDeps, opts: { revise?: boolean } = {}) 
     try {
       const lessons = deps.loadLessons ? await deps.loadLessons() : '';
 
-      const res = await fetch(`${deps.runner.baseUrl}/jobs/sync`, {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          authorization: `Bearer ${deps.runner.authToken}`,
-        },
-        body: JSON.stringify({
-          runId: state.runId,
-          issueIdentifier: state.issueIdentifier,
-          repoUrl: deps.runner.repoUrl,
-          baseBranch: 'main',
-          branch,
-          title: state.title,
-          description: state.description,
-          plan: state.plan,
-          commands: deps.testCommands,
-          lessons,
-          reviewFeedback: opts.revise ? (state.reviewFeedback ?? '') : '',
-        }),
+      const result = await deps.dispatch({
+        runId: state.runId,
+        issueIdentifier: state.issueIdentifier,
+        repoUrl: deps.repoUrl,
+        baseBranch: 'main',
+        branch,
+        title: state.title,
+        description: state.description,
+        plan: state.plan,
+        commands: deps.testCommands,
+        lessons,
+        reviewFeedback: opts.revise ? (state.reviewFeedback ?? '') : '',
       });
-
-      if (!res.ok) {
-        throw new Error(`runner respondeu ${res.status}: ${await res.text()}`);
-      }
-
-      const result = (await res.json()) as RunnerResult;
       const ok = result.status === 'succeeded';
       const errorBlock = result.error ? `\n\n\`\`\`\n${result.error}\n\`\`\`` : '';
       const files = result.filesChanged?.length

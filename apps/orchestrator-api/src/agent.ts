@@ -5,11 +5,13 @@ import { type LlmClient, createLlmClient } from '@agent-platform/llm';
 import { LESSON_CAP, formatLessons } from '@agent-platform/memory';
 import { env } from './env.js';
 import { listLessons } from './lessons.js';
+import { type WorkerManager, createWorkerManager, parseRunnerUrls } from './workerManager.js';
 
 export interface Agent {
   graph: AgentGraph;
   linear: LinearGateway;
   llm: LlmClient;
+  workerManager: WorkerManager;
 }
 
 let agentPromise: Promise<Agent> | null = null;
@@ -36,6 +38,12 @@ async function init(): Promise<Agent> {
   // Gateway do GitHub (MAC-26) — owner/repo derivados da URL do repo alvo.
   const github = createGithubGateway(env.GITHUB_TOKEN, parseRepoRef(env.REPO_URL));
 
+  // Worker Manager (MAC-39): fleet de runners + health/failover no dispatch.
+  const workerManager = createWorkerManager({
+    baseUrls: parseRunnerUrls(env.RUNNER_BASE_URLS, env.RUNNER_BASE_URL),
+    authToken: env.RUNNER_AUTH_TOKEN,
+  });
+
   // Comandos de validação no sandbox (MAC-29) — uma linha por comando.
   const testCommands = env.AGENT_TEST_COMMANDS.split('\n')
     .map((c) => c.trim())
@@ -57,14 +65,11 @@ async function init(): Promise<Agent> {
       loadLessons,
       maxReviewRounds: env.AGENT_MAX_REVIEW_ROUNDS,
       maxCostPerRunUsd: env.AGENT_MAX_COST_PER_RUN_USD,
-      runner: {
-        baseUrl: env.RUNNER_BASE_URL,
-        authToken: env.RUNNER_AUTH_TOKEN,
-        repoUrl,
-      },
+      runnerRepoUrl: repoUrl,
+      dispatch: workerManager.dispatch,
     },
     checkpointer,
   );
 
-  return { graph, linear, llm };
+  return { graph, linear, llm, workerManager };
 }
