@@ -57,8 +57,6 @@ export const AgentState = Annotation.Root({
     reducer: (a, b) => (a ?? 0) + (b ?? 0),
     default: () => 0,
   }),
-  /** MAC-59: veredito da volta anterior (guarda de no-progress). */
-  lastVerdict: Annotation<string>(),
   /** MAC-59: parecer da volta anterior (comparação do guarda de no-progress). */
   lastReview: Annotation<string>(),
   /** MAC-59: parecer do critic injetado no próximo job de revisão. */
