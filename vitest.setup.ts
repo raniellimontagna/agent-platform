@@ -18,6 +18,7 @@ const defaults: Record<string, string> = {
   GITHUB_TOKEN: 'ghp_test',
   RUNNER_BASE_URL: 'http://localhost:8080',
   RUNNER_AUTH_TOKEN: 'runner-test',
+  LINEAR_TEAM_ID: 'team_test',
   // worker-code
   ORCHESTRATOR_BASE_URL: 'http://localhost:3000',
   RUNNER_WORKDIR: '/tmp/agent-worktrees',
