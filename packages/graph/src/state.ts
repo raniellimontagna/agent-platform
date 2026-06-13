@@ -35,8 +35,15 @@ export const AgentState = Annotation.Root({
   fixAttempts: Annotation<number>(),
   /** Custo estimado por fase em USD (MAC-40). */
   planCostUsd: Annotation<number>(),
-  codeCostUsd: Annotation<number>(),
-  reviewCostUsd: Annotation<number>(),
+  // MAC-59: o loop roda coder/review várias vezes — custo acumula (não substitui).
+  codeCostUsd: Annotation<number>({
+    reducer: (a, b) => (a ?? 0) + (b ?? 0),
+    default: () => 0,
+  }),
+  reviewCostUsd: Annotation<number>({
+    reducer: (a, b) => (a ?? 0) + (b ?? 0),
+    default: () => 0,
+  }),
   /** Título Conventional Commits (inglês) do PR (MAC-26). */
   prTitle: Annotation<string>(),
   /** URL do Draft PR aberto pelo nó PR (MAC-26). */
@@ -45,6 +52,19 @@ export const AgentState = Annotation.Root({
   status: Annotation<string>(),
   /** Mensagem de erro, se o run falhar. */
   error: Annotation<string>(),
+  /** MAC-59: voltas de revisão já executadas (reducer soma; 0 = sem loop). */
+  reviewRounds: Annotation<number>({
+    reducer: (a, b) => (a ?? 0) + (b ?? 0),
+    default: () => 0,
+  }),
+  /** MAC-59: veredito da volta anterior (guarda de no-progress). */
+  lastVerdict: Annotation<string>(),
+  /** MAC-59: parecer da volta anterior (comparação do guarda de no-progress). */
+  lastReview: Annotation<string>(),
+  /** MAC-59: parecer do critic injetado no próximo job de revisão. */
+  reviewFeedback: Annotation<string>(),
+  /** MAC-59: destino escolhido pelo nó reviewing ('coding' | 'pr'). */
+  nextAfterReview: Annotation<string>(),
 });
 
 export type AgentStateType = typeof AgentState.State;
