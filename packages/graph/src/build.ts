@@ -3,7 +3,7 @@ import type { LinearGateway } from '@agent-platform/linear';
 import type { LlmClient } from '@agent-platform/llm';
 import { END, START, StateGraph } from '@langchain/langgraph';
 import { PostgresSaver } from '@langchain/langgraph-checkpoint-postgres';
-import { type RunnerConfig, makeCoderNode } from './nodes/coder.js';
+import { type DispatchFn, makeCoderNode } from './nodes/coder.js';
 import { makePlannerNode } from './nodes/planner.js';
 import { makePrNode } from './nodes/pr.js';
 import { makeReportNode } from './nodes/report.js';
@@ -13,7 +13,10 @@ import { AgentState } from './state.js';
 export interface GraphDeps {
   llm: LlmClient;
   linear: LinearGateway;
-  runner: RunnerConfig;
+  /** URL de clone do repo alvo (vai no body do job — MAC-39). */
+  runnerRepoUrl: string;
+  /** Despacha o job pro runner com health/failover (MAC-39). */
+  dispatch: DispatchFn;
   github: GithubGateway;
   /** Branch base dos PRs abertos pelo agente (default: main). */
   baseBranch?: string;
@@ -51,7 +54,8 @@ export function buildAgentGraph(deps: GraphDeps, checkpointer: PostgresSaver) {
   const planning = makePlannerNode(deps);
   const coderDeps = {
     linear: deps.linear,
-    runner: deps.runner,
+    repoUrl: deps.runnerRepoUrl,
+    dispatch: deps.dispatch,
     testCommands: deps.testCommands ?? [],
     loadLessons: deps.loadLessons,
   };
