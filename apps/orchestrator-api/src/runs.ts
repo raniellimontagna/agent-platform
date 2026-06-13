@@ -29,6 +29,10 @@ export interface NewRunInput {
   linearIssueId: string;
   linearIssueIdentifier: string;
   title: string;
+  /** Agendamento que originou o run (MAC-38). */
+  scheduleId?: string;
+  /** Run pode ser auto-aprovado se não houver motivo crítico (MAC-38). */
+  autoApprove?: boolean;
 }
 
 /** Cria o registro do run (MAC-36) e devolve o id. */
@@ -40,6 +44,8 @@ export async function createRun(input: NewRunInput): Promise<string> {
       linearIssueIdentifier: input.linearIssueIdentifier,
       title: input.title,
       status: 'pending',
+      ...(input.scheduleId ? { scheduleId: input.scheduleId } : {}),
+      ...(input.autoApprove !== undefined ? { autoApprove: input.autoApprove } : {}),
     })
     .returning({ id: schema.runs.id });
   // biome-ignore lint/style/noNonNullAssertion: insert ... returning sempre retorna a linha
@@ -119,6 +125,16 @@ export async function listRuns(limit = 50, offset = 0) {
     .orderBy(desc(schema.runs.createdAt))
     .limit(limit)
     .offset(offset);
+}
+
+/** Histórico de runs de um agendamento, mais recentes primeiro (MAC-38). */
+export async function listRunsBySchedule(scheduleId: string, limit = 50) {
+  return db
+    .select()
+    .from(schema.runs)
+    .where(eq(schema.runs.scheduleId, scheduleId))
+    .orderBy(desc(schema.runs.createdAt))
+    .limit(limit);
 }
 
 /** Resumo agregado das execuções do agente para dashboards/API. */
