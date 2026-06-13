@@ -9,6 +9,7 @@ import { statsRoute } from './routes/stats.js';
 import { webhooks } from './routes/webhooks.js';
 import { startAgentWorker } from './worker.js';
 import { schedulesRoute } from './routes/schedules.js';
+import { artifactsRoute } from './routes/artifacts.js';
 import { startScheduleWorker } from './scheduleWorker.js';
 
 const app = new Hono();
@@ -19,6 +20,7 @@ app.route('/', runsRoute);
 app.route('/', statsRoute);
 app.route('/', adminRoute);
 app.route('/', schedulesRoute);
+app.route('/', artifactsRoute);
 
 app.notFound((c) => c.json({ error: 'not found' }, 404));
 
