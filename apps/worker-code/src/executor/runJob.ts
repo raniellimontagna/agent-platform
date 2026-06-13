@@ -83,12 +83,15 @@ export async function runJob(job: Job): Promise<JobResult> {
   const base: JobResult = { runId: job.runId, status: 'failed', branch: job.branch, commands };
 
   try {
+    const reviseMode = Boolean(job.reviewFeedback?.trim());
+    if (reviseMode) log.info('modo revisão (MAC-59): partindo da branch de trabalho');
     log.info('preparing worktree');
     const dir = await prepareWorktree({
       runId: job.runId,
       repoUrl: job.repoUrl,
       baseBranch: job.baseBranch,
       branch: job.branch,
+      revise: reviseMode,
     });
 
     // Fluxo de code-gen (MAC-17): há plano aprovado.
@@ -100,6 +103,7 @@ export async function runJob(job: Job): Promise<JobResult> {
         description: job.description,
         plan: job.plan,
         lessons: job.lessons,
+        reviewFeedback: job.reviewFeedback,
         log,
       });
       base.summary = gen.summary;

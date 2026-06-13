@@ -48,11 +48,14 @@ export async function prepareWorktree(args: {
   repoUrl: string;
   baseBranch: string;
   branch: string;
+  /** MAC-59: parte da branch de trabalho já existente (revisão incremental). */
+  revise?: boolean;
 }): Promise<string> {
   const dir = worktreePath(args.runId);
   // Garante diretório limpo antes de clonar.
   await rm(dir, { recursive: true, force: true });
 
+  // Clona a base (main) — mantém o ref local `main` p/ calcular o diff do PR.
   const clone = await runCommand(
     `git clone --depth 1 --branch ${args.baseBranch} ${args.repoUrl} ${dir}`,
     env.RUNNER_WORKDIR,
@@ -61,9 +64,22 @@ export async function prepareWorktree(args: {
     throw new Error(`git clone failed: ${clone.stderr || clone.stdout}`);
   }
 
-  const checkout = await runCommand(`git checkout -b ${args.branch}`, dir);
-  if (checkout.exitCode !== 0) {
-    throw new Error(`git checkout failed: ${checkout.stderr || checkout.stdout}`);
+  if (args.revise) {
+    // Modo revisão: traz a branch de trabalho (já tem o código da passada
+    // anterior) e faz checkout nela. Diff continua vs base (main ref local).
+    const fetched = await runCommand(`git fetch --depth 1 origin ${args.branch}`, dir);
+    if (fetched.exitCode !== 0) {
+      throw new Error(`git fetch failed: ${fetched.stderr || fetched.stdout}`);
+    }
+    const checkout = await runCommand(`git checkout -b ${args.branch} FETCH_HEAD`, dir);
+    if (checkout.exitCode !== 0) {
+      throw new Error(`git checkout failed: ${checkout.stderr || checkout.stdout}`);
+    }
+  } else {
+    const checkout = await runCommand(`git checkout -b ${args.branch}`, dir);
+    if (checkout.exitCode !== 0) {
+      throw new Error(`git checkout failed: ${checkout.stderr || checkout.stdout}`);
+    }
   }
 
   return dir;

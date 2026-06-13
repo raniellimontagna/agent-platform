@@ -17,6 +17,8 @@ export const jobSchema = z.object({
   plan: z.string().default(''),
   /** Lições de runs anteriores do repo, já formatadas (Memory Layer, MAC-23). */
   lessons: z.string().default(''),
+  /** Parecer do critic a endereçar — ativa o modo revisão (MAC-59). */
+  reviewFeedback: z.string().default(''),
 });
 
 export type Job = z.infer<typeof jobSchema>;
