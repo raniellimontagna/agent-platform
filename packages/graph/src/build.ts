@@ -58,8 +58,8 @@ export function buildAgentGraph(deps: GraphDeps, checkpointer: PostgresSaver) {
   const review = makeReviewNode({
     llm: deps.llm,
     linear: deps.linear,
-    maxReviewRounds: deps.maxReviewRounds ?? 2,
-    maxCostPerRunUsd: deps.maxCostPerRunUsd ?? 1.0,
+    maxReviewRounds: deps.maxReviewRounds ?? 1,
+    maxCostPerRunUsd: deps.maxCostPerRunUsd ?? 2,
   });
   const pr = makePrNode({
     github: deps.github,
