@@ -21,6 +21,9 @@ const envSchema = z.object({
   GITHUB_TOKEN: z.string().min(1),
 
   RUNNER_BASE_URL: z.string().url(),
+  // Worker Manager (MAC-39): lista de runners separada por vírgula (failover).
+  // Ausente → usa só RUNNER_BASE_URL.
+  RUNNER_BASE_URLS: z.string().optional(),
   RUNNER_AUTH_TOKEN: z.string().min(1),
 
   // Repo alvo que o agente vai modificar (default: o próprio agent-platform).
