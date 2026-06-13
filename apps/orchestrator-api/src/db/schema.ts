@@ -63,6 +63,8 @@ export const runs = pgTable('runs', {
   testsPassed: boolean('tests_passed'),
   verdict: text('verdict'),
   fixAttempts: integer('fix_attempts'),
+  scheduleId: uuid('schedule_id').references(() => schedules.id, { onDelete: 'set null' }),
+  autoApprove: boolean('auto_approve').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true })
     .notNull()
@@ -110,6 +112,24 @@ export const lessons = pgTable('lessons', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+/** Agendamentos cron que disparam runs do agente a partir de um prompt (MAC-38). */
+export const schedules = pgTable('schedules', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  cron: text('cron').notNull(),
+  tz: text('tz').notNull().default('UTC'),
+  title: text('title').notNull(),
+  description: text('description').notNull(),
+  autoApprove: boolean('auto_approve').notNull().default(true),
+  enabled: boolean('enabled').notNull().default(true),
+  lastRunAt: timestamp('last_run_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});
+
 export type Run = typeof runs.$inferSelect;
 export type NewRun = typeof runs.$inferInsert;
 export type RunStep = typeof runSteps.$inferSelect;
@@ -118,3 +138,5 @@ export type Approval = typeof approvals.$inferSelect;
 export type NewApproval = typeof approvals.$inferInsert;
 export type LessonRow = typeof lessons.$inferSelect;
 export type NewLessonRow = typeof lessons.$inferInsert;
+export type Schedule = typeof schedules.$inferSelect;
+export type NewSchedule = typeof schedules.$inferInsert;
