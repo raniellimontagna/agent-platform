@@ -119,7 +119,6 @@ export function makeReviewNode(deps: ReviewDeps) {
         status: 'coding',
         reviewCostUsd,
         lastReview: review,
-        lastVerdict: verdictOf(review),
         nextAfterReview: next,
         // Reducer soma: +1 só quando vai revisar; feedback alimenta o próximo job.
         reviewRounds: next === 'coding' ? 1 : 0,
