@@ -100,7 +100,12 @@ export async function touchSchedule(id: string): Promise<void> {
   await db.update(schema.schedules).set({ lastRunAt: new Date() }).where(eq(schema.schedules.id, id));
 }
 
-/** Há um run ainda ativo deste agendamento? (overlap guard) */
+/**
+ * Há um run ainda ativo deste agendamento? (overlap guard)
+ * NOTA: é check-then-act sem lock — dois disparos quase simultâneos do mesmo
+ * schedule podem ambos passar e criar 2 runs. Baixa probabilidade num cron MVP;
+ * se virar problema, fechar com índice único parcial ou SELECT ... FOR UPDATE.
+ */
 export async function hasActiveRunForSchedule(scheduleId: string): Promise<boolean> {
   const rows = await db
     .select({ id: schema.runs.id })
