@@ -17,14 +17,29 @@ export interface CoderDeps {
   loadLessons?: () => Promise<string>;
 }
 
-interface CommandResult {
+export interface CommandResult {
   command: string;
   exitCode: number;
   stdout: string;
   stderr: string;
 }
 
-interface RunnerResult {
+/** Corpo do job enviado ao runner (MAC-39: despachado via dispatch injetado). */
+export interface RunnerJobBody {
+  runId: string;
+  issueIdentifier: string;
+  repoUrl: string;
+  baseBranch: string;
+  branch: string;
+  title: string;
+  description: string;
+  plan: string;
+  commands: string[];
+  lessons: string;
+  reviewFeedback: string;
+}
+
+export interface RunnerResult {
   status: 'succeeded' | 'failed';
   branch: string;
   error?: string;
@@ -39,6 +54,9 @@ interface RunnerResult {
   prTitle?: string;
   fixAttempts?: number;
 }
+
+/** Despacha um job pro runner e devolve o resultado (impl no orchestrator). */
+export type DispatchFn = (body: RunnerJobBody) => Promise<RunnerResult>;
 
 /** Resumo curto dos comandos de validação: status + tail do que falhou. */
 function summarizeTests(commands: CommandResult[] = []): string {
