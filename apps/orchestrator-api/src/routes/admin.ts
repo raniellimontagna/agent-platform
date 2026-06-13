@@ -1,4 +1,5 @@
 import { type Context, Hono, type Next } from 'hono';
+import { getAgent } from '../agent.js';
 import { env } from '../env.js';
 import { isPaused, setPaused } from '../killswitch.js';
 import { logger } from '../logger.js';
@@ -31,4 +32,10 @@ adminRoute.post('/admin/resume', async (c) => {
 
 adminRoute.get('/admin/status', async (c) => {
   return c.json({ paused: await isPaused() });
+});
+
+/** Snapshot de saúde dos runners conhecidos (MAC-39). */
+adminRoute.get('/admin/runners', async (c) => {
+  const { workerManager } = await getAgent();
+  return c.json({ runners: await workerManager.probeAll() });
 });
