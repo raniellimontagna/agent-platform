@@ -24,6 +24,12 @@ export interface IssueContext {
 export interface LinearGateway {
   getIssue(id: string): Promise<IssueContext>;
   comment(issueId: string, body: string): Promise<void>;
+  createIssue(input: {
+    title: string;
+    description: string;
+    teamId: string;
+    labelIds?: string[];
+  }): Promise<IssueContext>;
 }
 
 /**
@@ -47,6 +53,23 @@ export function createLinearGateway(apiKey: string): LinearGateway {
 
     async comment(issueId, body) {
       await client.createComment({ issueId, body });
+    },
+
+    async createIssue(input) {
+      const payload = await client.createIssue({
+        teamId: input.teamId,
+        title: input.title,
+        description: input.description,
+        ...(input.labelIds?.length ? { labelIds: input.labelIds } : {}),
+      });
+      const issue = await payload.issue;
+      if (!issue) throw new Error('Linear createIssue não retornou a issue');
+      return {
+        id: issue.id,
+        identifier: issue.identifier,
+        title: issue.title,
+        description: issue.description ?? '',
+      };
     },
   };
 }
