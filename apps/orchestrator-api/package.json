@@ -23,6 +23,7 @@
     "@agent-platform/policy": "workspace:*",
     "@hono/node-server": "^1.14.0",
     "bullmq": "^5.34.0",
+    "cron-parser": "^4.9.0",
     "drizzle-orm": "^0.38.4",
     "hono": "^4.7.2",
     "pino": "^9.6.0",
