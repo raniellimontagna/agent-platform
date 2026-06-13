@@ -9,7 +9,6 @@ import {
   listRuns,
   listSteps,
   resolveApproval,
-  runCostUsd,
   updateRunStatus,
 } from '../runs.js';
 
@@ -33,7 +32,7 @@ runsRoute.get('/runs/:id', async (c) => {
   return c.json(run);
 });
 
-/** Custo agregado de um run, somando os steps (MAC-40/59). */
+/** Custo agregado de um run, somando os steps (MAC-60). */
 runsRoute.get('/runs/:id/cost', async (c) => {
   const runId = c.req.param('id');
 
@@ -41,7 +40,8 @@ runsRoute.get('/runs/:id/cost', async (c) => {
     const run = await getRun(runId);
     if (!run) return c.json({ error: 'not found' }, 404);
 
-    const [totalCostUsd, steps] = await Promise.all([runCostUsd(runId), listRunStepCosts(runId)]);
+    const steps = await listRunStepCosts(runId);
+    const totalCostUsd = steps.reduce((sum, step) => sum + step.costUsd, 0);
 
     return c.json({
       runId,
