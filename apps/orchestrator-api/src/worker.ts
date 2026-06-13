@@ -4,6 +4,7 @@ import { verdictOf } from '@agent-platform/graph';
 import { distillLesson } from '@agent-platform/memory';
 import { getAgent } from './agent.js';
 import { hasCriticalReason, isCriticalReason } from './approvalPolicy.js';
+import { saveArtifacts } from './artifacts.js';
 import { env } from './env.js';
 import { isPaused } from './killswitch.js';
 import { saveLesson } from './lessons.js';
@@ -48,6 +49,9 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
       const startedAt = new Date();
       let result: {
         status?: string;
+        plan?: string;
+        diff?: string;
+        summary?: string;
         planCostUsd?: number;
         codeCostUsd?: number;
         reviewCostUsd?: number;
@@ -167,6 +171,24 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
         } catch (err) {
           log.warn({ err }, 'falha ao registrar lição (não-fatal)');
         }
+      }
+
+      // Artifact Store (MAC-44): guarda os artefatos do run de forma durável.
+      // Split por tipo de job evita duplicar o `plan` (reaparece no estado final
+      // do resume). Não-fatal: falha aqui não derruba o run.
+      try {
+        if (job.data.kind === 'plan') {
+          await saveArtifacts(runId, { plan: result.plan });
+        } else {
+          await saveArtifacts(runId, {
+            patch: result.diff,
+            review: result.review,
+            validation: result.testSummary,
+            summary: result.summary,
+          });
+        }
+      } catch (err) {
+        log.warn({ err }, 'falha ao salvar artefatos (não-fatal)');
       }
     },
     { connection },
