@@ -3,6 +3,7 @@ import { parseRepoRef } from '@agent-platform/github';
 import { verdictOf } from '@agent-platform/graph';
 import { distillLesson } from '@agent-platform/memory';
 import { getAgent } from './agent.js';
+import { hasCriticalReason, isCriticalReason } from './approvalPolicy.js';
 import { env } from './env.js';
 import { isPaused } from './killswitch.js';
 import { saveLesson } from './lessons.js';
@@ -14,6 +15,7 @@ import {
   getRun,
   recordApproval,
   recordStep,
+  resolveApproval,
   runCostUsd,
   updateRunStatus,
 } from './runs.js';
@@ -87,11 +89,33 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
         fixAttempts: result.fixAttempts,
       });
 
-      // Approval Policies (MAC-41): ao pausar p/ aprovação, registra a solicitação
-      // com os motivos detectados no plano (auditoria/governança).
+      // Approval Policies (MAC-41): ao pausar p/ aprovação, registra a solicitação.
+      // Scheduler (MAC-38): run auto-aprovável segue sozinho se NÃO houver motivo
+      // crítico; com motivo crítico, fica aguardando humano (approve via label).
       if (status === 'awaiting_approval') {
         const reasons = result.approvalReasons ?? ['plan'];
         await recordApproval(runId, reasons, `Motivos: ${reasons.join(', ')}`);
+
+        const run = await getRun(runId);
+        if (run?.autoApprove) {
+          if (hasCriticalReason(reasons)) {
+            const critical = reasons.filter(isCriticalReason);
+            await linear.comment(
+              run.linearIssueId,
+              `## ⏸️ Agendado pausado — aprovação humana necessária\nMotivo(s): ${critical.join(', ')}. Adicione a label \`approved\` para liberar.`,
+            );
+            log.warn({ runId, critical }, 'agendado retido — motivo crítico');
+          } else {
+            await resolveApproval(runId, 'approved', 'scheduler');
+            await updateRunStatus(runId, 'executing');
+            await agentQueue.add(
+              'resume',
+              { kind: 'resume', runId },
+              { priority: JOB_PRIORITY.resume },
+            );
+            log.info({ runId }, 'agendado auto-aprovado (sem motivo crítico)');
+          }
+        }
       }
 
       // Registra a etapa com tempo, resultado e custo (MAC-36/40). Cada job
