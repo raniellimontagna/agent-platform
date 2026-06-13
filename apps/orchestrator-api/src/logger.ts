@@ -18,7 +18,7 @@ const REDACT_PATHS = [
 ];
 
 export const logger = pino({
-  level: env.LOG_LEVEL,
+  level: env.LOG_LEVEL ?? 'info',
   redact: { paths: REDACT_PATHS, censor: '[redacted]' },
   transport:
     env.NODE_ENV === 'development'
