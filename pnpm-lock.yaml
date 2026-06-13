@@ -63,6 +63,9 @@ importers:
       bullmq:
         specifier: ^5.34.0
         version: 5.78.0
+      cron-parser:
+        specifier: ^4.9.0
+        version: 4.9.0
       drizzle-orm:
         specifier: ^0.38.4
         version: 0.38.4(pg@8.21.0)(postgres@3.4.9)
