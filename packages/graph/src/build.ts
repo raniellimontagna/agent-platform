@@ -21,6 +21,10 @@ export interface GraphDeps {
   testCommands?: string[];
   /** Carrega as lições do repo já formatadas p/ o prompt do codegen (MAC-23). */
   loadLessons?: () => Promise<string>;
+  /** Teto de voltas de revisão (MAC-59). */
+  maxReviewRounds?: number;
+  /** Teto de custo por run em USD — corta o loop (MAC-40/59). */
+  maxCostPerRunUsd?: number;
 }
 
 /**
@@ -51,7 +55,12 @@ export function buildAgentGraph(deps: GraphDeps, checkpointer: PostgresSaver) {
     testCommands: deps.testCommands ?? [],
     loadLessons: deps.loadLessons,
   });
-  const review = makeReviewNode({ llm: deps.llm, linear: deps.linear });
+  const review = makeReviewNode({
+    llm: deps.llm,
+    linear: deps.linear,
+    maxReviewRounds: deps.maxReviewRounds ?? 2,
+    maxCostPerRunUsd: deps.maxCostPerRunUsd ?? 1.0,
+  });
   const pr = makePrNode({
     github: deps.github,
     linear: deps.linear,

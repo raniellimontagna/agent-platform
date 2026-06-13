@@ -46,6 +46,10 @@ export function decideAfterReview(
 export interface ReviewDeps {
   llm: LlmClient;
   linear: LinearGateway;
+  /** Teto de voltas de revisão (MAC-59). */
+  maxReviewRounds: number;
+  /** Teto de custo por run em USD — corta o loop (MAC-40/59). */
+  maxCostPerRunUsd: number;
 }
 
 /**
@@ -57,7 +61,7 @@ export function makeReviewNode(deps: ReviewDeps) {
   return async (state: AgentStateType): Promise<Partial<AgentStateType>> => {
     // Sem diff (nada gerado) não há o que revisar — segue para o PR.
     if (!state.diff?.trim()) {
-      return { status: 'coding' };
+      return { status: 'coding', nextAfterReview: 'pr' };
     }
 
     try {
@@ -84,10 +88,43 @@ export function makeReviewNode(deps: ReviewDeps) {
         ],
       });
 
-      await deps.linear.comment(state.issueId, `## 🔎 Revisão do agente (critic)\n\n${review}`);
+      const reviewCostUsd = estimateCostUsd('critic', usage);
+      const totalCostUsd =
+        (state.planCostUsd ?? 0) +
+        (state.codeCostUsd ?? 0) +
+        (state.reviewCostUsd ?? 0) +
+        reviewCostUsd;
 
-      // Mantém `coding` → roteia para o nó PR (MAC-26).
-      return { review, status: 'coding', reviewCostUsd: estimateCostUsd('critic', usage) };
+      const next = decideAfterReview(
+        {
+          review,
+          reviewRounds: state.reviewRounds ?? 0,
+          lastReview: state.lastReview ?? '',
+          totalCostUsd,
+        },
+        { maxReviewRounds: deps.maxReviewRounds, maxCostPerRunUsd: deps.maxCostPerRunUsd },
+      );
+
+      const roundNote =
+        next === 'coding'
+          ? `\n\n_O agente vai tentar endereçar o parecer (revisão ${(state.reviewRounds ?? 0) + 1})._`
+          : '';
+      await deps.linear.comment(
+        state.issueId,
+        `## 🔎 Revisão do agente (critic)\n\n${review}${roundNote}`,
+      );
+
+      return {
+        review,
+        status: 'coding',
+        reviewCostUsd,
+        lastReview: review,
+        lastVerdict: verdictOf(review),
+        nextAfterReview: next,
+        // Reducer soma: +1 só quando vai revisar; feedback alimenta o próximo job.
+        reviewRounds: next === 'coding' ? 1 : 0,
+        reviewFeedback: next === 'coding' ? review : '',
+      };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       // Falha na revisão não derruba o run: segue para o PR sem parecer.
@@ -95,7 +132,7 @@ export function makeReviewNode(deps: ReviewDeps) {
         state.issueId,
         `## ⚠️ Revisão automática falhou (seguindo sem parecer)\n\n\`\`\`\n${message}\n\`\`\``,
       );
-      return { status: 'coding' };
+      return { status: 'coding', nextAfterReview: 'pr' };
     }
   };
 }
