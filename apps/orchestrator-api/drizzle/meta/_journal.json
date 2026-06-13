@@ -29,6 +29,13 @@
       "when": 1781363268020,
       "tag": "0003_nasty_wilson_fisk",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1781381487757,
+      "tag": "0004_freezing_raider",
+      "breakpoints": true
     }
   ]
 }
