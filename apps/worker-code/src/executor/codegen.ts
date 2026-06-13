@@ -99,6 +99,8 @@ export interface CodegenArgs {
   plan: string;
   /** Lições de runs anteriores do repo, já formatadas (MAC-23). */
   lessons?: string;
+  /** Parecer do critic a endereçar na revisão incremental (MAC-59). */
+  reviewFeedback?: string;
   log: Logger;
 }
 
@@ -201,7 +203,14 @@ function safeJoin(dir: string, relPath: string): string {
 /** Passo 1: o modelo escolhe quais arquivos modificar/criar. */
 async function selectFiles(
   llm: LlmClient,
-  ctx: { title: string; description: string; plan: string; fileTree: string; conventions: string },
+  ctx: {
+    title: string;
+    description: string;
+    plan: string;
+    fileTree: string;
+    conventions: string;
+    reviewFeedback?: string;
+  },
   log: Logger,
   onUsage?: (usage: TokenUsage) => void,
 ): Promise<{ edit: string[]; create: string[] }> {
@@ -218,6 +227,9 @@ async function selectFiles(
             `# Issue: ${ctx.title}`,
             ctx.description ? `\n${ctx.description}` : '',
             `\n# Plano aprovado\n${ctx.plan}`,
+            ctx.reviewFeedback
+              ? `\n# Parecer da revisão a endereçar (foque nestes pontos)\n${ctx.reviewFeedback}`
+              : '',
             ctx.conventions ? `\n# Convenções do projeto\n${ctx.conventions}` : '',
             `\n# Arquivos do repositório\n${ctx.fileTree}`,
           ].join('\n'),
@@ -269,7 +281,7 @@ async function applyFiles(dir: string, files: { path: string; content: string }[
  * altera de forma incremental em vez de reescrever do zero e quebrar o resto.
  */
 export async function generateAndApplyCode(args: CodegenArgs): Promise<CodegenResult> {
-  const { llm, dir, title, description, plan, lessons, log } = args;
+  const { llm, dir, title, description, plan, lessons, reviewFeedback, log } = args;
 
   const repoFiles = await listRepoFiles(dir);
   const fileTree = repoFiles.slice(0, 800).join('\n');
@@ -288,7 +300,7 @@ export async function generateAndApplyCode(args: CodegenArgs): Promise<CodegenRe
   log.info({ fileCount: repoFiles.length }, 'selecting files to change');
   const selection = await selectFiles(
     llm,
-    { title, description, plan, fileTree, conventions },
+    { title, description, plan, fileTree, conventions, reviewFeedback },
     log,
     addUsage,
   );
@@ -326,6 +338,9 @@ export async function generateAndApplyCode(args: CodegenArgs): Promise<CodegenRe
             conventions ? `\n# Convenções do projeto\n${conventions}` : '',
             examples ? `\n# Arquivos-exemplo (siga este padrão)${examples}` : '',
             lessons ? `\n# Lições de runs anteriores (evite repetir estes erros)\n${lessons}` : '',
+            reviewFeedback
+              ? `\n# Parecer da revisão a endereçar (corrija estes pontos, preservando o resto)\n${reviewFeedback}`
+              : '',
             `\n# Conteúdo atual dos arquivos a modificar${currentBlock || '\n(nenhum)'}`,
             createBlock,
           ].join('\n'),
