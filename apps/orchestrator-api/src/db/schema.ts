@@ -112,6 +112,25 @@ export const lessons = pgTable('lessons', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const artifactKind = pgEnum('artifact_kind', [
+  'plan',
+  'patch',
+  'review',
+  'validation',
+  'summary',
+]);
+
+/** Artefatos produzidos por um run, guardados de forma durável (MAC-44). */
+export const artifacts = pgTable('artifacts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  runId: uuid('run_id')
+    .notNull()
+    .references(() => runs.id, { onDelete: 'cascade' }),
+  kind: artifactKind('kind').notNull(),
+  content: text('content').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 /** Agendamentos cron que disparam runs do agente a partir de um prompt (MAC-38). */
 export const schedules = pgTable('schedules', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -140,3 +159,5 @@ export type LessonRow = typeof lessons.$inferSelect;
 export type NewLessonRow = typeof lessons.$inferInsert;
 export type Schedule = typeof schedules.$inferSelect;
 export type NewSchedule = typeof schedules.$inferInsert;
+export type Artifact = typeof artifacts.$inferSelect;
+export type NewArtifact = typeof artifacts.$inferInsert;
