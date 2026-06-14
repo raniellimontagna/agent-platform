@@ -1,4 +1,17 @@
-import { boolean, integer, jsonb, numeric, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  index,
+  integer,
+  jsonb,
+  numeric,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 /**
  * Estado de um run — uma execução do agente disparada por uma issue do Linear.
@@ -70,7 +83,17 @@ export const runs = pgTable('runs', {
     .notNull()
     .defaultNow()
     .$onUpdate(() => new Date()),
-});
+  },
+  (t) => [
+    // MAC-61: no máx. 1 run ativo por agendamento (fecha a race do overlap guard).
+    // schedule_id NULL (runs do webhook) é distinto em unique → webhook não afetado.
+    uniqueIndex('runs_active_schedule_uq')
+      .on(t.scheduleId)
+      .where(
+        sql`${t.status} in ('pending','planning','awaiting_approval','executing','reviewing')`,
+      ),
+  ],
+);
 
 export const runSteps = pgTable('run_steps', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -129,7 +152,14 @@ export const artifacts = pgTable('artifacts', {
   kind: artifactKind('kind').notNull(),
   content: text('content').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+  },
+  (t) => [
+    // MAC-61: FK não cria índice; listArtifacts filtra por run_id.
+    index('artifacts_run_id_idx').on(t.runId),
+    // MAC-61: 1 artefato por kind/run (reforça o no-dup do plan na borda do banco).
+    uniqueIndex('artifacts_run_id_kind_uq').on(t.runId, t.kind),
+  ],
+);
 
 /** Agendamentos cron que disparam runs do agente a partir de um prompt (MAC-38). */
 export const schedules = pgTable('schedules', {
