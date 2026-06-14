@@ -13,7 +13,9 @@ COPY . .
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
     pnpm install --frozen-lockfile
 # Build do app + suas deps de workspace (llm, linear, graph) em ordem topológica.
-RUN pnpm --filter "@agent-platform/orchestrator-api..." build
+# Inclui o mcp-server (facade stdio rodado via docker exec no Proxmox).
+RUN pnpm --filter "@agent-platform/orchestrator-api..." \
+         --filter "@agent-platform/mcp-server..." build
 
 FROM base AS deploy
 # Copia o workspace já buildado (mantém os symlinks dos workspace packages).
