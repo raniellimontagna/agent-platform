@@ -55,6 +55,7 @@ export function buildAgentGraph(deps: GraphDeps, checkpointer: PostgresSaver) {
   const coderDeps = {
     linear: deps.linear,
     repoUrl: deps.runnerRepoUrl,
+    baseBranch: deps.baseBranch ?? 'main',
     dispatch: deps.dispatch,
     testCommands: deps.testCommands ?? [],
     loadLessons: deps.loadLessons,
