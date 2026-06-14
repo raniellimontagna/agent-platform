@@ -36,6 +36,13 @@
       "when": 1781381487757,
       "tag": "0004_freezing_raider",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1781442264538,
+      "tag": "0005_spooky_ego",
+      "breakpoints": true
     }
   ]
 }
