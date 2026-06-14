@@ -5,6 +5,8 @@ export interface CoderDeps {
   linear: LinearGateway;
   /** URL de clone do repo alvo (vai no body do job). */
   repoUrl: string;
+  /** Branch base do clone/diff/PR (MAC-61: alinha coder e PR node). */
+  baseBranch: string;
   /** Despacha o job pro runner com health/failover (MAC-39). */
   dispatch: DispatchFn;
   /** Comandos de validação rodados no sandbox após o push (MAC-29). */
@@ -104,7 +106,7 @@ export function makeCoderNode(deps: CoderDeps, opts: { revise?: boolean } = {}) 
         runId: state.runId,
         issueIdentifier: state.issueIdentifier,
         repoUrl: deps.repoUrl,
-        baseBranch: 'main',
+        baseBranch: deps.baseBranch,
         branch,
         title: state.title,
         description: state.description,
