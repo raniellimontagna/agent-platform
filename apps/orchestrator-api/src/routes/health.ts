@@ -16,3 +16,7 @@ health.get('/health/ready', async (c) => {
     return c.json({ status: 'not_ready', db: 'down' }, 503);
   }
 });
+
+health.get('/healthz/ready', (c) => {
+  return c.json({ ready: true });
+});
