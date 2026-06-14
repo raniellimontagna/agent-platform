@@ -11,8 +11,19 @@ import { startAgentWorker } from './worker.js';
 import { schedulesRoute } from './routes/schedules.js';
 import { artifactsRoute } from './routes/artifacts.js';
 import { startScheduleWorker } from './scheduleWorker.js';
+import { isUuid } from './uuid.js';
 
 const app = new Hono();
+
+// MAC-64: rotas `:id` batem em colunas uuid — id não-uuid faria o cast do
+// Postgres lançar (→ 500). Rejeita cedo com 404 (id inválido = não encontrado).
+app.use('*', async (c, next) => {
+  const id = c.req.param('id');
+  if (id !== undefined && !isUuid(id)) {
+    return c.json({ error: 'not found' }, 404);
+  }
+  await next();
+});
 
 app.route('/', health);
 app.route('/', webhooks);
