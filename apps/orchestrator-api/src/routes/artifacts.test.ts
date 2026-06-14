@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getArtifact, listArtifacts } from '../artifacts.js';
+import { getRun } from '../runs.js';
 import { artifactsRoute } from './artifacts.js';
 
 vi.mock('../artifacts.js', () => ({
@@ -8,13 +9,16 @@ vi.mock('../artifacts.js', () => ({
   getArtifact: vi.fn(),
 }));
 
+vi.mock('../runs.js', () => ({ getRun: vi.fn() }));
+
 const app = new Hono();
 app.route('/', artifactsRoute);
 
 beforeEach(() => vi.clearAllMocks());
 
 describe('GET /runs/:id/artifacts', () => {
-  it('lista os artefatos do run', async () => {
+  it('lista os artefatos do run existente', async () => {
+    vi.mocked(getRun).mockResolvedValue({ id: 'run-1' } as never);
     vi.mocked(listArtifacts).mockResolvedValue([
       { id: 'a1', kind: 'plan', createdAt: new Date('2026-01-01') },
     ] as never);
@@ -23,6 +27,13 @@ describe('GET /runs/:id/artifacts', () => {
     expect(listArtifacts).toHaveBeenCalledWith('run-1');
     const body = (await res.json()) as { artifacts: unknown[] };
     expect(body.artifacts).toHaveLength(1);
+  });
+
+  it('404 quando o run não existe', async () => {
+    vi.mocked(getRun).mockResolvedValue(null);
+    const res = await app.request('/runs/missing/artifacts');
+    expect(res.status).toBe(404);
+    expect(listArtifacts).not.toHaveBeenCalled();
   });
 });
 
