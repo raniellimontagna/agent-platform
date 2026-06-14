@@ -12,4 +12,15 @@ describe('health routes', () => {
     expect(typeof body.ready).toBe('boolean');
     expect(body.ready).toBe(true);
   });
+
+  it('returns status=alive on GET /healthz/live', async () => {
+    const res = await health.request('http://localhost/healthz/live');
+
+    expect(res.status).toBe(200);
+
+    const body = await res.json();
+    expect(body).toEqual({ status: 'alive' });
+    expect(typeof body.status).toBe('string');
+    expect(body.status).toBe('alive');
+  });
 });

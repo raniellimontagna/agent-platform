@@ -20,3 +20,7 @@ health.get('/health/ready', async (c) => {
 health.get('/healthz/ready', (c) => {
   return c.json({ ready: true });
 });
+
+health.get('/healthz/live', (c) => {
+  return c.json({ status: 'alive' });
+});
