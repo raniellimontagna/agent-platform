@@ -53,3 +53,9 @@ pnpm --filter @agent-platform/mcp-server build
 
 Se a máquina do Claude Desktop não alcança a rede isolada `10.10.0.x`, rodar via
 ssh num host que alcança — ver [`docs/runbooks/mcp-server.md`](../../docs/runbooks/mcp-server.md).
+
+## Rodar no Proxmox (zero-túnel)
+
+Em produção o servidor roda dentro do container `orchestrator-api-1` (LXC 201),
+sem túnel SSH. O cliente conecta por ssh→`pct exec`→`docker exec`. Comando de
+registro e troubleshooting em [`docs/runbooks/mcp-proxmox.md`](../../docs/runbooks/mcp-proxmox.md).
