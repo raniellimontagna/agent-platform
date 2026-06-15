@@ -24,9 +24,11 @@ services:
       SCHEDULER_TZ: ${SCHEDULER_TZ:-UTC}
       LINEAR_SCHEDULED_LABEL_ID: ${LINEAR_SCHEDULED_LABEL_ID}
       AGENT_KEY: ${AGENT_KEY:-coder-agent}
+      HF_HOME: /opt/hf-cache
     volumes:
       - /opt/agent-platform/orchestrator:/app/data
       - /opt/agent-platform/logs:/app/logs
+      - /opt/agent-platform/hf-cache:/opt/hf-cache
     depends_on:
       postgres:
         condition: service_healthy
@@ -34,7 +36,7 @@ services:
         condition: service_healthy
 
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}

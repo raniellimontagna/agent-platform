@@ -1,5 +1,6 @@
 import {
   boolean,
+  customType,
   index,
   integer,
   jsonb,
@@ -12,6 +13,22 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
+// EMBEDDING_DIM duplicado aqui p/ evitar que drizzle-kit (CJS) falhe ao resolver
+// o import dinâmico de ../embeddings.ts. Fonte da verdade: src/embeddings.ts.
+const EMBEDDING_DIM = 384;
+
+/** Tipo pgvector para embeddings (MAC-45). number[] ↔ '[1,2,3]' no driver. */
+const vector = customType<{ data: number[]; driverData: string }>({
+  dataType() {
+    return `vector(${EMBEDDING_DIM})`;
+  },
+  toDriver(value: number[]): string {
+    return `[${value.join(',')}]`;
+  },
+  fromDriver(value: string): number[] {
+    return value.slice(1, -1).split(',').map(Number);
+  },
+});
 
 /**
  * Estado de um run — uma execução do agente disparada por uma issue do Linear.
@@ -134,6 +151,7 @@ export const lessons = pgTable('lessons', {
   text: text('text').notNull(),
   runId: uuid('run_id').references(() => runs.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  embedding: vector('embedding'),
 });
 
 export const artifactKind = pgEnum('artifact_kind', [
