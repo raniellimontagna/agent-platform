@@ -47,6 +47,17 @@ export function registerTools(server: McpServer, client: OrchestratorClient): vo
     ({ repo, limit }) => asTool(() => client.listLessons(repo, limit)),
   );
 
+  server.tool(
+    'list_agents',
+    'Lista os agentes registrados (catálogo). Filtra por key e/ou status.',
+    { key: z.string().optional(), status: z.enum(['active', 'deprecated']).optional() },
+    ({ key, status }) => asTool(() => client.listAgents({ key, status })),
+  );
+
+  server.tool('get_agent', 'Detalha um agente registrado pelo id.', { id: z.string() }, ({ id }) =>
+    asTool(() => client.getAgent(id)),
+  );
+
   server.tool('agent_status', 'Status do agente (pausado ou ativo).', {}, () =>
     asTool(() => client.agentStatus()),
   );
