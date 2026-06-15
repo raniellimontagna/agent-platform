@@ -12,6 +12,7 @@ import {
   resolveApproval,
   updateRunStatus,
 } from '../runs.js';
+import { isUniqueViolation } from '../db/pgError.js';
 
 export const webhooks = new Hono();
 
@@ -125,11 +126,21 @@ webhooks.post('/webhooks/linear', async (c) => {
   }
 
   // Cria o run e enfileira; a execução longa roda no worker (MAC-20).
-  const runId = await createRun({
-    linearIssueId: issueId,
-    linearIssueIdentifier: payload.data?.identifier ?? issueId,
-    title: payload.data?.title ?? '(sem título)',
-  });
+  let runId: string;
+  try {
+    runId = await createRun({
+      linearIssueId: issueId,
+      linearIssueIdentifier: payload.data?.identifier ?? issueId,
+      title: payload.data?.title ?? '(sem título)',
+    });
+  } catch (err) {
+    // MAC-47: índice único de issue ativa — webhook concorrente da mesma issue.
+    if (isUniqueViolation(err)) {
+      logger.warn({ issue: identifier }, 'run ativo já existe (índice); ignorando duplicata');
+      return c.json({ ok: true, skipped: true, reason: 'active run exists' });
+    }
+    throw err;
+  }
   await agentQueue.add('plan', { kind: 'plan', runId, issueId }, { priority: JOB_PRIORITY.plan });
 
   logger.info(
