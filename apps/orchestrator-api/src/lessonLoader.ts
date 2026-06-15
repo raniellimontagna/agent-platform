@@ -1,32 +1,41 @@
-import { LESSON_CAP, formatLessons } from '@agent-platform/memory';
+import { LESSON_CAP, type Lesson, formatLessons } from '@agent-platform/memory';
 import { embed } from './embeddings.js';
 import { searchLessons, listLessons } from './lessons.js';
 import { logger } from './logger.js';
 
+export interface RetrievalDeps {
+  embed: typeof embed;
+  searchLessons: typeof searchLessons;
+  listLessons: typeof listLessons;
+}
+
+const defaultDeps: RetrievalDeps = { embed, searchLessons, listLessons };
+
 /**
  * MAC-45: recupera lições por relevância (busca semântica) com fallback pra
- * recência (MAC-23). Embeda a query; busca por similaridade; se o embed falhar
- * ou não houver lições embeddadas, usa as mais recentes. Sempre formata (cap+dedup).
+ * recência (MAC-23). Embeda a query; busca por similaridade; se o embed falhar,
+ * a query for vazia, ou não houver hits → usa as mais recentes.
  */
-export function buildLessonLoader(
+export async function retrieveLessons(
   repo: string,
-  deps: {
-    embed: typeof embed;
-    searchLessons: typeof searchLessons;
-    listLessons: typeof listLessons;
-  } = { embed, searchLessons, listLessons },
-) {
-  return async (query: string): Promise<string> => {
-    try {
-      const q = query.trim();
-      if (q) {
-        const qEmb = await deps.embed(q);
-        const hits = await deps.searchLessons(repo, qEmb, LESSON_CAP);
-        if (hits.length > 0) return formatLessons(hits, LESSON_CAP);
-      }
-    } catch (err) {
-      logger.warn({ err }, 'busca semântica de lições falhou (fallback recência)');
+  query: string,
+  k: number,
+  deps: RetrievalDeps = defaultDeps,
+): Promise<Lesson[]> {
+  try {
+    const q = query.trim();
+    if (q) {
+      const hits = await deps.searchLessons(repo, await deps.embed(q), k);
+      if (hits.length > 0) return hits;
     }
-    return formatLessons(await deps.listLessons(repo, LESSON_CAP), LESSON_CAP);
-  };
+  } catch (err) {
+    logger.warn({ err }, 'busca semântica de lições falhou (fallback recência)');
+  }
+  return deps.listLessons(repo, k);
+}
+
+/** Loader injetado no grafo: lições relevantes já formatadas p/ o prompt (MAC-23/45). */
+export function buildLessonLoader(repo: string, deps: RetrievalDeps = defaultDeps) {
+  return async (query: string): Promise<string> =>
+    formatLessons(await retrieveLessons(repo, query, LESSON_CAP, deps), LESSON_CAP);
 }

@@ -1,6 +1,5 @@
 import { Hono } from 'hono';
-import { embed } from '../embeddings.js';
-import { listLessons, searchLessons } from '../lessons.js';
+import { retrieveLessons } from '../lessonLoader.js';
 import { logger } from '../logger.js';
 import { JOB_PRIORITY, agentQueue } from '../queue.js';
 import {
@@ -70,16 +69,8 @@ runsRoute.get('/lessons', async (c) => {
   const repo = c.req.query('repo');
   if (!repo) return c.json({ error: 'query `repo` obrigatória (owner/name)' }, 400);
   const limit = Math.min(Number(c.req.query('limit')) || 50, 200);
-  const queryText = c.req.query('query');
-  if (queryText && queryText.trim()) {
-    try {
-      const lessons = await searchLessons(repo, await embed(queryText), limit);
-      return c.json({ lessons });
-    } catch (err) {
-      logger.warn({ err }, 'busca semântica de lições falhou (fallback recência)');
-    }
-  }
-  return c.json({ lessons: await listLessons(repo, limit) });
+  const query = c.req.query('query');
+  return c.json({ lessons: await retrieveLessons(repo, query ?? '', limit) });
 });
 
 /** Aprova um run pausado e retoma o grafo (MAC-22/41). */

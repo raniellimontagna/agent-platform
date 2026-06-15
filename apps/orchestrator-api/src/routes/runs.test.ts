@@ -3,8 +3,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { runsRoute } from './runs.js';
 import { getRun, listRunStepCosts, listRuns } from '../runs.js';
 
+vi.mock('../lessonLoader.js', () => ({
+  retrieveLessons: vi.fn(),
+}));
+
 vi.mock('../lessons.js', () => ({
   listLessons: vi.fn(),
+  searchLessons: vi.fn(),
 }));
 
 vi.mock('../logger.js', () => ({
