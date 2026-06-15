@@ -11,7 +11,7 @@ Servidor MCP (stdio) que expõe o orchestrator a clientes MCP como o Claude Desk
 | `get_run` | Detalha um run |
 | `get_run_steps` | Etapas com tempo/custo |
 | `get_run_approvals` | Aprovações e motivos |
-| `list_lessons` | Lições do Memory Layer por repo |
+| `list_lessons` | Lições do Memory Layer por repo; com `query`, busca semântica por relevância |
 | `list_agents` | Lista agentes registrados (catálogo) → `GET /agents` |
 | `get_agent` | Detalha um agente pelo id → `GET /agents/:id` |
 | `list_tools` | Lista ferramentas registradas (catálogo) → `GET /tools` |
