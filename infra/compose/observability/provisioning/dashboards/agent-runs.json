@@ -124,6 +124,25 @@
           "rawSql": "SELECT round(100.0 * count(*) FILTER (WHERE status = 'completed') / NULLIF(count(*), 0), 1) AS taxa FROM runs;"
         }
       ]
+    },
+    {
+      "id": 8,
+      "title": "Runs ativos agora",
+      "type": "stat",
+      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "fixed", "fixedColor": "blue" } },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 22 },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT count(*) AS \"ativos\" FROM runs WHERE status IN ('pending','planning','awaiting_approval','executing','reviewing')"
+        }
+      ]
     }
   ]
 }
