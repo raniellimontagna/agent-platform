@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "runs_active_issue_uq" ON "runs" USING btree ("linear_issue_id") WHERE "runs"."status" in ('pending','planning','awaiting_approval','executing','reviewing');
