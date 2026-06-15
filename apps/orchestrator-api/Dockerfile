@@ -16,6 +16,13 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
 # Inclui o mcp-server (facade stdio rodado via docker exec no Proxmox).
 RUN pnpm --filter "@agent-platform/orchestrator-api..." \
          --filter "@agent-platform/mcp-server..." build
+# onnxruntime-node (via @huggingface/transformers, MAC-45) empacota providers GPU
+# (CUDA/TensorRT, ~GB) e binários de outras arquiteturas. Embeddings rodam em CPU
+# x64 — remove o peso morto pra não inflar a imagem (chegou a estourar o disco do
+# LXC no deploy). `|| true`: tolera ausência (a CPU lib libonnxruntime.so fica).
+RUN find /app/node_modules -type f -name 'libonnxruntime_providers_cuda.so*' -delete 2>/dev/null || true \
+ && find /app/node_modules -type f -name 'libonnxruntime_providers_tensorrt.so*' -delete 2>/dev/null || true \
+ && find /app/node_modules -type d -path '*onnxruntime-node/bin/*' \( -name win32 -o -name darwin -o -name arm64 \) -exec rm -rf {} + 2>/dev/null || true
 
 FROM base AS deploy
 # Copia o workspace já buildado (mantém os symlinks dos workspace packages).
