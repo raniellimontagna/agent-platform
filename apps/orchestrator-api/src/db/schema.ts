@@ -204,6 +204,32 @@ export const agents = pgTable(
   (t) => [uniqueIndex('agents_key_version_uq').on(t.key, t.version)],
 );
 
+export const toolRisk = pgEnum('tool_risk', ['safe', 'caution', 'dangerous']);
+export const toolStatus = pgEnum('tool_status', ['active', 'deprecated']);
+
+/** Catálogo versionado de ferramentas (MAC-43). Metadado — permissões declarativas. */
+export const tools = pgTable(
+  'tools',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    key: text('key').notNull(),
+    version: text('version').notNull(),
+    description: text('description'),
+    risk: toolRisk('risk').notNull().default('safe'),
+    scopes: jsonb('scopes')
+      .notNull()
+      .default(sql`'[]'::jsonb`)
+      .$type<string[]>(),
+    status: toolStatus('status').notNull().default('active'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [uniqueIndex('tools_key_version_uq').on(t.key, t.version)],
+);
+
 export type Run = typeof runs.$inferSelect;
 export type NewRun = typeof runs.$inferInsert;
 export type RunStep = typeof runSteps.$inferSelect;
@@ -218,3 +244,5 @@ export type Artifact = typeof artifacts.$inferSelect;
 export type NewArtifact = typeof artifacts.$inferInsert;
 export type Agent = typeof agents.$inferSelect;
 export type NewAgent = typeof agents.$inferInsert;
+export type Tool = typeof tools.$inferSelect;
+export type NewTool = typeof tools.$inferInsert;
