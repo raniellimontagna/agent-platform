@@ -58,6 +58,21 @@ export function registerTools(server: McpServer, client: OrchestratorClient): vo
     asTool(() => client.getAgent(id)),
   );
 
+  server.tool(
+    'list_tools',
+    'Lista as ferramentas registradas (catálogo). Filtra por key, status e/ou risk.',
+    {
+      key: z.string().optional(),
+      status: z.enum(['active', 'deprecated']).optional(),
+      risk: z.enum(['safe', 'caution', 'dangerous']).optional(),
+    },
+    ({ key, status, risk }) => asTool(() => client.listTools({ key, status, risk })),
+  );
+
+  server.tool('get_tool', 'Detalha uma ferramenta registrada pelo id.', { id: z.string() }, ({ id }) =>
+    asTool(() => client.getTool(id)),
+  );
+
   server.tool('agent_status', 'Status do agente (pausado ou ativo).', {}, () =>
     asTool(() => client.agentStatus()),
   );
