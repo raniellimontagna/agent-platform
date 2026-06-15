@@ -64,6 +64,8 @@ describe('createClient', () => {
       [(c) => c.rejectRun('r1', 'me'), 'POST', 'http://orch:3000/runs/r1/reject?by=me'],
       [(c) => c.pauseAgents(), 'POST', 'http://orch:3000/admin/pause'],
       [(c) => c.resumeAgents(), 'POST', 'http://orch:3000/admin/resume'],
+      [(c) => c.listAgents(), 'GET', 'http://orch:3000/agents'],
+      [(c) => c.getAgent('a1'), 'GET', 'http://orch:3000/agents/a1'],
     ];
     for (const [fn, method, url] of cases) {
       const f = mockFetch(200, {});
@@ -71,6 +73,13 @@ describe('createClient', () => {
       const call = (f as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls[0];
       expect([call[1].method, call[0]]).toEqual([method, url]);
     }
+  });
+
+  it('listAgents monta key/status na query', async () => {
+    const f = mockFetch(200, { agents: [] });
+    await createClient(cfg(f)).listAgents({ key: 'coder-agent', status: 'active' });
+    const call = (f as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls[0];
+    expect(call[0]).toBe('http://orch:3000/agents?key=coder-agent&status=active');
   });
 
   it('erro de rede vira ApiError com mensagem clara', async () => {
