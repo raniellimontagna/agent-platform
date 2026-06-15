@@ -4,6 +4,13 @@ import { listArtifacts } from './artifacts.js';
 import { getRun } from './runs.js';
 
 vi.mock('./artifacts.js', () => ({ listArtifacts: vi.fn(), getArtifact: vi.fn() }));
+vi.mock('./agents.js', async (orig) => ({
+  ...(await orig<typeof import('./agents.js')>()),
+  listAgents: vi.fn(),
+  getAgent: vi.fn(),
+  createAgent: vi.fn(),
+  updateAgentStatus: vi.fn(),
+}));
 vi.mock('./runs.js', () => ({
   getRun: vi.fn(),
   listRuns: vi.fn(),
@@ -44,5 +51,10 @@ describe('guard de uuid (MAC-64)', () => {
     const res = await app.request('/runs/00000000-0000-4000-8000-000000000000');
     expect(res.status).toBe(404); // run inexistente → 404 da rota
     expect(getRun).toHaveBeenCalledTimes(1);
+  });
+
+  it('404 para :id não-uuid em /agents/:id', async () => {
+    const res = await app.request('/agents/nao-uuid');
+    expect(res.status).toBe(404);
   });
 });

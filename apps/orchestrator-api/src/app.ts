@@ -1,6 +1,7 @@
 import { Hono, type MiddlewareHandler } from 'hono';
 import { logger } from './logger.js';
 import { adminRoute } from './routes/admin.js';
+import { agentsRoute } from './routes/agents.js';
 import { artifactsRoute } from './routes/artifacts.js';
 import { health } from './routes/health.js';
 import { runsRoute } from './routes/runs.js';
@@ -33,6 +34,8 @@ export function buildApp(): Hono {
     '/artifacts/:id',
     '/schedules/:id',
     '/schedules/:id/*',
+    '/agents/:id',
+    '/agents/:id/*',
   ]) {
     app.use(pattern, uuidGuard);
   }
@@ -44,6 +47,7 @@ export function buildApp(): Hono {
   app.route('/', adminRoute);
   app.route('/', schedulesRoute);
   app.route('/', artifactsRoute);
+  app.route('/', agentsRoute);
 
   app.notFound((c) => c.json({ error: 'not found' }, 404));
 
