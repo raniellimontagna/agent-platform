@@ -21,6 +21,8 @@ export interface PullRequest {
 
 export interface GithubGateway {
   createPullRequest(args: CreatePullRequestArgs): Promise<PullRequest>;
+  mergePullRequest(args: { number: number; method?: 'merge' | 'squash' | 'rebase' }): Promise<void>;
+  deleteBranch(branch: string): Promise<void>;
 }
 
 /**
@@ -63,6 +65,24 @@ export function createGithubGateway(token: string, repo: RepoRef): GithubGateway
 
       const data = (await res.json()) as { number: number; html_url: string };
       return { number: data.number, url: data.html_url };
+    },
+    async mergePullRequest({ number, method = 'squash' }) {
+      const res = await fetch(`${apiBase}/pulls/${number}/merge`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ merge_method: method }),
+      });
+      if (!res.ok) throw new Error(`GitHub merge respondeu ${res.status}: ${await res.text()}`);
+    },
+    async deleteBranch(branch) {
+      const res = await fetch(`${apiBase}/git/refs/heads/${encodeURIComponent(branch)}`, {
+        method: 'DELETE',
+        headers,
+      });
+      // 404/422 = ref já removida → tolerar.
+      if (!res.ok && res.status !== 404 && res.status !== 422) {
+        throw new Error(`GitHub deleteBranch respondeu ${res.status}: ${await res.text()}`);
+      }
     },
   };
 }
