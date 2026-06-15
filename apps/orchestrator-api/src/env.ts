@@ -48,6 +48,8 @@ const envSchema = z.object({
   SCHEDULER_TZ: z.string().default('UTC'),
   // Label opcional aplicada às issues criadas por agendamento.
   LINEAR_SCHEDULED_LABEL_ID: z.string().optional(),
+  // Agent Registry (MAC-42): key do agente default (catálogo/seed/resolução).
+  AGENT_KEY: z.string().default('coder-agent'),
 });
 
 export type Env = z.infer<typeof envSchema>;
