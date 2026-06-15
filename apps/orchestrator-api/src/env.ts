@@ -50,6 +50,8 @@ const envSchema = z.object({
   LINEAR_SCHEDULED_LABEL_ID: z.string().optional(),
   // Agent Registry (MAC-42): key do agente default (catálogo/seed/resolução).
   AGENT_KEY: z.string().default('coder-agent'),
+  // Multi-Agent Execution (MAC-47): nº de runs processados em paralelo pelo worker.
+  AGENT_MAX_CONCURRENCY: z.coerce.number().default(3),
 });
 
 export type Env = z.infer<typeof envSchema>;
