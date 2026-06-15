@@ -18,13 +18,24 @@ export interface RunStats {
 }
 
 /** Status não-terminais — um run nesses ainda está em andamento. */
-const ACTIVE_STATUSES: RunStatus[] = [
+export const ACTIVE_STATUSES: RunStatus[] = [
   'pending',
   'planning',
   'awaiting_approval',
   'executing',
   'reviewing',
 ];
+
+/** Contagem de runs por status (MAC-47, observabilidade de concorrência). */
+export async function countRunsByStatus(): Promise<Partial<Record<RunStatus, number>>> {
+  const rows = await db
+    .select({ status: schema.runs.status, count: sql<number>`count(*)::int` })
+    .from(schema.runs)
+    .groupBy(schema.runs.status);
+  const out: Partial<Record<RunStatus, number>> = {};
+  for (const r of rows) out[r.status as RunStatus] = r.count;
+  return out;
+}
 
 export interface NewRunInput {
   linearIssueId: string;
