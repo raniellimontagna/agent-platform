@@ -5,7 +5,7 @@ descobertos na prática. Complementa o [proxmox-setup.md](./proxmox-setup.md) (q
 descreve o passo a passo do zero). **Leia isto antes de mexer no ambiente de outra
 máquina** — evita re-descobrir as armadilhas abaixo.
 
-> Última atualização: 2026-06-10 (provisionamento inicial concluído).
+> Última atualização: 2026-06-15 (Fase 7 deployada — pgvector + multi-agent).
 
 ---
 
@@ -61,6 +61,24 @@ vzdump 203 --storage backup-hd --mode suspend --compress zstd
 
 Restore: `qmrestore` (VM) / `pct restore` (LXC) a partir do arquivo em
 `backup-hd:backup/...`.
+
+### 1.5. Orchestrator (201): disco de 20GB aperta com a imagem do onnxruntime
+
+O `@huggingface/transformers` (Vector Memory, MAC-45) puxa `onnxruntime-node`, que
+empacota providers GPU (CUDA/TensorRT, ~GB) e binários de outras arquiteturas que
+**não usamos** (embeddings rodam CPU/linux-x64). No primeiro deploy a imagem estourou
+o disco do LXC 201 (`no space left on device` no export). Dois remédios:
+
+```bash
+# Liberar cache de build acumulado (costuma reclamar GBs):
+pct exec 201 -- docker builder prune -af
+# Crescer o disco do LXC se precisar de folga:
+pct resize 201 rootfs +10G
+```
+
+O `Dockerfile` do orchestrator já corta os `.so` de CUDA/TensorRT + dirs win32/darwin/
+arm64 no build (corta ~GB) — pega no próximo `deploy.sh orchestrator`. Postgres usa a
+imagem `pgvector/pgvector:pg16` (mesmo PG16, volume compatível).
 
 ### 2. Runner (202): node/pnpm via nvm não estão no PATH de shell não-interativo
 
@@ -125,11 +143,21 @@ qm destroy <ID>        # VM
 
 ## Status do deploy
 
-> **Atualização 2026-06-12:** as 4 VMs estão deployadas e o loop autônomo rodou
-> ponta a ponta em produção (webhook real do Linear via Tailscale Funnel, codegen,
-> validação + auto-correção, review, Draft PR, memória de lições). A tabela abaixo
+> **Atualização 2026-06-15 (Fase 7 deployada):** as 4 VMs estão deployadas e o loop
+> autônomo roda ponta a ponta em prod. Orchestrator com Postgres+pgvector (migrations
+> 0000→0009), embeddings locais, registries de agente/tool, scheduler, artifact store
+> e execução paralela de runs (`AGENT_MAX_CONCURRENCY`). Endpoints novos validados em
+> prod: `/agents`, `/tools`, `/lessons?query=`, `/admin/concurrency`. A tabela abaixo
 > documenta os bloqueios **originais** de cada serviço (referência histórica) — hoje
 > todos resolvidos. Deploy de cada serviço via `infra/deploy/deploy.sh <svc>`.
+>
+> **Gotcha de migration (pgvector):** o drizzle migrator é transacional por lote —
+> se uma migration falha, o lote inteiro dá rollback. A 0009 (índice único de issue
+> ativa) falha se houver runs ativos duplicados (limpar com
+> `UPDATE runs SET status='cancelled' WHERE status IN ('awaiting_approval','pending')`).
+> Re-rodar migrate via container no ar (evita quebra de paste em comando longo):
+> `pct exec 201 -- docker exec orchestrator-api-1 node dist/db/migrate.js`, depois
+> `docker restart orchestrator-api-1` pra rodar os seeds (agents/tools) no boot.
 
 Bloqueios originais antes do primeiro deploy dos composes em `infra/compose/<vm>/`:
 

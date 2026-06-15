@@ -4,7 +4,8 @@ Mapa único do sistema: o que está no ar, o fluxo ponta a ponta, e como cada
 card do Linear (projeto **Orquestrador de Agentes com LangGraph**, time `MAC`)
 se encaixa na estrutura. Serve para validar o todo antes de seguir.
 
-> Estado em 2026-06-12. Legenda: ✅ feito · 🏗 no ar/parcial · ⏳ pendente.
+> Estado em 2026-06-15. Legenda: ✅ feito · 🏗 no ar/parcial · ⏳ pendente.
+> **Fases 0–7 completas** — projeto code-complete e deployado em prod.
 
 ---
 
@@ -18,7 +19,7 @@ flowchart TB
 
   subgraph AGENT["agent-platform 10.10.0.x — vmbr1 (isolada, NAT via host)"]
     GW["agent-gateway · .10 · LXC 200<br/>LiteLLM :4000 · Caddy · OmniRoute :20128 · Postgres"]
-    ORCH["agent-orchestrator · .11 · LXC 201<br/>API Hono :3000 · LangGraph · Postgres · Redis/BullMQ"]
+    ORCH["agent-orchestrator · .11 · LXC 201<br/>API Hono :3000 · LangGraph · Postgres+pgvector · Redis/BullMQ · embeddings locais"]
     RUN["agent-runners · .12 · VM 202<br/>worker-code :8080 · git worktrees · sandbox"]
     OBS["agent-observability · .13 · LXC 203<br/>Grafana :3000 · Prometheus · Loki · Promtail"]
   end
@@ -41,8 +42,9 @@ flowchart TB
   GW -.métricas/logs.-> OBS
 ```
 
-**Estado da infra (Fase 1):** as 4 VMs provisionadas e no ar. Deploy: observability
-✅ e runners ✅ rodando; gateway e orchestrator ⏳ aguardando secrets/OAuth.
+**Estado da infra:** as 4 VMs provisionadas, no ar e deployadas. Gateway com OmniRoute
+(OAuth) + Verboo + virtual key dedicada (MAC-15); orchestrator com Postgres+pgvector
+(migrations 0000→0009) e embeddings locais; webhook real do Linear via Tailscale Funnel.
 
 ---
 
@@ -50,30 +52,38 @@ flowchart TB
 
 ```mermaid
 flowchart TD
-  A["Issue recebe label <b>ai-ready</b>"] -->|webhook| B["Webhook Linear<br/>MAC-19"]
-  B --> C["Dispara fluxo ai-ready<br/>MAC-20"]
-  C --> D["State Machine<br/>MAC-14"]
+  A["Issue recebe label <b>ai-ready</b>"] -->|webhook| B["Webhook Linear<br/>MAC-19 (dedup por issue ativa)"]
+  SCHED["Scheduler cron<br/>MAC-38"] -->|cria issue + run| C
+  B --> C["Cria run (agent_id do registry)<br/>MAC-20/42"]
+  C --> D["State Machine — fila BullMQ<br/>N runs em paralelo · MAC-14/47"]
   D --> E["Planner Agent gera plano<br/>MAC-16"]
   E --> F["Reporter comenta plano no Linear<br/>MAC-21"]
-  F --> G{"Human Approval Node<br/>MAC-22"}
-  G -->|aprovado| H["Branch Manager cria branch<br/>MAC-25"]
+  F --> G{"Human Approval Node<br/>MAC-22 (auto-aprova agendado)"}
+  G -->|aprovado| H["Coder: branch única + worktree<br/>MAC-25/27"]
   G -->|reprovado| Z["Encerra / aguarda"]
-  H --> I["Worktree Manager<br/>MAC-27"]
-  I --> J["Coder Agent altera código<br/>(contexto + lições) MAC-17/24/23"]
-  J --> K["Sandbox Executor<br/>MAC-28"]
-  K --> L["Test Runner / valida<br/>MAC-29"]
+  H --> J["Coder Agent altera código<br/>contexto + lições (busca semântica)<br/>MAC-17/24/23/45"]
+  J --> K["Sandbox Executor (allowlist)<br/>MAC-28/31"]
+  K --> L["Valida ANTES de pushar<br/>MAC-29"]
   L -->|"falhou"| FX["Self-correction<br/>fix dirigido MAC-54"]
   FX --> L
-  L -->|"ok ou esgotou retries"| M["Reviewer Agent revisa diff<br/>MAC-18"]
-  M --> N["PR Creator abre Draft PR<br/>MAC-26"]
-  N --> Q["Memory: destila lição se falhou<br/>MAC-23"]
+  L -->|"ok ou esgotou retries"| M["Reviewer Agent revisa diff (critic)<br/>MAC-18"]
+  M -->|"REPROVA / ressalva"| RV["Revising: re-coda endereçando<br/>o parecer · MAC-59"]
+  RV --> M
+  M -->|"aprovado / teto"| N["PR Creator abre Draft PR<br/>MAC-26"]
+  N --> AR["Artifact Store: plano/patch/review/...<br/>MAC-44"]
+  AR --> Q["Memory: destila lição se falhou<br/>(embeda p/ busca futura) MAC-23/45"]
   Q --> O["Reporter comenta resultado no Linear<br/>MAC-21"]
   O --> P["Merge e deploy MANUAIS (MVP)"]
 ```
 
-Atravessando tudo: **Context Builder** (MAC-24), **Memory Layer** (MAC-23 — lições
-por repo, reinjetadas), **Self-correction** (MAC-54 — fix intra-run), **Retry
-Engine** (MAC-33), **Workflow Persistence** (MAC-34) e o gateway de modelos (Fase 2).
+Grafo LangGraph: `planning → [⏸ aprovação] → coding → reviewing → [revisar? → revising → reviewing] → pr → report → END`
+(falha do coder curto-circuita para `report`). Atravessando tudo: **Context Builder**
+(MAC-24), **Memory Layer** (MAC-23/45 — lições por repo, recuperadas por similaridade),
+**Self-correction** (MAC-54 — fix intra-run), **Loop de revisão** (MAC-59), **Retry
+Engine** (MAC-33), **Workflow Persistence** (MAC-34), **Cost Guard** (MAC-40) e o
+gateway de modelos (Fase 2). Catálogos: **Agent/Tool Registry** (MAC-42/43, metadado +
+FK, não executam — o grafo segue em código). Concorrência: `AGENT_MAX_CONCURRENCY`
+runs simultâneos, observável em `GET /admin/concurrency` (MAC-47).
 
 ---
 
@@ -97,10 +107,15 @@ Engine** (MAC-33), **Workflow Persistence** (MAC-34) e o gateway de modelos (Fas
 | Retry / Persistence | MAC-33/34 | `packages/llm` (retry), `packages/graph` (checkpointer), `worker.ts` (resume) | ✅ |
 | Branch / PR / Worktree | MAC-25/26/27 | `packages/github`, `packages/graph/src/nodes/pr.ts`, `apps/worker-code/src/executor/worktree.ts` | ✅ |
 | Sandbox Executor / Test Runner / Self-correction | MAC-28/29 (+fix loop) | `apps/worker-code` (runJob + allowlist + applyFix) | ✅ (valida antes de pushar; corrige até `AGENT_MAX_FIX_ATTEMPTS`) |
-| Observabilidade (painéis, registro) | MAC-35/36 | `infra/compose/observability/provisioning/`, `apps/orchestrator-api` (runs/steps) | registro ✅; 3 dashboards (Execuções, Custo & Governança, Qualidade & Memória) — verificar UI |
+| Observabilidade (painéis, registro) | MAC-35/36 | `infra/compose/observability/provisioning/`, `apps/orchestrator-api` (runs/steps) | ✅ 3 dashboards (Execuções, Custo & Governança, Qualidade & Memória) verificados na UI + painel "Runs ativos agora" |
 | Segurança (vault, allowlist, kill switch) | MAC-30/31/32 | `killswitch.ts`, `routes/admin.ts`, `worker-code/.../commandPolicy.ts`, `docs/runbooks/secrets.md` | ✅ |
-| Runtime (queue, scheduler, workers, cost, approval) | MAC-37/38/39/40/41 | `apps/orchestrator-api` (BullMQ + cost guard), `packages/policy` | queue/cost/approval ✅; scheduler(38)/workers(39) ⏳ |
-| Escala (registries, artifacts, vector, MCP, multiagente) | MAC-42..47 | `apps/mcp-server`, `packages/*` | MCP server ✅ (`apps/mcp-server`); registries/artifacts/vector/multiagente ⏳ |
+| Loop de revisão (critic re-coda) | MAC-59 | `packages/graph` (nó `revising` + `decideAfterReview`) | ✅ |
+| Runtime (queue, scheduler, workers, cost, approval) | MAC-37/38/39/40/41 | `apps/orchestrator-api` (BullMQ + cost guard + scheduler), `packages/policy` | ✅ (scheduler `/schedules`, worker manager `/admin/runners` com failover) |
+| Agent Registry / Tool Registry | MAC-42/43 | `apps/orchestrator-api` (`agents.ts`/`tools.ts`, `/agents`,`/tools`), migrations 0006/0007 | ✅ catálogos versionados (capabilities; risk+scopes) + seed + MCP read |
+| Artifact Store | MAC-44 | `apps/orchestrator-api` (`artifacts.ts`, `/runs/:id/artifacts`), migration 0004 | ✅ |
+| Vector Memory | MAC-45 | `apps/orchestrator-api` (`embeddings.ts`/`lessonLoader.ts`), pgvector, migration 0008 | ✅ busca semântica de lições + fallback recência |
+| MCP server | MAC-46 | `apps/mcp-server` (stdio facade) | ✅ rodando zero-túnel no Proxmox (docker exec) |
+| Multi-Agent Execution | MAC-47 | `apps/orchestrator-api` (worker `concurrency`, `/admin/concurrency`), migration 0009 | ✅ N runs em paralelo + dedup de issue ativa |
 
 Provider LLM é híbrido: Verboo (MAC-13) + OmniRoute/OAuth (MAC-48) — ver §5 e ADR-0006.
 
@@ -115,9 +130,9 @@ Provider LLM é híbrido: Verboo (MAC-13) + OmniRoute/OAuth (MAC-48) — ver §5
 | 2 | Gateway LiteLLM e provedores | MAC-12/13/48/15 | 30/06 | 🏗 no ar; OAuth feito |
 | 3 | Orquestrador LangGraph | MAC-14/16/17/18/21/22/23/24/33/34 | 10/07 | ✅ completa |
 | 4 | Linear, GitHub e Code Runner | MAC-19/20/25/26/27/28/29 | 20/07 | ✅ |
-| 5 | Segurança e Observabilidade | MAC-30/31/32/35/36 | 10/08 | ✅ (painéis: verificar UI) |
-| 6 | Runtime e Governança | MAC-37/38/39/40/41 | 24/08 | 🏗 37/40/41 ✅; 38/39 ⏳ |
-| 7 | Produção e Escala | MAC-42/43/44/45/46/47 | 07/09 | ⏳ |
+| 5 | Segurança e Observabilidade | MAC-30/31/32/35/36 | 10/08 | ✅ |
+| 6 | Runtime e Governança | MAC-37/38/39/40/41 | 24/08 | ✅ |
+| 7 | Produção e Escala | MAC-42/43/44/45/46/47 | 07/09 | ✅ |
 
 ¹ MAC-7 e MAC-8 têm o mesmo título "Provisionar VM Gateway" (ver §5).
 
