@@ -45,6 +45,8 @@ export interface NewRunInput {
   scheduleId?: string;
   /** Run pode ser auto-aprovado se não houver motivo crítico (MAC-38). */
   autoApprove?: boolean;
+  /** Issue marcada com a label auto-merge (opt-in de merge automático). */
+  autoMerge?: boolean;
   /** Agente que vai rodar (MAC-42). Default = agente vigente da key padrão. */
   agentId?: string;
 }
@@ -64,6 +66,7 @@ export async function createRun(input: NewRunInput): Promise<string> {
       status: 'pending',
       ...(input.scheduleId ? { scheduleId: input.scheduleId } : {}),
       ...(input.autoApprove !== undefined ? { autoApprove: input.autoApprove } : {}),
+      ...(input.autoMerge !== undefined ? { autoMerge: input.autoMerge } : {}),
       ...(agentId ? { agentId } : {}),
     })
     .returning({ id: schema.runs.id });

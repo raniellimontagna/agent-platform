@@ -71,6 +71,13 @@
       "when": 1781544355378,
       "tag": "0009_petite_songbird",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1781567603146,
+      "tag": "0010_jazzy_wild_child",
+      "breakpoints": true
     }
   ]
 }

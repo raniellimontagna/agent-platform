@@ -96,6 +96,7 @@ export const runs = pgTable('runs', {
   scheduleId: uuid('schedule_id').references(() => schedules.id, { onDelete: 'set null' }),
   agentId: uuid('agent_id').references(() => agents.id, { onDelete: 'set null' }),
   autoApprove: boolean('auto_approve').notNull().default(false),
+  autoMerge: boolean('auto_merge').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true })
     .notNull()
