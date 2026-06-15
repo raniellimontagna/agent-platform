@@ -2,6 +2,8 @@ import type { Lesson, LessonSource } from '@agent-platform/memory';
 import { desc, eq } from 'drizzle-orm';
 import { db, schema } from './db/client.js';
 import type { LessonRow } from './db/schema.js';
+import { embed } from './embeddings.js';
+import { logger } from './logger.js';
 
 /** Mapeia a linha do banco para o tipo puro do pacote memory. */
 function toLesson(row: LessonRow): Lesson {
@@ -24,12 +26,21 @@ export async function saveLesson(input: {
   runId: string;
   category?: string | null;
 }): Promise<void> {
+  // MAC-45: indexa a lição com o embedding do texto. Non-fatal: se falhar, grava
+  // sem embedding (não perde a lição; não entra na busca semântica).
+  let embedding: number[] | null = null;
+  try {
+    embedding = await embed(input.text);
+  } catch (err) {
+    logger.warn({ err }, 'embed da lição falhou (gravando sem embedding)');
+  }
   await db.insert(schema.lessons).values({
     repo: input.repo,
     source: input.source,
     text: input.text,
     runId: input.runId,
     category: input.category ?? null,
+    ...(embedding ? { embedding } : {}),
   });
 }
 
