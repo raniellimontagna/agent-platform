@@ -1,16 +1,7 @@
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import { db } from './db/client.js';
 import * as schema from './db/schema.js';
-import type { RunStatus } from './runs.js';
-
-/** Status não-terminais — usados no overlap guard. */
-const ACTIVE_STATUSES: RunStatus[] = [
-  'pending',
-  'planning',
-  'awaiting_approval',
-  'executing',
-  'reviewing',
-];
+import { ACTIVE_STATUSES } from './runs.js';
 
 export interface NewScheduleInput {
   name: string;
