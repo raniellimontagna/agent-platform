@@ -1,0 +1,1 @@
+ALTER TABLE "runs" ADD COLUMN "auto_merge" boolean DEFAULT false NOT NULL;
