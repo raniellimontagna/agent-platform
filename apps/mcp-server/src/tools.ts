@@ -78,6 +78,13 @@ export function registerTools(server: McpServer, client: OrchestratorClient): vo
   );
 
   server.tool(
+    'agent_concurrency',
+    'Concorrência de execução: limite configurado, runs ativos e contagem por status (MAC-47).',
+    {},
+    () => asTool(() => client.agentConcurrency()),
+  );
+
+  server.tool(
     'get_stats',
     'Resumo agregado das execuções (runs por status, taxa de sucesso, custo total/24h, lições, média de auto-correção).',
     {},

@@ -69,6 +69,7 @@ describe('createClient', () => {
       [(c) => c.getStats(), 'GET', 'http://orch:3000/stats'],
       [(c) => c.approveRun('r1'), 'POST', 'http://orch:3000/runs/r1/approve'],
       [(c) => c.rejectRun('r1', 'me'), 'POST', 'http://orch:3000/runs/r1/reject?by=me'],
+      [(c) => c.agentConcurrency(), 'GET', 'http://orch:3000/admin/concurrency'],
       [(c) => c.pauseAgents(), 'POST', 'http://orch:3000/admin/pause'],
       [(c) => c.resumeAgents(), 'POST', 'http://orch:3000/admin/resume'],
       [(c) => c.listAgents(), 'GET', 'http://orch:3000/agents'],
