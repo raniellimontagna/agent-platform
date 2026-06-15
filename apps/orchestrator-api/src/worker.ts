@@ -3,6 +3,7 @@ import { parseRepoRef } from '@agent-platform/github';
 import { verdictOf } from '@agent-platform/graph';
 import { distillLesson } from '@agent-platform/memory';
 import { getAgent } from './agent.js';
+import { ensureDefaultAgent } from './agents.js';
 import { hasCriticalReason, isCriticalReason } from './approvalPolicy.js';
 import { saveArtifacts } from './artifacts.js';
 import { env } from './env.js';
@@ -30,6 +31,13 @@ import {
  */
 export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, string>> {
   const { graph, linear, llm } = await getAgent();
+
+  // MAC-42: garante o agente default no catálogo (idempotente). Não-fatal.
+  try {
+    await ensureDefaultAgent();
+  } catch (err) {
+    logger.warn({ err }, 'ensureDefaultAgent falhou (seguindo sem seed)');
+  }
 
   const worker = new Worker<AgentJobData, unknown, string>(
     AGENT_QUEUE,
