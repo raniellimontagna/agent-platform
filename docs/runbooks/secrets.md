@@ -21,7 +21,7 @@ Política e procedimento de rotação dos segredos do agent-platform.
 | `LITELLM_MASTER_KEY` | gateway `.env` | LiteLLM | gerado (sk-…) |
 | `OMNIROUTE_API_KEY` | gateway `.env` | OmniRoute | painel OmniRoute (OAuth) |
 | `VERBOO_API_KEY` | gateway `.env` | Verboo | painel Verboo |
-| `LITELLM_API_KEY` | orchestrator + runner `.env` | chamadas LLM | = master key do gateway |
+| `LITELLM_API_KEY` | orchestrator + runner `.env` | chamadas LLM | virtual key dedicada do LiteLLM (`key_alias=agent-platform`), gerada com a master (MAC-15) — **não** é a master key |
 | `LINEAR_API_KEY` | orchestrator `.env` | Linear SDK | Linear → Settings → API |
 | `LINEAR_WEBHOOK_SECRET` | orchestrator `.env` | HMAC do webhook | Linear → Webhooks |
 | `GITHUB_TOKEN` | orchestrator `.env` | clone/push/PR | GitHub PAT (escopo `repo`) |
@@ -47,8 +47,13 @@ Geral: editar o `.env` do serviço, salvar, redeployar/reiniciar o container.
 
 - **`RUNNER_AUTH_TOKEN`**: compartilhado orchestrator↔runner e usado no `/admin`
   (kill switch). Trocar nos dois `.env` na mesma janela pra não quebrar a auth.
-- **`LITELLM_MASTER_KEY`**: ao rotacionar, atualizar `LITELLM_API_KEY` no
-  orchestrator e no runner (eles usam a master key).
+- **`LITELLM_API_KEY` (virtual key `agent-platform`)**: orchestrator e runner usam
+  uma virtual key dedicada do LiteLLM, **não** a master (MAC-15). Para rotacionar:
+  gerar nova key (`POST :4000/key/generate` com a master — ver
+  [`litellm-guardrails.md`](litellm-guardrails.md)), trocar `LITELLM_API_KEY` nos
+  dois `.env` e revogar a antiga (`POST :4000/key/delete`). Rotacionar a
+  `LITELLM_MASTER_KEY` (gateway) **não** exige mais mexer no orchestrator/runner —
+  só re-emitir as virtual keys se quiser.
 - **`GITHUB_TOKEN`**: PAT com escopo `repo`. Após rotacionar, revogar o antigo no
   GitHub → Settings → Developer settings → Tokens.
 

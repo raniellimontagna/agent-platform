@@ -29,6 +29,14 @@ medido.
 Execute no host Proxmox. Os comandos usam o master key somente para provisionar
 chaves; os serviços devem usar as chaves geradas, não o master key.
 
+> **Estado atual (MAC-15, 2026-06-14):** está deployada **uma** virtual key
+> compartilhada `agent-platform` (orchestrator + runner usam a mesma), com
+> `models: []` (acesso a todos os aliases) e **sem budget/rate limit** por key.
+> Isso já tira a master key do pipeline. O procedimento abaixo (duas keys
+> separadas `agent-orchestrator`/`agent-runner` com `models` restritos + budget)
+> é o hardening recomendado para apertar isolamento e governança por componente —
+> aplicar quando quiser separar budget/auditoria.
+
 ```bash
 pct exec 200 -- bash -lc '
 cd /opt/agent-platform/gateway
