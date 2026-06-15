@@ -23,6 +23,7 @@ services:
       LINEAR_TEAM_ID: ${LINEAR_TEAM_ID}
       SCHEDULER_TZ: ${SCHEDULER_TZ:-UTC}
       LINEAR_SCHEDULED_LABEL_ID: ${LINEAR_SCHEDULED_LABEL_ID}
+      AGENT_KEY: ${AGENT_KEY:-coder-agent}
     volumes:
       - /opt/agent-platform/orchestrator:/app/data
       - /opt/agent-platform/logs:/app/logs
