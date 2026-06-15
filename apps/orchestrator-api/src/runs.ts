@@ -1,5 +1,6 @@
 import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import { db, schema } from './db/client.js';
+import { resolveDefaultAgent } from './agents.js';
 
 export type RunStatus = (typeof schema.runStatus.enumValues)[number];
 export type StepType = (typeof schema.stepType.enumValues)[number];
@@ -33,10 +34,16 @@ export interface NewRunInput {
   scheduleId?: string;
   /** Run pode ser auto-aprovado se não houver motivo crítico (MAC-38). */
   autoApprove?: boolean;
+  /** Agente que vai rodar (MAC-42). Default = agente vigente da key padrão. */
+  agentId?: string;
 }
 
 /** Cria o registro do run (MAC-36) e devolve o id. */
 export async function createRun(input: NewRunInput): Promise<string> {
+  // MAC-42: grava a versão exata do agente que rodou. Resolve o default quando o
+  // chamador não passa um. Sem agente active (não deve ocorrer pós-seed) → null,
+  // não bloqueia o run.
+  const agentId = input.agentId ?? (await resolveDefaultAgent())?.id;
   const [row] = await db
     .insert(schema.runs)
     .values({
@@ -46,6 +53,7 @@ export async function createRun(input: NewRunInput): Promise<string> {
       status: 'pending',
       ...(input.scheduleId ? { scheduleId: input.scheduleId } : {}),
       ...(input.autoApprove !== undefined ? { autoApprove: input.autoApprove } : {}),
+      ...(agentId ? { agentId } : {}),
     })
     .returning({ id: schema.runs.id });
   // biome-ignore lint/style/noNonNullAssertion: insert ... returning sempre retorna a linha
