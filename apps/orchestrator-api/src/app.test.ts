@@ -11,6 +11,13 @@ vi.mock('./agents.js', async (orig) => ({
   createAgent: vi.fn(),
   updateAgentStatus: vi.fn(),
 }));
+vi.mock('./tools.js', async (orig) => ({
+  ...(await orig<typeof import('./tools.js')>()),
+  listTools: vi.fn(),
+  getTool: vi.fn(),
+  createTool: vi.fn(),
+  updateToolStatus: vi.fn(),
+}));
 vi.mock('./runs.js', () => ({
   getRun: vi.fn(),
   listRuns: vi.fn(),
@@ -55,6 +62,11 @@ describe('guard de uuid (MAC-64)', () => {
 
   it('404 para :id não-uuid em /agents/:id', async () => {
     const res = await app.request('/agents/nao-uuid');
+    expect(res.status).toBe(404);
+  });
+
+  it('404 para :id não-uuid em /tools/:id', async () => {
+    const res = await app.request('/tools/nao-uuid');
     expect(res.status).toBe(404);
   });
 });
