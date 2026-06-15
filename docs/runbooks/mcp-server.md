@@ -3,6 +3,11 @@
 Expõe o orchestrator a clientes MCP via stdio. Detalhes e tools:
 [`apps/mcp-server/README.md`](../../apps/mcp-server/README.md).
 
+> **Modo de produção (recomendado): zero-túnel no Proxmox.** O server roda dentro
+> do container `orchestrator-api-1` (LXC 201) via `docker exec`, sem túnel SSH —
+> ver [`mcp-proxmox.md`](mcp-proxmox.md). Este runbook cobre o modo **local + túnel**
+> (dev, com a fonte no laptop).
+
 ## Clientes (é client-agnostic)
 
 O server é stdio MCP padrão — funciona em **qualquer cliente MCP**. O comando é
