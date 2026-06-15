@@ -24,6 +24,7 @@ export interface IssueContext {
 export interface LinearGateway {
   getIssue(id: string): Promise<IssueContext>;
   comment(issueId: string, body: string): Promise<void>;
+  setIssueState(issueId: string, stateId: string): Promise<void>;
   createIssue(input: {
     title: string;
     description: string;
@@ -53,6 +54,10 @@ export function createLinearGateway(apiKey: string): LinearGateway {
 
     async comment(issueId, body) {
       await client.createComment({ issueId, body });
+    },
+
+    async setIssueState(issueId, stateId) {
+      await client.updateIssue(issueId, { stateId });
     },
 
     async createIssue(input) {
