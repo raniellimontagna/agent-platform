@@ -26,6 +26,7 @@ export interface OrchestratorClient {
   listTools(filter?: { key?: string; status?: string; risk?: string }): Promise<unknown>;
   getTool(id: string): Promise<unknown>;
   agentStatus(): Promise<unknown>;
+  agentConcurrency(): Promise<unknown>;
   getStats(): Promise<unknown>;
   approveRun(id: string, by?: string): Promise<unknown>;
   rejectRun(id: string, by?: string): Promise<unknown>;
@@ -77,6 +78,7 @@ export function createClient(cfg: ClientConfig): OrchestratorClient {
       call('GET', `/tools${query({ key: filter?.key, status: filter?.status, risk: filter?.risk })}`),
     getTool: (toolId) => call('GET', `/tools/${id(toolId)}`),
     agentStatus: () => call('GET', '/admin/status'),
+    agentConcurrency: () => call('GET', '/admin/concurrency'),
     getStats: () => call('GET', '/stats'),
     approveRun: (runId, by) => call('POST', `/runs/${id(runId)}/approve${query({ by })}`),
     rejectRun: (runId, by) => call('POST', `/runs/${id(runId)}/reject${query({ by })}`),
