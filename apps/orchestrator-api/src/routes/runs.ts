@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
-import { listLessons } from '../lessons.js';
+import { embed } from '../embeddings.js';
+import { listLessons, searchLessons } from '../lessons.js';
 import { logger } from '../logger.js';
 import { JOB_PRIORITY, agentQueue } from '../queue.js';
 import {
@@ -64,11 +65,20 @@ runsRoute.get('/runs/:id/approvals', async (c) => {
   return c.json({ approvals: await listApprovals(c.req.param('id')) });
 });
 
-/** Lições acumuladas de um repo (Memory Layer, MAC-23). `?repo=owner/name`, `?limit=`. */
+/** Lições acumuladas de um repo (Memory Layer, MAC-23). `?repo=owner/name`, `?limit=`, `?query=` (semântica, MAC-45). */
 runsRoute.get('/lessons', async (c) => {
   const repo = c.req.query('repo');
   if (!repo) return c.json({ error: 'query `repo` obrigatória (owner/name)' }, 400);
   const limit = Math.min(Number(c.req.query('limit')) || 50, 200);
+  const queryText = c.req.query('query');
+  if (queryText && queryText.trim()) {
+    try {
+      const lessons = await searchLessons(repo, await embed(queryText), limit);
+      return c.json({ lessons });
+    } catch (err) {
+      logger.warn({ err }, 'busca semântica de lições falhou (fallback recência)');
+    }
+  }
   return c.json({ lessons: await listLessons(repo, limit) });
 });
 

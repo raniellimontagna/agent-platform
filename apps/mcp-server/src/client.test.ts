@@ -46,6 +46,13 @@ describe('createClient', () => {
     expect(call[0]).toBe('http://orch:3000/lessons?repo=owner%2Frepo');
   });
 
+  it('listLessons monta query semântica', async () => {
+    const f = mockFetch(200, { lessons: [] });
+    await createClient(cfg(f)).listLessons('o/r', 5, 'auth bug');
+    const call = (f as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls[0];
+    expect(call[0]).toBe('http://orch:3000/lessons?repo=o%2Fr&limit=5&query=auth+bug');
+  });
+
   it('lança ApiError em resposta não-2xx', async () => {
     const f = mockFetch(404, 'not found');
     await expect(createClient(cfg(f)).getRun('x')).rejects.toBeInstanceOf(ApiError);
