@@ -1,10 +1,12 @@
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { EMBEDDING_DIM, embed } from './embeddings.js';
 
-// Em prod o modelo é baked em /app/.hf-cache (Dockerfile). Local/CI não tem /app —
-// aponta o cache p/ um path writable (reusa o download de runs anteriores). `embed`
-// lê o cacheDir lazy (1ª chamada), então setar aqui no topo do módulo basta.
-process.env.HF_HOME ??= '/tmp/hf-cache';
+// Usa o modelo VENDORIZADO no repo (apps/orchestrator-api/vendor/hf-cache) — assim
+// o teste roda offline em qualquer lugar: local, CI e o sandbox do runner (que clona
+// o repo, mas não alcança o HF). Sem isso, `pnpm test` quebrava no sandbox e a
+// self-correction sabotava o embeddings.ts. `embed` lê o cacheDir lazy (1ª chamada).
+process.env.HF_HOME ??= fileURLToPath(new URL('../vendor/hf-cache', import.meta.url));
 
 describe('embed', () => {
   // Carrega o modelo (baixa ~80MB na 1ª vez) — precisa de rede no primeiro run.
