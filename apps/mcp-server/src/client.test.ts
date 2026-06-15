@@ -66,6 +66,8 @@ describe('createClient', () => {
       [(c) => c.resumeAgents(), 'POST', 'http://orch:3000/admin/resume'],
       [(c) => c.listAgents(), 'GET', 'http://orch:3000/agents'],
       [(c) => c.getAgent('a1'), 'GET', 'http://orch:3000/agents/a1'],
+      [(c) => c.listTools(), 'GET', 'http://orch:3000/tools'],
+      [(c) => c.getTool('t1'), 'GET', 'http://orch:3000/tools/t1'],
     ];
     for (const [fn, method, url] of cases) {
       const f = mockFetch(200, {});
@@ -80,6 +82,13 @@ describe('createClient', () => {
     await createClient(cfg(f)).listAgents({ key: 'coder-agent', status: 'active' });
     const call = (f as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls[0];
     expect(call[0]).toBe('http://orch:3000/agents?key=coder-agent&status=active');
+  });
+
+  it('listTools monta key/status/risk na query', async () => {
+    const f = mockFetch(200, { tools: [] });
+    await createClient(cfg(f)).listTools({ key: 'git', status: 'active', risk: 'caution' });
+    const call = (f as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls[0];
+    expect(call[0]).toBe('http://orch:3000/tools?key=git&status=active&risk=caution');
   });
 
   it('erro de rede vira ApiError com mensagem clara', async () => {
