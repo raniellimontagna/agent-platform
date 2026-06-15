@@ -207,7 +207,7 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
         log.warn({ err }, 'falha ao salvar artefatos (não-fatal)');
       }
     },
-    { connection },
+    { connection, concurrency: env.AGENT_MAX_CONCURRENCY },
   );
 
   worker.on('failed', (job, err) => {
