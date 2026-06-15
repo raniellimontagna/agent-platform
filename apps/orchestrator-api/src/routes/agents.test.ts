@@ -34,6 +34,12 @@ describe('GET /agents', () => {
     await app.request('/agents?key=coder-agent&status=active');
     expect(listAgents).toHaveBeenCalledWith({ key: 'coder-agent', status: 'active' });
   });
+
+  it('400 com status inválido', async () => {
+    const res = await app.request('/agents?status=garbage');
+    expect(res.status).toBe(400);
+    expect(listAgents).not.toHaveBeenCalled();
+  });
 });
 
 describe('GET /agents/:id', () => {
