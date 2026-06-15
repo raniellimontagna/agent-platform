@@ -50,6 +50,13 @@
       "when": 1781522658737,
       "tag": "0006_familiar_demogoblin",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1781524962870,
+      "tag": "0007_strange_xavin",
+      "breakpoints": true
     }
   ]
 }
