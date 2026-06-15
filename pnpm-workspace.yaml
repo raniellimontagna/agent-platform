@@ -6,3 +6,6 @@ allowBuilds:
   '@biomejs/biome': true
   esbuild: true
   msgpackr-extract: false
+  onnxruntime-node: true
+  protobufjs: true
+  sharp: false
