@@ -1,6 +1,7 @@
 import type { GithubGateway } from '@agent-platform/github';
 import type { LinearGateway } from '@agent-platform/linear';
 import type { AgentStateType } from '../state.js';
+import { shouldAutoMerge } from './report.js';
 
 export interface PrDeps {
   github: GithubGateway;
@@ -41,11 +42,13 @@ export function makePrNode(deps: PrDeps) {
         '\n---\n🤖 PR aberto automaticamente pelo agent-platform. Revisão humana necessária.',
       ].join('\n');
 
+      const autoMerge = shouldAutoMerge(state);
       const pr = await deps.github.createPullRequest({
         head: state.branch,
         base: deps.baseBranch,
         title,
         body,
+        draft: !autoMerge, // gate ok → PR pronto p/ merge; senão Draft (manual)
       });
 
       await deps.linear.comment(
@@ -53,7 +56,7 @@ export function makePrNode(deps: PrDeps) {
         `## 🔀 Draft PR aberto\n[#${pr.number}](${pr.url}) — branch \`${state.branch}\`.`,
       );
 
-      return { prUrl: pr.url, status: 'completed' };
+      return { prUrl: pr.url, prNumber: pr.number, status: 'completed' };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       await deps.linear.comment(
