@@ -48,6 +48,10 @@ const envSchema = z.object({
   SCHEDULER_TZ: z.string().default('UTC'),
   // Label opcional aplicada às issues criadas por agendamento.
   LINEAR_SCHEDULED_LABEL_ID: z.string().optional(),
+  // Auto-merge (MAC-67): label de opt-in + estado "Done" do time p/ fechar a issue.
+  LINEAR_AUTO_MERGE_LABEL_ID: z.string().optional(),
+  LINEAR_DONE_STATE_ID: z.string().default('79e3b949-6f1f-469d-902d-71d135d18cae'),
+
   // Agent Registry (MAC-42): key do agente default (catálogo/seed/resolução).
   AGENT_KEY: z.string().default('coder-agent'),
   // Multi-Agent Execution (MAC-47): nº de runs processados em paralelo pelo worker.
