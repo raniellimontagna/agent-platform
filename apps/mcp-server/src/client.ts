@@ -20,7 +20,7 @@ export interface OrchestratorClient {
   getRun(id: string): Promise<unknown>;
   getRunSteps(id: string): Promise<unknown>;
   getRunApprovals(id: string): Promise<unknown>;
-  listLessons(repo: string, limit?: number): Promise<unknown>;
+  listLessons(repo: string, limit?: number, query?: string): Promise<unknown>;
   listAgents(filter?: { key?: string; status?: string }): Promise<unknown>;
   getAgent(id: string): Promise<unknown>;
   listTools(filter?: { key?: string; status?: string; risk?: string }): Promise<unknown>;
@@ -70,7 +70,7 @@ export function createClient(cfg: ClientConfig): OrchestratorClient {
     getRun: (runId) => call('GET', `/runs/${id(runId)}`),
     getRunSteps: (runId) => call('GET', `/runs/${id(runId)}/steps`),
     getRunApprovals: (runId) => call('GET', `/runs/${id(runId)}/approvals`),
-    listLessons: (repo, limit) => call('GET', `/lessons${query({ repo, limit })}`),
+    listLessons: (repo, limit, q) => call('GET', `/lessons${query({ repo, limit, query: q })}`),
     listAgents: (filter) => call('GET', `/agents${query({ key: filter?.key, status: filter?.status })}`),
     getAgent: (agentId) => call('GET', `/agents/${id(agentId)}`),
     listTools: (filter) =>

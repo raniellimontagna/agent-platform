@@ -42,9 +42,9 @@ export function registerTools(server: McpServer, client: OrchestratorClient): vo
 
   server.tool(
     'list_lessons',
-    'Lições aprendidas (Memory Layer) acumuladas para um repo.',
-    { repo: z.string(), limit: z.number().int().positive().optional() },
-    ({ repo, limit }) => asTool(() => client.listLessons(repo, limit)),
+    'Lições aprendidas (Memory Layer) de um repo. Com `query`, busca por relevância (semântica); sem, retorna as mais recentes.',
+    { repo: z.string(), limit: z.number().int().positive().optional(), query: z.string().optional() },
+    ({ repo, limit, query }) => asTool(() => client.listLessons(repo, limit, query)),
   );
 
   server.tool(
