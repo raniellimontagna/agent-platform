@@ -1,6 +1,7 @@
 import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db, schema } from './db/client.js';
+import { isUniqueViolation } from './db/pgError.js';
 import type { Agent, NewAgent } from './db/schema.js';
 import { env } from './env.js';
 
@@ -32,15 +33,6 @@ export class AgentExistsError extends Error {
     super('agent already exists');
     this.name = 'AgentExistsError';
   }
-}
-
-function isUniqueViolation(err: unknown): boolean {
-  return (
-    typeof err === 'object' &&
-    err !== null &&
-    'code' in err &&
-    (err as { code?: string }).code === '23505'
-  );
 }
 
 /** Lista agentes (catálogo / descoberta), mais recentes primeiro. */

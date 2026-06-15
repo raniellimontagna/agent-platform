@@ -1,6 +1,7 @@
 import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db, schema } from './db/client.js';
+import { isUniqueViolation } from './db/pgError.js';
 import type { Tool, NewTool } from './db/schema.js';
 
 export type ToolRisk = (typeof schema.toolRisk.enumValues)[number];
@@ -33,15 +34,6 @@ export class ToolExistsError extends Error {
     super('tool already exists');
     this.name = 'ToolExistsError';
   }
-}
-
-function isUniqueViolation(err: unknown): boolean {
-  return (
-    typeof err === 'object' &&
-    err !== null &&
-    'code' in err &&
-    (err as { code?: string }).code === '23505'
-  );
 }
 
 /** Lista tools (catálogo / descoberta), mais recentes primeiro. */
