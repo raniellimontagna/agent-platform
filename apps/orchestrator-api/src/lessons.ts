@@ -1,5 +1,5 @@
 import type { Lesson, LessonSource } from '@agent-platform/memory';
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq, isNotNull, sql } from 'drizzle-orm';
 import { db, schema } from './db/client.js';
 import type { LessonRow } from './db/schema.js';
 import { embed } from './embeddings.js';
@@ -52,5 +52,24 @@ export async function listLessons(repo: string, limit: number): Promise<Lesson[]
     .where(eq(schema.lessons.repo, repo))
     .orderBy(desc(schema.lessons.createdAt))
     .limit(limit);
+  return rows.map(toLesson);
+}
+
+/**
+ * Lições do repo mais SIMILARES ao embedding da query (MAC-45), via cosine (<=>)
+ * do pgvector. Só considera linhas com embedding. Vazio se não houver nenhuma.
+ */
+export async function searchLessons(
+  repo: string,
+  queryEmbedding: number[],
+  k: number,
+): Promise<Lesson[]> {
+  const vec = `[${queryEmbedding.join(',')}]`;
+  const rows = await db
+    .select()
+    .from(schema.lessons)
+    .where(and(eq(schema.lessons.repo, repo), isNotNull(schema.lessons.embedding)))
+    .orderBy(sql`${schema.lessons.embedding} <=> ${vec}::vector`)
+    .limit(k);
   return rows.map(toLesson);
 }
