@@ -16,7 +16,8 @@ Servidor MCP (stdio) que expõe o orchestrator a clientes MCP como o Claude Desk
 | `get_agent` | Detalha um agente pelo id → `GET /agents/:id` |
 | `list_tools` | Lista ferramentas registradas (catálogo) → `GET /tools` |
 | `get_tool` | Detalha uma ferramenta pelo id → `GET /tools/:id` |
-| `agent_status` | Pausado/ativo |
+| `agent_status` | Pausado/ativo → `GET /admin/status` |
+| `agent_concurrency` | Limite configurado, runs ativos e contagem por status → `GET /admin/concurrency` |
 | `get_stats` | Resumo agregado (runs, custo, lições, taxa de sucesso, auto-correção) |
 | `approve_run` | Aprova e retoma um run pausado |
 | `reject_run` | Reprova (encerra) |
