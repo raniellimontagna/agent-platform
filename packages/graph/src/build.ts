@@ -22,8 +22,8 @@ export interface GraphDeps {
   baseBranch?: string;
   /** Comandos de validação rodados no sandbox após o push (MAC-29). */
   testCommands?: string[];
-  /** Carrega as lições do repo já formatadas p/ o prompt do codegen (MAC-23). */
-  loadLessons?: () => Promise<string>;
+  /** Carrega as lições relevantes p/ a query (título+descrição) já formatadas (MAC-23/45). */
+  loadLessons?: (query: string) => Promise<string>;
   /** Teto de voltas de revisão (MAC-59). */
   maxReviewRounds?: number;
   /** Teto de custo por run em USD — corta o loop (MAC-40/59). */

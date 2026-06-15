@@ -11,8 +11,8 @@ export interface CoderDeps {
   dispatch: DispatchFn;
   /** Comandos de validação rodados no sandbox após o push (MAC-29). */
   testCommands: string[];
-  /** Carrega as lições do repo já formatadas p/ o codegen (MAC-23). Opcional. */
-  loadLessons?: () => Promise<string>;
+  /** Carrega as lições relevantes p/ a query (título+descrição) já formatadas (MAC-23/45). */
+  loadLessons?: (query: string) => Promise<string>;
 }
 
 export interface CommandResult {
@@ -100,7 +100,9 @@ export function makeCoderNode(deps: CoderDeps, opts: { revise?: boolean } = {}) 
       : `agent/${state.issueIdentifier.toLowerCase()}-${slugify(state.title)}-${shortRun}`;
 
     try {
-      const lessons = deps.loadLessons ? await deps.loadLessons() : '';
+      const lessons = deps.loadLessons
+        ? await deps.loadLessons(`${state.title}\n${state.description}`)
+        : '';
 
       const result = await deps.dispatch({
         runId: state.runId,
