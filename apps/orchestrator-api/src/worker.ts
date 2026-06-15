@@ -4,6 +4,7 @@ import { verdictOf } from '@agent-platform/graph';
 import { distillLesson } from '@agent-platform/memory';
 import { getAgent } from './agent.js';
 import { ensureDefaultAgent } from './agents.js';
+import { ensureDefaultTools } from './tools.js';
 import { hasCriticalReason, isCriticalReason } from './approvalPolicy.js';
 import { saveArtifacts } from './artifacts.js';
 import { env } from './env.js';
@@ -37,6 +38,13 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
     await ensureDefaultAgent();
   } catch (err) {
     logger.warn({ err }, 'ensureDefaultAgent falhou (seguindo sem seed)');
+  }
+
+  // MAC-43: garante as tools default no catálogo (idempotente). Não-fatal.
+  try {
+    await ensureDefaultTools();
+  } catch (err) {
+    logger.warn({ err }, 'ensureDefaultTools falhou (seguindo sem seed)');
   }
 
   const worker = new Worker<AgentJobData, unknown, string>(
