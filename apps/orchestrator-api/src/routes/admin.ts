@@ -3,6 +3,7 @@ import { getAgent } from '../agent.js';
 import { env } from '../env.js';
 import { isPaused, setPaused } from '../killswitch.js';
 import { logger } from '../logger.js';
+import { ACTIVE_STATUSES, countRunsByStatus } from '../runs.js';
 
 export const adminRoute = new Hono();
 
@@ -38,4 +39,11 @@ adminRoute.get('/admin/status', async (c) => {
 adminRoute.get('/admin/runners', async (c) => {
   const { workerManager } = await getAgent();
   return c.json({ runners: await workerManager.probeAll() });
+});
+
+/** Observabilidade de concorrência (MAC-47): limite + runs ativos por status. */
+adminRoute.get('/admin/concurrency', async (c) => {
+  const byStatus = await countRunsByStatus();
+  const active = ACTIVE_STATUSES.reduce((sum, s) => sum + (byStatus[s] ?? 0), 0);
+  return c.json({ limit: env.AGENT_MAX_CONCURRENCY, active, byStatus });
 });
