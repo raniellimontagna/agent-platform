@@ -24,5 +24,9 @@ async function getExtractor(): Promise<Extractor> {
 export async function embed(text: string): Promise<number[]> {
   const extractor = await getExtractor();
   const output = await extractor(text, { pooling: 'mean', normalize: true });
-  return Array.from(output.data);
+  const vec = Array.from(output.data);
+  if (vec.length !== EMBEDDING_DIM) {
+    throw new Error(`embedding dim ${vec.length} != EMBEDDING_DIM ${EMBEDDING_DIM}`);
+  }
+  return vec;
 }
