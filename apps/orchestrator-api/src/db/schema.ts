@@ -77,6 +77,7 @@ export const runs = pgTable('runs', {
   verdict: text('verdict'),
   fixAttempts: integer('fix_attempts'),
   scheduleId: uuid('schedule_id').references(() => schedules.id, { onDelete: 'set null' }),
+  agentId: uuid('agent_id').references(() => agents.id, { onDelete: 'set null' }),
   autoApprove: boolean('auto_approve').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true })
@@ -179,6 +180,30 @@ export const schedules = pgTable('schedules', {
     .$onUpdate(() => new Date()),
 });
 
+export const agentStatus = pgEnum('agent_status', ['active', 'deprecated']);
+
+/** Catálogo versionado de tipos de agente (MAC-42). Metadado — não executa nada. */
+export const agents = pgTable(
+  'agents',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    key: text('key').notNull(),
+    version: text('version').notNull(),
+    description: text('description'),
+    capabilities: jsonb('capabilities')
+      .notNull()
+      .default(sql`'[]'::jsonb`)
+      .$type<string[]>(),
+    status: agentStatus('status').notNull().default('active'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [uniqueIndex('agents_key_version_uq').on(t.key, t.version)],
+);
+
 export type Run = typeof runs.$inferSelect;
 export type NewRun = typeof runs.$inferInsert;
 export type RunStep = typeof runSteps.$inferSelect;
@@ -191,3 +216,5 @@ export type Schedule = typeof schedules.$inferSelect;
 export type NewSchedule = typeof schedules.$inferInsert;
 export type Artifact = typeof artifacts.$inferSelect;
 export type NewArtifact = typeof artifacts.$inferInsert;
+export type Agent = typeof agents.$inferSelect;
+export type NewAgent = typeof agents.$inferInsert;
