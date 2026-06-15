@@ -2,9 +2,8 @@ import { createGithubGateway, parseRepoRef } from '@agent-platform/github';
 import { type AgentGraph, buildAgentGraph, createCheckpointer } from '@agent-platform/graph';
 import { type LinearGateway, createLinearGateway } from '@agent-platform/linear';
 import { type LlmClient, createLlmClient } from '@agent-platform/llm';
-import { LESSON_CAP, formatLessons } from '@agent-platform/memory';
 import { env } from './env.js';
-import { listLessons } from './lessons.js';
+import { buildLessonLoader } from './lessonLoader.js';
 import { type WorkerManager, createWorkerManager, parseRunnerUrls } from './workerManager.js';
 
 export interface Agent {
@@ -53,8 +52,7 @@ async function init(): Promise<Agent> {
   // para o codegen. Fechamento sobre o repo — single-repo por deploy no MVP.
   const repoRef = parseRepoRef(env.REPO_URL);
   const repo = `${repoRef.owner}/${repoRef.repo}`;
-  const loadLessons = async (): Promise<string> =>
-    formatLessons(await listLessons(repo, LESSON_CAP), LESSON_CAP);
+  const loadLessons = buildLessonLoader(repo);
 
   const graph = buildAgentGraph(
     {
