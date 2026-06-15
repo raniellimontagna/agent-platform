@@ -2,7 +2,6 @@ import { type Context, Hono, type Next } from 'hono';
 import { z } from 'zod';
 import {
   AgentExistsError,
-  type AgentStatus,
   createAgent,
   createAgentSchema,
   getAgent,
@@ -26,12 +25,14 @@ agentsRoute.post('/agents', requireAuth);
 agentsRoute.patch('/agents/:id', requireAuth);
 
 const patchSchema = z.object({ status: z.enum(['active', 'deprecated']) });
+const statusSchema = z.enum(['active', 'deprecated']).optional();
 
 /** Lista o catálogo (descoberta). Filtra por key/status. */
 agentsRoute.get('/agents', async (c) => {
   const key = c.req.query('key');
-  const status = c.req.query('status') as AgentStatus | undefined;
-  return c.json({ agents: await listAgents({ key, status }) });
+  const parsedStatus = statusSchema.safeParse(c.req.query('status') ?? undefined);
+  if (!parsedStatus.success) return c.json({ error: 'status inválido' }, 400);
+  return c.json({ agents: await listAgents({ key, status: parsedStatus.data }) });
 });
 
 /** Detalhe de um agente. */
