@@ -25,11 +25,11 @@ services:
       LINEAR_SCHEDULED_LABEL_ID: ${LINEAR_SCHEDULED_LABEL_ID}
       AGENT_KEY: ${AGENT_KEY:-coder-agent}
       AGENT_MAX_CONCURRENCY: ${AGENT_MAX_CONCURRENCY:-3}
-      HF_HOME: /opt/hf-cache
+      # MAC-45: modelo de embedding é baked na imagem (/app/.hf-cache, ver Dockerfile)
+      # — sem download em runtime nem volume. HF_HOME só p/ override manual.
     volumes:
       - /opt/agent-platform/orchestrator:/app/data
       - /opt/agent-platform/logs:/app/logs
-      - /opt/agent-platform/hf-cache:/opt/hf-cache
     depends_on:
       postgres:
         condition: service_healthy

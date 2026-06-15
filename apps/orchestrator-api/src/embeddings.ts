@@ -12,10 +12,16 @@ async function getExtractor(): Promise<Extractor> {
   if (!extractorPromise) {
     extractorPromise = (async () => {
       const { pipeline, env } = await import('@huggingface/transformers');
-      // Cache do modelo em volume persistente (ver compose). Default /tmp se ausente.
-      env.cacheDir = process.env.HF_HOME ?? '/tmp/hf-cache';
+      // Modelo é baked na imagem em /app/.hf-cache (ver Dockerfile) — sem download
+      // em runtime (que falhava no LXC). allowRemoteModels=true só como fallback.
+      env.cacheDir = process.env.HF_HOME ?? '/app/.hf-cache';
+      env.allowRemoteModels = true;
       return (await pipeline('feature-extraction', MODEL)) as unknown as Extractor;
-    })();
+    })().catch((err) => {
+      // Não cacheia a falha — permite retry numa próxima chamada (ex. download transitório).
+      extractorPromise = null;
+      throw err;
+    });
   }
   return extractorPromise;
 }

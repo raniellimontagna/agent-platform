@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { EMBEDDING_DIM, embed } from './embeddings.js';
 
+// Em prod o modelo é baked em /app/.hf-cache (Dockerfile). Local/CI não tem /app —
+// aponta o cache p/ um path writable (reusa o download de runs anteriores). `embed`
+// lê o cacheDir lazy (1ª chamada), então setar aqui no topo do módulo basta.
+process.env.HF_HOME ??= '/tmp/hf-cache';
+
 describe('embed', () => {
   // Carrega o modelo (baixa ~80MB na 1ª vez) — precisa de rede no primeiro run.
   it('retorna um vetor de EMBEDDING_DIM normalizado', async () => {
