@@ -13,6 +13,23 @@ export function verdictOf(review?: string): string {
   return m?.[1]?.trim() || '—';
 }
 
+/**
+ * Gate do auto-merge (MAC-67): opt-in (label → run.auto_merge) + validação ✅ +
+ * critic APROVADO seco. `verdictOf` devolve o texto do veredito, então `===
+ * 'APROVADO'` exclui "APROVADO COM RESSALVAS"/"REPROVADO" automaticamente.
+ */
+export function shouldAutoMerge(state: {
+  autoMerge?: boolean;
+  testsPassed?: boolean;
+  review?: string;
+}): boolean {
+  return (
+    state.autoMerge === true &&
+    state.testsPassed === true &&
+    verdictOf(state.review) === 'APROVADO'
+  );
+}
+
 /** Status da validação no sandbox (MAC-29) em texto curto. */
 function testsLabel(testsPassed?: boolean): string {
   if (testsPassed === undefined) return 'não executada';

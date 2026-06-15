@@ -63,6 +63,10 @@ export const AgentState = Annotation.Root({
   reviewFeedback: Annotation<string>(),
   /** MAC-59: destino escolhido pelo nó reviewing ('coding' | 'pr'). */
   nextAfterReview: Annotation<string>(),
+  /** Issue marcada com auto-merge (opt-in). Vem do run (MAC-67). */
+  autoMerge: Annotation<boolean>(),
+  /** Número do PR aberto (pro auto-merge). MAC-67. */
+  prNumber: Annotation<number>(),
 });
 
 export type AgentStateType = typeof AgentState.State;

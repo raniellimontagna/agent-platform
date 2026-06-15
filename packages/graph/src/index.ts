@@ -5,5 +5,5 @@ export {
   type AgentGraph,
   type GraphDeps,
 } from './build.js';
-export { verdictOf } from './nodes/report.js';
+export { verdictOf, shouldAutoMerge } from './nodes/report.js';
 export type { CommandResult, RunnerResult, RunnerJobBody, DispatchFn } from './nodes/coder.js';
