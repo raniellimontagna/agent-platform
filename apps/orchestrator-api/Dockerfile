@@ -26,7 +26,9 @@ RUN find /app/node_modules -type f -name 'libonnxruntime_providers_cuda.so*' -de
 # MAC-45: baixa o modelo de embedding na imagem (build tem rede; runtime no LXC não
 # conseguia baixar → embed falhava). Fica em /app/.hf-cache, copiado pro deploy via
 # `COPY --from=build /app /app`. Também valida que a CPU lib pós-strip roda inferência.
-RUN node -e "(async()=>{const t=await import('@huggingface/transformers');t.env.cacheDir='/app/.hf-cache';const p=await t.pipeline('feature-extraction','Xenova/all-MiniLM-L6-v2');const o=await p('warmup',{pooling:'mean',normalize:true});if(o.data.length!==384)process.exit(2);console.log('embedding model baked, dim',o.data.length);})().catch(e=>{console.error(e);process.exit(1)})"
+# Roda de dentro do app: o pnpm symlinka @huggingface/transformers no node_modules
+# do workspace (não no root). cacheDir absoluto → /app/.hf-cache (copiado pro deploy).
+RUN cd /app/apps/orchestrator-api && node -e "(async()=>{const t=await import('@huggingface/transformers');t.env.cacheDir='/app/.hf-cache';const p=await t.pipeline('feature-extraction','Xenova/all-MiniLM-L6-v2');const o=await p('warmup',{pooling:'mean',normalize:true});if(o.data.length!==384)process.exit(2);console.log('embedding model baked, dim',o.data.length);})().catch(e=>{console.error(e);process.exit(1)})"
 
 FROM base AS deploy
 # Copia o workspace já buildado (mantém os symlinks dos workspace packages).
