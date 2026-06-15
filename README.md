@@ -2,23 +2,31 @@
 
 Orquestrador de agentes self-hosted. Issues do Linear com label `ai-ready` disparam um fluxo autônomo: leitura de contexto → plano → aprovação humana → branch → código → **validação + auto-correção** → revisão → Draft PR.
 
-O agente **aprende com as próprias falhas** (memória de lições por repo) e **se corrige dentro do run** quando a validação quebra, antes de abrir o PR. Governança embutida: kill switch, cost guard, políticas de aprovação. Observabilidade via Grafana (execuções, custo, qualidade, memória).
+O agente **aprende com as próprias falhas** (memória de lições por repo, com **busca semântica**) e **se corrige dentro do run** quando a validação quebra, antes de abrir o PR. Governança embutida: kill switch, cost guard, políticas de aprovação. Observabilidade via Grafana (execuções, custo, qualidade, memória). Roda **vários runs em paralelo** com catálogos versionados de agentes e ferramentas.
 
 ## Capacidades
 
 - **Loop autônomo ponta a ponta** — webhook `ai-ready` → plano (LLM) → aprovação humana (label `approved`) → codegen com contexto → validação no sandbox → revisão (critic) → Draft PR → report consolidado no Linear.
-- **Memory Layer (MAC-23)** — falhas (critic REPROVA / validação ❌) viram lições destiladas, guardadas por repo e reinjetadas no codegen de runs futuros.
+- **Memory Layer (MAC-23/45)** — falhas (critic REPROVA / validação ❌) viram lições destiladas, guardadas por repo e reinjetadas no codegen de runs futuros. Recuperação por **relevância** (embeddings locais + pgvector, cosine), com fallback pra recência.
 - **Self-correction (MAC-54)** — valida antes de pushar; se falha, corrige e revalida até `AGENT_MAX_FIX_ATTEMPTS` (default 2).
+- **Loop de revisão (MAC-59)** — critic REPROVA / ressalva → o coder re-coda endereçando o parecer e re-revisa, até `AGENT_MAX_REVIEW_ROUNDS`.
+- **Multi-Agent Execution (MAC-47)** — N runs em paralelo (`AGENT_MAX_CONCURRENCY`), coordenação à prova de race (índice único de issue ativa), observabilidade de concorrência.
+- **Agent Registry (MAC-42) + Tool Registry (MAC-43)** — catálogos versionados (key/version) de tipos de agente (capabilities) e ferramentas (risk + scopes), via REST + MCP; `agent_id` gravado por run.
+- **Scheduler (MAC-38) + Worker Manager (MAC-39)** — agendamentos cron disparam runs (auto-aprovação sem motivo crítico); failover entre runners.
+- **Artifact Store (MAC-44)** — plano/patch/review/validação/summary de cada run guardados de forma durável e consultável.
 - **Governança** — kill switch (Redis), cost guard (limite por run/24h), approval policies, retry + persistência de runs.
-- **Observabilidade** — 3 dashboards Grafana: Execuções, Custo & Governança, Qualidade & Memória.
+- **Observabilidade** — dashboards Grafana (Execuções, Custo & Governança, Qualidade & Memória) + endpoints `/admin/*`.
+- **MCP server (MAC-46)** — fachada stdio sobre a REST API: runs, lições, agentes, tools, concorrência, aprovações (read + ações), via Claude Code/qualquer cliente MCP.
 
 ## Stack
 
 | Camada | Tecnologia |
 |---|---|
 | API / Orquestrador | TypeScript + Node LTS + Hono + LangGraph JS/TS |
-| Banco / Fila | Postgres + Redis + BullMQ |
+| Banco / Fila | Postgres (+ **pgvector**) + Redis + BullMQ |
+| Memória vetorial | Embeddings locais (Transformers.js, `all-MiniLM-L6-v2`, 384 dims, CPU) + pgvector |
 | LLM Gateway | LiteLLM (aliases: `cheap_fast`, `research`, `strong_coder`, `heavy_coder`, `critic`) |
+| Integração via MCP | `apps/mcp-server` (stdio, fachada da REST API) |
 | Infra | Proxmox — 4 VMs na subnet `10.10.0.x` (vmbr1) |
 | Observabilidade | Grafana + Prometheus + Loki |
 | Acesso externo | Tailscale |
@@ -71,9 +79,10 @@ Guia completo: [`docs/runbooks/proxmox-setup.md`](docs/runbooks/proxmox-setup.md
 ```
 agent-platform/
   apps/
-    orchestrator-api/     # API Hono + LangGraph
-    worker-code/          # Executor de código (sandbox)
+    orchestrator-api/     # API Hono + LangGraph (+ registries, vector memory, scheduler)
+    worker-code/          # Executor de código (sandbox + self-correction)
     worker-reviewer/      # Revisor de diff
+    mcp-server/           # Fachada MCP (stdio) sobre a REST API
     dashboard/            # UI de controle
   packages/
     agents/               # Agentes LangGraph

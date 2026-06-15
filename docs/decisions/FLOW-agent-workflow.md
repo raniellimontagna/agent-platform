@@ -26,7 +26,7 @@
 │                                                                 │
 │  7. Clona repo em worktree isolado                              │
 │  8. Monta contexto: convenções + arquivos-exemplo (MAC-24)      │
-│     + lições de runs passados do repo (Memory, MAC-23)          │
+│     + lições RELEVANTES do repo (busca semântica, MAC-23/45)    │
 │  9. Chama LiteLLM [strong_coder] → gera/altera código           │
 │  10. Valida no sandbox (install/build/test) ANTES de pushar     │
 │  11. Self-correction (MAC-54): falhou? → fix dirigido →         │
@@ -40,20 +40,33 @@
 │                     ORCHESTRATOR API                            │
 │                                                                 │
 │  14. Chama LiteLLM [critic] → revisa diff                       │
-│  15. Abre Draft PR no GitHub (título Conventional Commits EN)   │
-│  16. Memory (MAC-23): se critic REPROVA / validação ❌ →        │
-│      destila lição [cheap_fast] e guarda por repo               │
-│  17. Report: comenta resultado consolidado + custo no Linear    │
-│  18. Persiste qualidade no run (validação/veredito/fixAttempts) │
+│  15. Loop de revisão (MAC-59): REPROVA/ressalva? → coder        │
+│      re-coda endereçando o parecer → re-revisa, até teto        │
+│  16. Abre Draft PR no GitHub (título Conventional Commits EN)   │
+│  17. Artifact Store (MAC-44): guarda plano/patch/review/        │
+│      validação/summary do run                                   │
+│  18. Memory (MAC-23/45): se critic REPROVA / validação ❌ →     │
+│      destila lição [cheap_fast], embeda e guarda por repo       │
+│  19. Report: comenta resultado consolidado + custo no Linear    │
+│  20. Persiste qualidade no run (validação/veredito/fixAttempts) │
 └─────────────────────────────────────────────────────────────────┘
 
                     ── MERGE É MANUAL ──
 ```
 
-Grafo LangGraph: `planning → [⏸ aprovação] → coding → reviewing → pr → report → END`
+Grafo LangGraph: `planning → [⏸ aprovação] → coding → reviewing → [revisar? → revising → reviewing] → pr → report → END`
 (falha do coder curto-circuita para `report`). O self-correction (passo 11) vive
-dentro do runner — não muda a topologia do grafo. Checkpointer Postgres persiste e
-retoma após restart (MAC-34).
+dentro do runner — não muda a topologia do grafo; o loop de revisão (passo 15) é
+graph-level (nó `revising`, fora do `interruptBefore` p/ não re-pedir aprovação).
+Checkpointer Postgres persiste e retoma após restart (MAC-34).
+
+**Disparo e escala.** Além do webhook `ai-ready`, um **scheduler cron** (MAC-38)
+cria issues + runs (auto-aprovados se sem motivo crítico). O run grava `agent_id`
+do **Agent Registry** (MAC-42); ferramentas e suas permissões vivem no **Tool
+Registry** (MAC-43). O worker processa **N runs em paralelo**
+(`AGENT_MAX_CONCURRENCY`, MAC-47) com dedup de issue ativa por índice único; o
+dispatch faz **failover** entre runners (MAC-39). Concorrência observável em
+`GET /admin/concurrency`.
 
 ## VMs e DNS interno
 
