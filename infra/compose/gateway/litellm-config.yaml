@@ -28,6 +28,38 @@ model_list:
       rpm: 12
       tpm: 40000
 
+  # --- fallback de último recurso: Verboo para aliases fortes -----------
+  # Verboo tem cota alta, mas modelo menor/menos "thinking". Use só quando
+  # OmniRoute/combos estiverem fora do ar ou sem quota.
+  - model_name: research_fb_verboo
+    litellm_params:
+      model: openai/deepseek-v4-flash
+      api_key: os.environ/VERBOO_API_KEY
+      api_base: os.environ/VERBOO_API_BASE
+      rpm: 20
+      tpm: 60000
+  - model_name: strong_coder_fb_verboo
+    litellm_params:
+      model: openai/deepseek-v4-flash
+      api_key: os.environ/VERBOO_API_KEY
+      api_base: os.environ/VERBOO_API_BASE
+      rpm: 20
+      tpm: 60000
+  - model_name: heavy_coder_fb_verboo
+    litellm_params:
+      model: openai/deepseek-v4-flash
+      api_key: os.environ/VERBOO_API_KEY
+      api_base: os.environ/VERBOO_API_BASE
+      rpm: 12
+      tpm: 50000
+  - model_name: critic_fb_verboo
+    litellm_params:
+      model: openai/deepseek-v4-flash
+      api_key: os.environ/VERBOO_API_KEY
+      api_base: os.environ/VERBOO_API_BASE
+      rpm: 12
+      tpm: 50000
+
   # --- cost-saver: padrão para leitura, síntese e código comum ----------
   - model_name: research
     litellm_params:
@@ -68,6 +100,10 @@ litellm_settings:
   budget_duration: 30d
   fallbacks:
     - cheap_fast: ["cheap_fast_fb_cost_saver"]
+    - research: ["research_fb_verboo"]
+    - strong_coder: ["strong_coder_fb_verboo"]
+    - heavy_coder: ["heavy_coder_fb_verboo"]
+    - critic: ["critic_fb_verboo"]
 
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY
