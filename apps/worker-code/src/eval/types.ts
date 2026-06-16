@@ -88,5 +88,14 @@ export interface EvalReport {
   total: number;
   passedCount: number;
   score: number;
+  trend?: EvalTrend;
   results: EvalResult[];
+}
+
+export interface EvalTrend {
+  previousGeneratedAt?: string;
+  previousScore?: number;
+  scoreDelta?: number;
+  regressed: boolean;
+  regressedScenarios: string[];
 }

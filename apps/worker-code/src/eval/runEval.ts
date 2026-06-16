@@ -16,6 +16,7 @@ import {
   type EvalReport,
   type EvalResult,
   type EvalScenario,
+  type EvalTrend,
   evalScenarioSchema,
 } from './types.js';
 import { type WorkerDryRunResult, runWorkerDryRun } from './workerDryRun.js';
@@ -28,8 +29,11 @@ async function main(): Promise<void> {
 
   console.log(`eval report: ${join(outRoot, report.generatedAt)}`);
   console.log(`${report.passedCount}/${report.total} scenarios passed; score ${report.score}`);
+  if (report.trend?.previousScore !== undefined) {
+    console.log(`score delta vs previous: ${formatDelta(report.trend.scoreDelta ?? 0)}`);
+  }
 
-  if (!report.passed) {
+  if (!report.passed || (args.failOnRegression && report.trend?.regressed)) {
     process.exitCode = 1;
   }
 }
@@ -53,18 +57,51 @@ export async function runEvalSuite(args: {
     results.length === 0
       ? 100
       : Math.round(results.reduce((sum, result) => sum + result.score, 0) / results.length);
+  const previous = await readLatestReport(args.outRoot);
   const report: EvalReport = {
     generatedAt,
     passed: results.every((result) => result.passed),
     total: results.length,
     passedCount,
     score,
+    trend: compareReports(results, score, previous),
     results,
   };
 
   await writeFile(join(artifactRoot, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
   await writeFile(join(artifactRoot, 'report.md'), renderMarkdown(report));
+  await writeFile(join(args.outRoot, 'latest-report.json'), `${JSON.stringify(report, null, 2)}\n`);
+  await writeFile(
+    join(args.outRoot, 'history.jsonl'),
+    `${JSON.stringify(reportSummary(report))}\n`,
+    {
+      flag: 'a',
+    },
+  );
   return report;
+}
+
+export function compareReports(
+  results: EvalResult[],
+  score: number,
+  previous?: EvalReport,
+): EvalTrend {
+  if (!previous) return { regressed: false, regressedScenarios: [] };
+  const previousScores = new Map(previous.results.map((result) => [result.id, result.score]));
+  const regressedScenarios = results
+    .filter((result) => {
+      const previousScore = previousScores.get(result.id);
+      return previousScore !== undefined && result.score < previousScore;
+    })
+    .map((result) => result.id);
+  const scoreDelta = score - previous.score;
+  return {
+    previousGeneratedAt: previous.generatedAt,
+    previousScore: previous.score,
+    scoreDelta,
+    regressed: scoreDelta < 0 || regressedScenarios.length > 0,
+    regressedScenarios,
+  };
 }
 
 async function runScenario(scenario: EvalScenario, artifactDir: string): Promise<EvalResult> {
@@ -125,8 +162,13 @@ function renderMarkdown(report: EvalReport): string {
     `Result: ${report.passed ? 'PASS' : 'FAIL'}`,
     `Score: ${report.score}`,
     `Scenarios: ${report.passedCount}/${report.total}`,
-    '',
   ];
+  if (report.trend?.previousScore !== undefined) {
+    lines.push(`Previous score: ${report.trend.previousScore}`);
+    lines.push(`Score delta: ${formatDelta(report.trend.scoreDelta ?? 0)}`);
+    lines.push(`Regressed scenarios: ${report.trend.regressedScenarios.join(', ') || '(none)'}`);
+  }
+  lines.push('');
 
   for (const result of report.results) {
     lines.push(`## ${result.id}: ${result.title}`);
@@ -149,12 +191,42 @@ function renderMarkdown(report: EvalReport): string {
   return `${lines.join('\n')}\n`;
 }
 
-function parseArgs(argv: string[]): { fixtures?: string; out?: string } {
-  const parsed: { fixtures?: string; out?: string } = {};
+async function readLatestReport(outRoot: string): Promise<EvalReport | undefined> {
+  try {
+    const raw = await readFile(join(outRoot, 'latest-report.json'), 'utf8');
+    return JSON.parse(raw) as EvalReport;
+  } catch {
+    return undefined;
+  }
+}
+
+function reportSummary(report: EvalReport): Record<string, unknown> {
+  return {
+    generatedAt: report.generatedAt,
+    passed: report.passed,
+    total: report.total,
+    passedCount: report.passedCount,
+    score: report.score,
+    previousScore: report.trend?.previousScore,
+    scoreDelta: report.trend?.scoreDelta,
+    regressed: report.trend?.regressed ?? false,
+    regressedScenarios: report.trend?.regressedScenarios ?? [],
+  };
+}
+
+function formatDelta(value: number): string {
+  return value > 0 ? `+${value}` : String(value);
+}
+
+function parseArgs(argv: string[]): { fixtures?: string; out?: string; failOnRegression: boolean } {
+  const parsed: { fixtures?: string; out?: string; failOnRegression: boolean } = {
+    failOnRegression: false,
+  };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === '--fixtures') parsed.fixtures = argv[++i];
     if (arg === '--out') parsed.out = argv[++i];
+    if (arg === '--fail-on-regression') parsed.failOnRegression = true;
   }
   return parsed;
 }

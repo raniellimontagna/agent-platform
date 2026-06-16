@@ -27,6 +27,8 @@ Artefatos ficam em `.eval-runs/<timestamp>/` com:
 - `report.md`: resumo legível.
 - `<scenario>/result.json`: checks e comandos por cenário.
 - `<scenario>/diff.patch`: diff produzido pela mudança candidata.
+- `latest-report.json`: último report completo para comparação local.
+- `history.jsonl`: histórico append-only com score, delta e cenários regressivos.
 
 O comando sai com código diferente de zero se qualquer cenário reprovar. Para
 adicionar um cenário, crie uma pasta em
@@ -47,6 +49,16 @@ Quando `workerDryRun.llmResponses` está presente, o harness usa o codegen real
 (`generateAndApplyCode` e `applyFix`) com um `LlmClient` fake que devolve as
 respostas JSON em ordem. Isso permite testar seleção de arquivos, aplicação de
 conteúdo e self-correction sem chamar LiteLLM.
+
+Para detectar queda de qualidade contra o último report salvo em `.eval-runs`,
+rode:
+
+```bash
+rtk corepack pnpm eval:regression
+```
+
+Esse modo compara score agregado e score por cenário contra
+`.eval-runs/latest-report.json`; se houver regressão, o processo falha.
 
 ## Catálogo atual
 
