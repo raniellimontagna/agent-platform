@@ -1,5 +1,5 @@
 import type { DispatchFn, RunnerResult } from '@agent-platform/graph';
-import { Agent as UndiciAgent } from 'undici';
+import { Agent as UndiciAgent, fetch as undiciFetch } from 'undici';
 import { logger } from './logger.js';
 
 export interface RunnerProbe {
@@ -40,7 +40,8 @@ export function createWorkerManager(opts: {
   jobTimeoutMs?: number;
 }): WorkerManager {
   const { baseUrls, authToken } = opts;
-  const fetchImpl = opts.fetchImpl ?? globalThis.fetch;
+  const useDefaultFetch = !opts.fetchImpl;
+  const fetchImpl = opts.fetchImpl ?? (undiciFetch as unknown as typeof fetch);
   const healthTimeoutMs = opts.healthTimeoutMs ?? 2000;
   const jobTimeoutMs = opts.jobTimeoutMs ?? 900_000;
   const jobDispatcher = new UndiciAgent({
@@ -83,13 +84,14 @@ export function createWorkerManager(opts: {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), jobTimeoutMs);
       try {
-        res = await fetchImpl(`${url}/jobs/sync`, {
+        const requestInit = {
           method: 'POST',
           headers: { 'content-type': 'application/json', authorization: `Bearer ${authToken}` },
           body: JSON.stringify(body),
           signal: ctrl.signal,
-          dispatcher: jobDispatcher,
-        } as unknown as RequestInit);
+          ...(useDefaultFetch ? { dispatcher: jobDispatcher } : {}),
+        } as unknown as RequestInit;
+        res = await fetchImpl(`${url}/jobs/sync`, requestInit);
       } catch (err) {
         // Erro de transporte (runner caiu no meio) → tenta o próximo.
         lastErr = err;
