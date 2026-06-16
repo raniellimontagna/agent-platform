@@ -49,6 +49,7 @@ export interface CompleteOptions {
   messages: ChatMessage[];
   temperature?: number;
   maxTokens?: number;
+  jsonMode?: boolean;
   /** Callback com o uso de tokens da chamada — base do cost tracking (MAC-40). */
   onUsage?: (usage: TokenUsage) => void;
 }
@@ -94,11 +95,13 @@ export function createLlmClient(config: LlmConfig): LlmClient {
   });
 
   return {
-    async complete({ alias, messages, maxTokens, onUsage }) {
+    async complete({ alias, messages, temperature, maxTokens, jsonMode, onUsage }) {
       const res = await client.chat.completions.create({
         model: alias,
         messages,
+        temperature,
         max_tokens: maxTokens,
+        response_format: jsonMode ? { type: 'json_object' } : undefined,
       });
       if (onUsage && res.usage) {
         onUsage({
