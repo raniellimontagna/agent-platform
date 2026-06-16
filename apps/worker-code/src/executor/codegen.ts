@@ -317,17 +317,15 @@ function isDocumentationPath(path: string): boolean {
   return normalized.startsWith('docs/') || normalized.endsWith('.md');
 }
 
-function issueExplicitlyRequestsDocs(title: string, description: string): boolean {
-  return /\b(doc|docs|documentation|readme|runbook|documenta(?:r|ção|cao))\b/i.test(
-    `${title}\n${description}`,
-  );
+function issueExplicitlyRequestsDocs(title: string): boolean {
+  return /\b(doc|docs|documentation|readme|runbook|documenta(?:r|ção|cao))\b/i.test(title);
 }
 
 export function filterDocumentationTargets(
   selection: { edit: string[]; create: string[] },
   ctx: { title: string; description: string },
 ): { selection: { edit: string[]; create: string[] }; droppedDocs: string[] } {
-  if (issueExplicitlyRequestsDocs(ctx.title, ctx.description)) {
+  if (issueExplicitlyRequestsDocs(ctx.title)) {
     return { selection, droppedDocs: [] };
   }
 
