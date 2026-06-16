@@ -359,6 +359,20 @@ export function selectFixCandidateFiles(filesChanged: string[], failureTail: str
   return mentioned.length > 0 ? mentioned : candidates.slice(0, 6);
 }
 
+export function filterReviewCreates(
+  selection: { edit: string[]; create: string[] },
+  reviewFeedback?: string,
+): { selection: { edit: string[]; create: string[] }; droppedCreates: string[] } {
+  if (!reviewFeedback?.trim() || selection.create.length === 0) {
+    return { selection, droppedCreates: [] };
+  }
+
+  return {
+    selection: { edit: selection.edit, create: [] },
+    droppedCreates: selection.create,
+  };
+}
+
 /**
  * Gera o código via alias `strong_coder` e aplica os arquivos no worktree (MAC-17).
  *
@@ -390,12 +404,17 @@ export async function generateAndApplyCode(args: CodegenArgs): Promise<CodegenRe
     log,
     addUsage,
   );
-  const { selection, droppedDocs } = filterDocumentationTargets(rawSelection, {
+  const docsFiltered = filterDocumentationTargets(rawSelection, {
     title,
     description,
   });
+  const { selection, droppedCreates } = filterReviewCreates(docsFiltered.selection, reviewFeedback);
+  const droppedDocs = docsFiltered.droppedDocs;
   if (droppedDocs.length > 0) {
     log.info({ droppedDocs }, 'documentation targets ignored');
+  }
+  if (droppedCreates.length > 0) {
+    log.info({ droppedCreates }, 'review create targets ignored');
   }
   log.info({ edit: selection.edit, create: selection.create }, 'files selected');
 
