@@ -7,6 +7,7 @@ import type { CommandResult } from '../types.js';
 export function summarizeFailureTail(commands: CommandResult[]): string {
   const failed = commands.find((c) => c.exitCode !== 0);
   if (!failed) return '';
-  const tail = (failed.stderr || failed.stdout || '').trim().slice(-1500);
+  const output = [failed.stderr, failed.stdout].filter((part) => part.trim()).join('\n');
+  const tail = output.trim().slice(-2500);
   return `$ ${failed.command}\n${tail}`;
 }

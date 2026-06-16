@@ -25,6 +25,14 @@ describe('summarizeFailureTail', () => {
     const out = summarizeFailureTail([cmd('pnpm test', 1, '', 'FAIL src/x.test.ts')]);
     expect(out).toBe('$ pnpm test\nFAIL src/x.test.ts');
   });
+
+  it('inclui stderr e stdout quando ambos existem', () => {
+    const out = summarizeFailureTail([
+      cmd('pnpm build', 1, '[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL]', 'src/eval/scoring.ts(1,1)'),
+    ]);
+
+    expect(out).toBe('$ pnpm build\n[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL]\nsrc/eval/scoring.ts(1,1)');
+  });
 });
 
 describe('buildCommitMessage', () => {

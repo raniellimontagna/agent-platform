@@ -348,10 +348,15 @@ export function selectFixCandidateFiles(filesChanged: string[], failureTail: str
   const normalizedTail = failureTail.replaceAll('\\', '/');
   const mentioned = candidates.filter((path) => {
     const normalized = path.replace(/^\/+/, '').replaceAll('\\', '/');
+    const suffixes = normalized
+      .split('/')
+      .map((_, index, parts) => parts.slice(index).join('/'))
+      .filter((suffix) => suffix.includes('/'));
     const fileName = normalized.split('/').pop() ?? normalized;
     return (
       normalizedTail.includes(normalized) ||
       normalizedTail.includes(`./${normalized}`) ||
+      suffixes.some((suffix) => normalizedTail.includes(suffix)) ||
       normalizedTail.includes(fileName)
     );
   });
