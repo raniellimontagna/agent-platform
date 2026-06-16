@@ -155,6 +155,7 @@ export async function completeJson<S extends z.ZodTypeAny>(
     const raw = await llm.complete({
       alias: 'strong_coder',
       temperature: opts.temperature,
+      jsonMode: true,
       messages: opts.messages,
       onUsage: opts.onUsage,
     });
@@ -176,6 +177,7 @@ export async function completeJson<S extends z.ZodTypeAny>(
       const repaired = await llm.complete({
         alias: 'strong_coder',
         temperature: 0,
+        jsonMode: true,
         onUsage: opts.onUsage,
         messages: [
           {
