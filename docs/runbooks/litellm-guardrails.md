@@ -13,18 +13,17 @@ Runbook para fechar budgets, rate limits e chaves de acesso do gateway LLM.
 | `heavy_coder` | código difícil e recuperação de falhas | 12 RPM / 50k TPM |
 | `critic` | revisão final | 12 RPM / 50k TPM |
 
-Enquanto os combos OAuth do OmniRoute estiverem degradados, aliases fortes
-(`research`, `strong_coder`, `heavy_coder`, `critic`) usam Verboo
-(`deepseek-v4-flash`) direto. Isso preserva disponibilidade, mas a qualidade é
-menor e há menos "thinking"; trate resultados nesse modo como candidatos a revisão
-humana mais cuidadosa. Quando Antigravity/Codex/Claude estiverem saudáveis, reverta
-os aliases fortes para os combos `cost-saver`/`high-availability` e mantenha Verboo
-como fallback de último recurso.
+Aliases fortes (`research`, `strong_coder`, `heavy_coder`, `critic`) usam os
+combos OAuth do OmniRoute como primários e Verboo (`deepseek-v4-flash`) como
+fallback operacional de cota alta. Verboo preserva disponibilidade, mas a qualidade
+é menor e há menos "thinking"; trate resultados que caírem nesse fallback como
+candidatos a revisão humana mais cuidadosa.
 
 O fallback operacional vive no `router_settings` do LiteLLM. Mantenha o timeout do
 Router menor que o timeout dos clientes (`LLM_TIMEOUT_MS` do runner/orchestrator)
 para o combo degradado falhar dentro do gateway antes do cliente abortar. Para
-codegen, o gateway usa 240s e o runner usa 300s.
+codegen, o gateway usa 700s, os clientes LLM usam 750s e o dispatch de job usa
+1800s.
 
 `store_model_in_db` deve ficar `false`: a config versionada precisa ser a fonte da
 verdade. Se ficar `true`, modelos persistidos no banco do LiteLLM podem manter rotas
@@ -34,12 +33,12 @@ O proxy também tem budget global em `litellm-config.yaml`:
 
 ```yaml
 litellm_settings:
-  request_timeout: 240
+  request_timeout: 700
   num_retries: 0
   max_budget: 25.0
   budget_duration: 30d
 router_settings:
-  timeout: 240
+  timeout: 700
   num_retries: 0
 ```
 

@@ -11,7 +11,7 @@ const envSchema = z.object({
   LITELLM_BASE_URL: z.string().url(),
   LITELLM_API_KEY: z.string().min(1),
   // O gateway precisa tempo suficiente para aplicar fallback antes do cliente abortar.
-  LLM_TIMEOUT_MS: z.coerce.number().default(180_000),
+  LLM_TIMEOUT_MS: z.coerce.number().default(750_000),
   LLM_MAX_RETRIES: z.coerce.number().default(0),
 
   LINEAR_API_KEY: z.string().min(1),
@@ -29,7 +29,7 @@ const envSchema = z.object({
   RUNNER_BASE_URLS: z.string().optional(),
   RUNNER_AUTH_TOKEN: z.string().min(1),
   // Jobs de código podem gastar vários minutos em LLM + validação no runner.
-  RUNNER_JOB_TIMEOUT_MS: z.coerce.number().default(900_000),
+  RUNNER_JOB_TIMEOUT_MS: z.coerce.number().default(1_800_000),
 
   // Repo alvo que o agente vai modificar (default: o próprio agent-platform).
   REPO_URL: z.string().min(1).default('https://github.com/raniellimontagna/agent-platform.git'),
