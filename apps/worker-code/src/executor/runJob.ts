@@ -164,6 +164,7 @@ export async function runJob(job: Job): Promise<JobResult> {
       log.info({ commitSha: commit.sha, branch: job.branch, fixAttempts }, 'pushed branch');
 
       for (const r of validation.results) commands.push(r);
+      base.sandbox = summarizeSandbox(commands);
       base.testsPassed = validation.passed;
       log.info({ testsPassed: validation.passed, fixAttempts }, 'validation finished');
 
@@ -177,16 +178,32 @@ export async function runJob(job: Job): Promise<JobResult> {
       commands.push(result);
       if (result.exitCode !== 0) {
         log.warn({ cmd, exitCode: result.exitCode }, 'command failed');
+        base.sandbox = summarizeSandbox(commands);
         return { ...base, status: 'failed' };
       }
     }
 
+    base.sandbox = summarizeSandbox(commands);
     return { ...base, status: 'succeeded' };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     log.error({ err }, 'job failed');
     return { ...base, status: 'failed', error: message };
   }
+}
+
+function summarizeSandbox(commands: CommandResult[]): JobResult['sandbox'] {
+  const durations = commands.map((command) => command.durationMs);
+  const failed = commands.find((command) => command.exitCode !== 0);
+  return {
+    backend: env.AGENT_SANDBOX_BACKEND,
+    image: env.AGENT_SANDBOX_BACKEND === 'docker' ? env.AGENT_SANDBOX_IMAGE : undefined,
+    network: env.AGENT_SANDBOX_BACKEND === 'docker' ? env.AGENT_SANDBOX_NETWORK : undefined,
+    commandCount: commands.length,
+    totalDurationMs: durations.reduce((sum, value) => sum + value, 0),
+    maxCommandDurationMs: durations.length > 0 ? Math.max(...durations) : 0,
+    failedCommand: failed?.command,
+  };
 }
 
 /** Monta a mensagem de commit (Conventional Commits, título do modelo em inglês). */

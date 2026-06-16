@@ -17,6 +17,7 @@
     "format": "biome format --write .",
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
+    "verify": "corepack pnpm lint && corepack pnpm verify:loop && corepack pnpm eval:regression",
     "verify:loop": "corepack pnpm -r build && corepack pnpm test && corepack pnpm eval"
   },
   "devDependencies": {

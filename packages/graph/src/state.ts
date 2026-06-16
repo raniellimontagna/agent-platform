@@ -33,6 +33,16 @@ export const AgentState = Annotation.Root({
   testSummary: Annotation<string>(),
   /** Quantas correções de auto-fix rodaram no runner (0 = passou de primeira). */
   fixAttempts: Annotation<number>(),
+  /** Resumo agregado do sandbox usado pelo runner (backend/imagem/duração/falha). */
+  sandbox: Annotation<{
+    backend: 'process' | 'docker';
+    image?: string;
+    network?: string;
+    commandCount: number;
+    totalDurationMs: number;
+    maxCommandDurationMs: number;
+    failedCommand?: string;
+  }>(),
   /** Custo estimado por fase em USD (MAC-40). */
   planCostUsd: Annotation<number>(),
   // MAC-59: o loop roda coder/review várias vezes — custo acumula (não substitui).

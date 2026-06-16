@@ -78,6 +78,15 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
         testsPassed?: boolean;
         testSummary?: string;
         fixAttempts?: number;
+        sandbox?: {
+          backend: 'process' | 'docker';
+          image?: string;
+          network?: string;
+          commandCount: number;
+          totalDurationMs: number;
+          maxCommandDurationMs: number;
+          failedCommand?: string;
+        };
       };
       if (job.data.kind === 'plan') {
         const issue = await linear.getIssue(job.data.issueId);
@@ -109,6 +118,7 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
         testsPassed: result.testsPassed,
         verdict: verdict === '—' ? undefined : verdict,
         fixAttempts: result.fixAttempts,
+        sandbox: result.sandbox,
       });
 
       // Approval Policies (MAC-41): ao pausar p/ aprovação, registra a solicitação.
