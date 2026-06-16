@@ -1,19 +1,27 @@
-import { fileURLToPath } from 'node:url';
-import { describe, expect, it } from 'vitest';
-import { EMBEDDING_DIM, embed } from './embeddings.js';
+import { describe, expect, it, vi } from 'vitest';
 
-// Usa o modelo VENDORIZADO no repo (apps/orchestrator-api/vendor/hf-cache) — assim
-// o teste roda offline em qualquer lugar: local, CI e o sandbox do runner (que clona
-// o repo, mas não alcança o HF). Sem isso, `pnpm test` quebrava no sandbox e a
-// self-correction sabotava o embeddings.ts. `embed` lê o cacheDir lazy (1ª chamada).
-process.env.HF_HOME ??= fileURLToPath(new URL('../vendor/hf-cache', import.meta.url));
+const hfEnv: { cacheDir?: string; allowRemoteModels?: boolean } = {};
+const pipeline = vi.fn(async () => async () => {
+  const data = new Float32Array(384);
+  data[0] = 1;
+  return { data };
+});
+
+vi.mock('@huggingface/transformers', () => ({
+  env: hfEnv,
+  pipeline,
+}));
+
+const { EMBEDDING_DIM, embed } = await import('./embeddings.js');
 
 describe('embed', () => {
-  // Carrega o modelo (baixa ~80MB na 1ª vez) — precisa de rede no primeiro run.
   it('retorna um vetor de EMBEDDING_DIM normalizado', async () => {
     const v = await embed('corrigir bug de autenticação no login');
     expect(v).toHaveLength(EMBEDDING_DIM);
     const norm = Math.sqrt(v.reduce((s, x) => s + x * x, 0));
     expect(norm).toBeCloseTo(1, 1);
-  }, 120_000);
+    expect(pipeline).toHaveBeenCalledWith('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+    expect(hfEnv.cacheDir).toBe('/app/.hf-cache');
+    expect(hfEnv.allowRemoteModels).toBe(true);
+  });
 });
