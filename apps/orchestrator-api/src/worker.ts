@@ -74,6 +74,7 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
         approvalReasons?: string[];
         branch?: string;
         prUrl?: string;
+        error?: string;
         review?: string;
         testsPassed?: boolean;
         testSummary?: string;
@@ -115,6 +116,7 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
       await updateRunStatus(runId, status, {
         branch: result.branch,
         prUrl: result.prUrl,
+        error: result.error,
         testsPassed: result.testsPassed,
         verdict: verdict === '—' ? undefined : verdict,
         fixAttempts: result.fixAttempts,
@@ -163,6 +165,7 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
         startedAt,
         model: isPlan ? 'research' : 'strong_coder+critic',
         costUsd,
+        error: status === 'failed' ? result.error : undefined,
       });
       log.info({ status, costUsd }, 'graph step finished');
 
