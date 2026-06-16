@@ -106,7 +106,7 @@ runs simultâneos, observável em `GET /admin/concurrency` (MAC-47).
 | Memory Layer | MAC-23 | `packages/memory`, `apps/orchestrator-api` (lessons) | ✅ (feedback learning: lições por repo) |
 | Retry / Persistence | MAC-33/34 | `packages/llm` (retry), `packages/graph` (checkpointer), `worker.ts` (resume) | ✅ |
 | Branch / PR / Worktree | MAC-25/26/27 | `packages/github`, `packages/graph/src/nodes/pr.ts`, `apps/worker-code/src/executor/worktree.ts` | ✅ |
-| Sandbox Executor / Test Runner / Self-correction | MAC-28/29 (+fix loop) | `apps/worker-code` (runJob + allowlist + applyFix) | ✅ (valida antes de pushar; corrige até `AGENT_MAX_FIX_ATTEMPTS`) |
+| Sandbox Executor / Test Runner / Self-correction | MAC-28/29 (+fix loop) | `apps/worker-code` (`sandbox.ts`, runJob + allowlist + applyFix) | ✅ (produção usa containers Docker efêmeros; valida antes de pushar; corrige até `AGENT_MAX_FIX_ATTEMPTS`) |
 | Observabilidade (painéis, registro) | MAC-35/36 | `infra/compose/observability/provisioning/`, `apps/orchestrator-api` (runs/steps) | ✅ 3 dashboards (Execuções, Custo & Governança, Qualidade & Memória) verificados na UI + painel "Runs ativos agora" |
 | Segurança (vault, allowlist, kill switch) | MAC-30/31/32 | `killswitch.ts`, `routes/admin.ts`, `worker-code/.../commandPolicy.ts`, `docs/runbooks/secrets.md` | ✅ |
 | Loop de revisão (critic re-coda) | MAC-59 | `packages/graph` (nó `revising` + `decideAfterReview`) | ✅ |
