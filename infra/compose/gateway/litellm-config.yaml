@@ -114,4 +114,6 @@ router_settings:
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY
   database_url: os.environ/DATABASE_URL
-  store_model_in_db: true
+  # Config versionada é a fonte da verdade; modelos persistidos mantiveram rotas
+  # antigas para OmniRoute mesmo após deploy do YAML.
+  store_model_in_db: false
