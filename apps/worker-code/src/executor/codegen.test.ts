@@ -6,6 +6,7 @@ import {
   completeJson,
   extractJson,
   filterDocumentationTargets,
+  filterReviewCreates,
   selectFixCandidateFiles,
 } from './codegen.js';
 
@@ -161,5 +162,28 @@ describe('selectFixCandidateFiles', () => {
     const files = Array.from({ length: 10 }, (_, index) => `src/file${index}.ts`);
 
     expect(selectFixCandidateFiles(files, 'erro sem caminho')).toEqual(files.slice(0, 6));
+  });
+});
+
+describe('filterReviewCreates', () => {
+  it('mantém creates no fluxo normal', () => {
+    const selection = { edit: ['src/a.ts'], create: ['src/b.ts'] };
+
+    expect(filterReviewCreates(selection, undefined)).toEqual({
+      selection,
+      droppedCreates: [],
+    });
+  });
+
+  it('remove creates no modo revisão', () => {
+    expect(
+      filterReviewCreates(
+        { edit: ['src/a.ts'], create: ['src/b.ts', 'src/c.ts'] },
+        'endereçar ressalvas do critic',
+      ),
+    ).toEqual({
+      selection: { edit: ['src/a.ts'], create: [] },
+      droppedCreates: ['src/b.ts', 'src/c.ts'],
+    });
   });
 });
