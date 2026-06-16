@@ -1,0 +1,28 @@
+{
+  "id": "docs-note",
+  "title": "Documenta uma nota operacional curta",
+  "description": "Cenário pequeno: criar uma nota de runbook sem tocar em arquivos de código.",
+  "repo": {
+    "files": {
+      "README.md": "# Fixture Repo\n",
+      "package.json": "{\"type\":\"module\",\"scripts\":{\"test\":\"node test.js\"}}\n",
+      "test.js": "import { readFileSync } from 'node:fs';\nconst text = readFileSync('docs/runbook.md', 'utf8');\nif (!text.includes('eval harness')) throw new Error('missing eval harness note');\n"
+    }
+  },
+  "candidate": {
+    "files": {
+      "docs/runbook.md": "# Runbook\n\nEsta nota valida o eval harness sem side effects externos.\n"
+    }
+  },
+  "commands": ["node test.js"],
+  "expected": {
+    "changedFiles": ["docs/runbook.md"],
+    "forbiddenFiles": ["package.json"],
+    "requiredContent": [
+      {
+        "path": "docs/runbook.md",
+        "includes": "eval harness"
+      }
+    ]
+  }
+}

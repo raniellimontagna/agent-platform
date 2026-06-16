@@ -16,6 +16,9 @@ build/
 logs/
 *.log
 
+# Eval harness artifacts
+.eval-runs/
+
 # Drizzle
 drizzle/meta/_journal.json.bak
 
