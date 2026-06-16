@@ -25,6 +25,8 @@ const envSchema = z.object({
   // Ausente → usa só RUNNER_BASE_URL.
   RUNNER_BASE_URLS: z.string().optional(),
   RUNNER_AUTH_TOKEN: z.string().min(1),
+  // Jobs de código podem gastar vários minutos em LLM + validação no runner.
+  RUNNER_JOB_TIMEOUT_MS: z.coerce.number().default(900_000),
 
   // Repo alvo que o agente vai modificar (default: o próprio agent-platform).
   REPO_URL: z.string().min(1).default('https://github.com/raniellimontagna/agent-platform.git'),

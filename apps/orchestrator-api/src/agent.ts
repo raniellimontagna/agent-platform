@@ -41,6 +41,7 @@ async function init(): Promise<Agent> {
   const workerManager = createWorkerManager({
     baseUrls: parseRunnerUrls(env.RUNNER_BASE_URLS, env.RUNNER_BASE_URL),
     authToken: env.RUNNER_AUTH_TOKEN,
+    jobTimeoutMs: env.RUNNER_JOB_TIMEOUT_MS,
   });
 
   // Comandos de validação no sandbox (MAC-29) — uma linha por comando.

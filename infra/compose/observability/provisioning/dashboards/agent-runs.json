@@ -1,9 +1,7 @@
 {
   "uid": "agent-runs",
   "title": "Agent Platform — Execuções",
-  "tags": [
-    "agent-platform"
-  ],
+  "tags": ["agent-platform"],
   "timezone": "browser",
   "schemaVersion": 39,
   "version": 2,

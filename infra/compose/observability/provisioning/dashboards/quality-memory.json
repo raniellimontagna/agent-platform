@@ -1,9 +1,7 @@
 {
   "uid": "quality-memory",
   "title": "Agent Platform — Qualidade & Memória",
-  "tags": [
-    "agent-platform"
-  ],
+  "tags": ["agent-platform"],
   "timezone": "browser",
   "schemaVersion": 39,
   "version": 2,
