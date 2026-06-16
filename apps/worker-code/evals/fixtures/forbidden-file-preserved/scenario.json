@@ -1,0 +1,28 @@
+{
+  "id": "forbidden-file-preserved",
+  "title": "Mudança cirúrgica preserva arquivo proibido",
+  "description": "Regressão para evitar que uma alteração simples mexa em package/config.",
+  "repo": {
+    "files": {
+      "package.json": "{\"type\":\"module\",\"scripts\":{\"test\":\"node feature.test.js\"}}\n",
+      "feature.js": "export function featureFlag() {\n  return false;\n}\n",
+      "feature.test.js": "import { featureFlag } from './feature.js';\nif (featureFlag() !== true) throw new Error('feature must be enabled');\n"
+    }
+  },
+  "candidate": {
+    "files": {
+      "feature.js": "export function featureFlag() {\n  return true;\n}\n"
+    }
+  },
+  "commands": ["node feature.test.js"],
+  "expected": {
+    "changedFiles": ["feature.js"],
+    "forbiddenFiles": ["package.json"],
+    "requiredContent": [
+      {
+        "path": "feature.js",
+        "includes": "return true"
+      }
+    ]
+  }
+}

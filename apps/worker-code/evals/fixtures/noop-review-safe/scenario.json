@@ -1,0 +1,27 @@
+{
+  "id": "noop-review-safe",
+  "title": "Cenário no-op preserva validação verde",
+  "description": "Regressão para revisões sem mudanças commitáveis: nada muda e os comandos seguem verdes.",
+  "repo": {
+    "files": {
+      "package.json": "{\"type\":\"module\",\"scripts\":{\"test\":\"node ok.test.js\"}}\n",
+      "ok.js": "export const ok = true;\n",
+      "ok.test.js": "import { ok } from './ok.js';\nif (ok !== true) throw new Error('not ok');\n"
+    }
+  },
+  "candidate": {
+    "files": {},
+    "delete": []
+  },
+  "commands": ["node ok.test.js"],
+  "expected": {
+    "changedFiles": [],
+    "forbiddenFiles": ["package.json", "ok.js"],
+    "requiredContent": [
+      {
+        "path": "ok.js",
+        "includes": "ok = true"
+      }
+    ]
+  }
+}

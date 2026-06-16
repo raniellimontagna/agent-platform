@@ -1,0 +1,36 @@
+{
+  "id": "worker-json-repair",
+  "title": "Dry-run cobre repair de JSON do modelo",
+  "description": "Regressão para respostas do modelo com prosa/truncamento antes de JSON limpo.",
+  "repo": {
+    "files": {
+      "package.json": "{\"type\":\"module\",\"scripts\":{\"test\":\"node status.test.js\"}}\n",
+      "status.js": "export function status() {\n  return 'pending';\n}\n",
+      "status.test.js": "import { status } from './status.js';\nif (status() !== 'ready') throw new Error('status must be ready');\n"
+    }
+  },
+  "workerDryRun": {
+    "plan": "Alterar status() para retornar ready.",
+    "branch": "agent/eval-worker-json-repair",
+    "prTitle": "fix(eval): return ready status",
+    "summary": "Valida repair de JSON antes do codegen.",
+    "llmResponses": [
+      "Vou editar status.js e depois explico.",
+      "{\"edit\":[\"status.js\"],\"create\":[",
+      "{\"edit\":[\"status.js\"],\"create\":[]}",
+      "{\"prTitle\":\"fix(eval): return ready status\",\"summary\":\"Altera status para ready.\",\"files\":[{\"path\":\"status.js\",\"content\":\"export function status() {\\n  return 'ready';\\n}\\n\"}]}"
+    ],
+    "maxFixAttempts": 0
+  },
+  "commands": ["node status.test.js"],
+  "expected": {
+    "changedFiles": ["status.js"],
+    "forbiddenFiles": ["package.json"],
+    "requiredContent": [
+      {
+        "path": "status.js",
+        "includes": "return 'ready'"
+      }
+    ]
+  }
+}
