@@ -2,7 +2,7 @@ import { type Context, Hono, type Next } from 'hono';
 import { env } from '../env.js';
 import { reportResult, runJob } from '../executor/runJob.js';
 import { logger } from '../logger.js';
-import { jobSchema } from '../types.js';
+import { type Job, jobSchema } from '../types.js';
 
 export const jobs = new Hono();
 
@@ -17,6 +17,22 @@ async function requireAuth(c: Context, next: Next) {
 jobs.use('/jobs', requireAuth);
 jobs.use('/jobs/*', requireAuth);
 
+async function runAndReport(job: Job): Promise<void> {
+  try {
+    await reportResult(await runJob(job));
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    logger.error({ err, runId: job.runId }, 'async job failed before result report');
+    await reportResult({
+      runId: job.runId,
+      status: 'failed',
+      branch: job.branch,
+      commands: [],
+      error: message,
+    });
+  }
+}
+
 /** Assíncrono: aceita o job e devolve o resultado via callback (MAC-37). */
 jobs.post('/jobs', async (c) => {
   const parsed = jobSchema.safeParse(await c.req.json().catch(() => null));
@@ -25,7 +41,7 @@ jobs.post('/jobs', async (c) => {
   }
   const job = parsed.data;
   logger.info({ runId: job.runId, issue: job.issueIdentifier }, 'job accepted (async)');
-  void runJob(job).then(reportResult);
+  void runAndReport(job);
   return c.json({ accepted: true, runId: job.runId }, 202);
 });
 

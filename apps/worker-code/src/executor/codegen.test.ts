@@ -55,7 +55,7 @@ describe('completeJson', () => {
   it('faz repair quando os attempts vêm em prosa e o repair traz JSON limpo', async () => {
     const { llm, calls } = fakeLlm([
       'Claro! Vou gerar o código...',
-      'Aqui está a explicação, sem JSON.',
+      'Aqui está a explicação com JSON inválido: { ok: true }',
       '{"ok": true}',
     ]);
     expect(await completeJson(llm, opts, schema, noopLog, 2)).toEqual({ ok: true });
@@ -66,5 +66,17 @@ describe('completeJson', () => {
   it('lança quando nem os attempts nem o repair produzem JSON', async () => {
     const { llm } = fakeLlm(['prosa', 'mais prosa', 'ainda prosa']);
     await expect(completeJson(llm, opts, schema, noopLog, 2)).rejects.toThrow();
+  });
+
+  it('não faz repair caro quando a última resposta nem contém objeto JSON', async () => {
+    const { llm, calls } = fakeLlm(['{"bad": true}', 'bash\nrtk pnpm eval\n', '{"ok": true}']);
+    await expect(completeJson(llm, opts, schema, noopLog, 2)).rejects.toThrow();
+    expect(calls()).toBe(2);
+  });
+
+  it('ainda faz repair quando a última resposta parece JSON truncado', async () => {
+    const { llm, calls } = fakeLlm(['{"bad": true}', '{"ok":', '{"ok": true}']);
+    expect(await completeJson(llm, opts, schema, noopLog, 2)).toEqual({ ok: true });
+    expect(calls()).toBe(3);
   });
 });
