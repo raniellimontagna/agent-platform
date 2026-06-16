@@ -94,11 +94,10 @@ export function createLlmClient(config: LlmConfig): LlmClient {
   });
 
   return {
-    async complete({ alias, messages, temperature, maxTokens, onUsage }) {
+    async complete({ alias, messages, maxTokens, onUsage }) {
       const res = await client.chat.completions.create({
         model: alias,
         messages,
-        temperature,
         max_tokens: maxTokens,
       });
       if (onUsage && res.usage) {

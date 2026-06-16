@@ -94,8 +94,8 @@ model_list:
 
 litellm_settings:
   drop_params: true
-  request_timeout: 120
-  num_retries: 3
+  request_timeout: 90
+  num_retries: 0
   max_budget: 25.0
   budget_duration: 30d
   fallbacks:

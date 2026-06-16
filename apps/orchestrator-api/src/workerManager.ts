@@ -1,4 +1,5 @@
 import type { DispatchFn, RunnerResult } from '@agent-platform/graph';
+import { Agent as UndiciAgent } from 'undici';
 import { logger } from './logger.js';
 
 export interface RunnerProbe {
@@ -42,6 +43,10 @@ export function createWorkerManager(opts: {
   const fetchImpl = opts.fetchImpl ?? globalThis.fetch;
   const healthTimeoutMs = opts.healthTimeoutMs ?? 2000;
   const jobTimeoutMs = opts.jobTimeoutMs ?? 900_000;
+  const jobDispatcher = new UndiciAgent({
+    headersTimeout: jobTimeoutMs,
+    bodyTimeout: jobTimeoutMs,
+  });
   let next = 0;
 
   async function isHealthy(url: string): Promise<boolean> {
@@ -83,7 +88,8 @@ export function createWorkerManager(opts: {
           headers: { 'content-type': 'application/json', authorization: `Bearer ${authToken}` },
           body: JSON.stringify(body),
           signal: ctrl.signal,
-        });
+          dispatcher: jobDispatcher,
+        } as unknown as RequestInit);
       } catch (err) {
         // Erro de transporte (runner caiu no meio) → tenta o próximo.
         lastErr = err;
