@@ -208,12 +208,29 @@ function summarizeSandbox(commands: CommandResult[]): JobResult['sandbox'] {
 }
 
 /** Monta a mensagem de commit (Conventional Commits, título do modelo em inglês). */
-function buildCommitMessage(job: Job, prTitle: string, summary: string): string {
+interface CommitCoauthor {
+  name?: string;
+  email?: string;
+}
+
+export function buildCommitMessage(
+  job: Job,
+  prTitle: string,
+  summary: string,
+  coauthor: CommitCoauthor = {
+    name: env.GIT_COAUTHOR_NAME,
+    email: env.GIT_COAUTHOR_EMAIL,
+  },
+): string {
   const subject = (
     prTitle.trim() || `chore(${job.issueIdentifier.toLowerCase()}): ${job.title}`
   ).slice(0, 100);
   const body = summary ? `\n\n${summary}` : '';
-  return `${subject}${body}\n\nRef: ${job.issueIdentifier}`;
+  const trailers = [`Ref: ${job.issueIdentifier}`];
+  if (coauthor.name && coauthor.email) {
+    trailers.push(`Co-authored-by: ${coauthor.name} <${coauthor.email}>`);
+  }
+  return `${subject}${body}\n\n${trailers.join('\n')}`;
 }
 
 /** Reporta o resultado de volta ao orquestrador. */
