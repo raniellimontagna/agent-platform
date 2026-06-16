@@ -343,6 +343,22 @@ export function filterDocumentationTargets(
   };
 }
 
+export function selectFixCandidateFiles(filesChanged: string[], failureTail: string): string[] {
+  const candidates = [...new Set(filesChanged)].slice(0, MAX_EDIT_FILES);
+  const normalizedTail = failureTail.replaceAll('\\', '/');
+  const mentioned = candidates.filter((path) => {
+    const normalized = path.replace(/^\/+/, '').replaceAll('\\', '/');
+    const fileName = normalized.split('/').pop() ?? normalized;
+    return (
+      normalizedTail.includes(normalized) ||
+      normalizedTail.includes(`./${normalized}`) ||
+      normalizedTail.includes(fileName)
+    );
+  });
+
+  return mentioned.length > 0 ? mentioned : candidates.slice(0, 6);
+}
+
 /**
  * Gera o código via alias `strong_coder` e aplica os arquivos no worktree (MAC-17).
  *
@@ -496,7 +512,13 @@ export async function applyFix(args: FixArgs): Promise<FixResult> {
   // Relê on-disk os arquivos tocados (recém-escritos; arquivos novos podem não
   // estar no git ls-files, então lemos direto, sem filtro de tracking).
   const current: { path: string; content: string }[] = [];
-  for (const rel of filesChanged.slice(0, MAX_EDIT_FILES)) {
+  const fixCandidates = selectFixCandidateFiles(filesChanged, failureTail);
+  log.info(
+    { files: fixCandidates.length, originalFiles: filesChanged.length, fixCandidates },
+    'selected files for fix',
+  );
+
+  for (const rel of fixCandidates) {
     try {
       const content = await readFile(safeJoin(dir, rel), 'utf8');
       current.push({ path: rel, content: content.slice(0, MAX_FILE_CHARS) });

@@ -2,7 +2,12 @@ import type { LlmClient } from '@agent-platform/llm';
 import type { Logger } from 'pino';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { completeJson, extractJson, filterDocumentationTargets } from './codegen.js';
+import {
+  completeJson,
+  extractJson,
+  filterDocumentationTargets,
+  selectFixCandidateFiles,
+} from './codegen.js';
 
 /** LlmClient fake: devolve as respostas da fila em ordem (repete a última). */
 function fakeLlm(responses: string[]): {
@@ -130,5 +135,31 @@ describe('filterDocumentationTargets', () => {
 
     expect(result.selection).toEqual(selection);
     expect(result.droppedDocs).toEqual([]);
+  });
+});
+
+describe('selectFixCandidateFiles', () => {
+  it('mantém só os arquivos citados no erro de validação', () => {
+    expect(
+      selectFixCandidateFiles(
+        ['apps/worker-code/src/eval/runEval.ts', 'apps/worker-code/src/eval/scoring.ts'],
+        'apps/worker-code/src/eval/runEval.ts:42:13 - error TS2322',
+      ),
+    ).toEqual(['apps/worker-code/src/eval/runEval.ts']);
+  });
+
+  it('usa o nome do arquivo quando o erro não traz caminho completo', () => {
+    expect(
+      selectFixCandidateFiles(
+        ['apps/worker-code/src/eval/runEval.ts', 'apps/worker-code/src/eval/scoring.ts'],
+        'FAIL scoring.ts > scoreEvalReport',
+      ),
+    ).toEqual(['apps/worker-code/src/eval/scoring.ts']);
+  });
+
+  it('limita o fallback quando não consegue inferir arquivos do erro', () => {
+    const files = Array.from({ length: 10 }, (_, index) => `src/file${index}.ts`);
+
+    expect(selectFixCandidateFiles(files, 'erro sem caminho')).toEqual(files.slice(0, 6));
   });
 });
