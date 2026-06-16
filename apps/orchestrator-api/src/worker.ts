@@ -81,6 +81,7 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
       };
       if (job.data.kind === 'plan') {
         const issue = await linear.getIssue(job.data.issueId);
+        const run = await getRun(runId);
         await updateRunStatus(runId, 'planning');
         result = await graph.invoke(
           {
@@ -90,6 +91,7 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
             title: issue.title,
             description: issue.description,
             status: 'planning',
+            autoMerge: run?.autoMerge ?? false,
           },
           config,
         );
