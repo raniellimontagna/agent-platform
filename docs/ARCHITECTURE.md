@@ -4,8 +4,10 @@ Mapa único do sistema: o que está no ar, o fluxo ponta a ponta, e como cada
 card do Linear (projeto **Orquestrador de Agentes com LangGraph**, time `MAC`)
 se encaixa na estrutura. Serve para validar o todo antes de seguir.
 
-> Estado em 2026-06-15. Legenda: ✅ feito · 🏗 no ar/parcial · ⏳ pendente.
-> **Fases 0–7 completas** — projeto code-complete e deployado em prod.
+> Estado em 2026-06-16. Legenda: ✅ feito · 🏗 no ar/parcial · ⏳ pendente.
+> **Fases 0–7 completas** — projeto deployado em prod; auto-merge opt-in,
+> loop critic até 3 voltas, identidade de commits do agente e dashboards
+> validados com E2E real.
 
 ---
 
@@ -69,14 +71,14 @@ flowchart TD
   L -->|"ok ou esgotou retries"| M["Reviewer Agent revisa diff (critic)<br/>MAC-18"]
   M -->|"REPROVA / ressalva"| RV["Revising: re-coda endereçando<br/>o parecer · MAC-59"]
   RV --> M
-  M -->|"aprovado / teto"| N["PR Creator abre Draft PR<br/>MAC-26"]
+  M -->|"aprovado / ressalva operacional / teto"| N["PR Creator abre PR<br/>Draft sem auto-merge; pronto com opt-in<br/>MAC-26/67"]
   N --> AR["Artifact Store: plano/patch/review/...<br/>MAC-44"]
   AR --> Q["Memory: destila lição se falhou<br/>(embeda p/ busca futura) MAC-23/45"]
   Q --> O["Reporter comenta resultado no Linear<br/>MAC-21"]
-  O --> P["Merge e deploy MANUAIS (MVP)"]
+  O --> P["Merge automático opt-in<br/>label auto-merge + testes verdes + critic<br/>MAC-67"]
 ```
 
-Grafo LangGraph: `planning → [⏸ aprovação] → coding → reviewing → [revisar? → revising → reviewing] → pr → report → END`
+Grafo LangGraph: `planning → [⏸ aprovação] → coding → reviewing → [revisar? → revising → reviewing] → pr → merging → report → END`
 (falha do coder curto-circuita para `report`). Atravessando tudo: **Context Builder**
 (MAC-24), **Memory Layer** (MAC-23/45 — lições por repo, recuperadas por similaridade),
 **Self-correction** (MAC-54 — fix intra-run), **Loop de revisão** (MAC-59), **Retry
@@ -107,15 +109,17 @@ runs simultâneos, observável em `GET /admin/concurrency` (MAC-47).
 | Retry / Persistence | MAC-33/34 | `packages/llm` (retry), `packages/graph` (checkpointer), `worker.ts` (resume) | ✅ |
 | Branch / PR / Worktree | MAC-25/26/27 | `packages/github`, `packages/graph/src/nodes/pr.ts`, `apps/worker-code/src/executor/worktree.ts` | ✅ |
 | Sandbox Executor / Test Runner / Self-correction | MAC-28/29 (+fix loop) | `apps/worker-code` (`sandbox.ts`, runJob + allowlist + applyFix) | ✅ (produção usa containers Docker efêmeros; valida antes de pushar; corrige até `AGENT_MAX_FIX_ATTEMPTS`) |
-| Observabilidade (painéis, registro) | MAC-35/36 | `infra/compose/observability/provisioning/`, `apps/orchestrator-api` (runs/steps) | ✅ 3 dashboards (Execuções, Custo & Governança, Qualidade & Memória) verificados na UI + painel "Runs ativos agora" |
+| Observabilidade (painéis, registro) | MAC-35/36 | `infra/compose/observability/provisioning/`, `apps/orchestrator-api` (runs/steps) | ✅ dashboards com execuções, sandbox, custo, auto-merge e critic |
 | Segurança (vault, allowlist, kill switch) | MAC-30/31/32 | `killswitch.ts`, `routes/admin.ts`, `worker-code/.../commandPolicy.ts`, `docs/runbooks/secrets.md` | ✅ |
-| Loop de revisão (critic re-coda) | MAC-59 | `packages/graph` (nó `revising` + `decideAfterReview`) | ✅ |
+| Loop de revisão (critic re-coda) | MAC-59 | `packages/graph` (nó `revising` + `decideAfterReview`) | ✅ até 3 voltas (`AGENT_MAX_REVIEW_ROUNDS=3`) |
+| Auto-merge opt-in | MAC-67 | `packages/graph/src/nodes/merging.ts`, `report.ts`, webhook Linear labels | ✅ prod E2E: `MAC-84`/`MAC-85`, branch deletada e issue `Done` |
 | Runtime (queue, scheduler, workers, cost, approval) | MAC-37/38/39/40/41 | `apps/orchestrator-api` (BullMQ + cost guard + scheduler), `packages/policy` | ✅ (scheduler `/schedules`, worker manager `/admin/runners` com failover) |
 | Agent Registry / Tool Registry | MAC-42/43 | `apps/orchestrator-api` (`agents.ts`/`tools.ts`, `/agents`,`/tools`), migrations 0006/0007 | ✅ catálogos versionados (capabilities; risk+scopes) + seed + MCP read |
 | Artifact Store | MAC-44 | `apps/orchestrator-api` (`artifacts.ts`, `/runs/:id/artifacts`), migration 0004 | ✅ |
 | Vector Memory | MAC-45 | `apps/orchestrator-api` (`embeddings.ts`/`lessonLoader.ts`), pgvector, migration 0008 | ✅ busca semântica de lições + fallback recência |
 | MCP server | MAC-46 | `apps/mcp-server` (stdio facade) | ✅ rodando zero-túnel no Proxmox (docker exec) |
 | Multi-Agent Execution | MAC-47 | `apps/orchestrator-api` (worker `concurrency`, `/admin/concurrency`), migration 0009 | ✅ N runs em paralelo + dedup de issue ativa |
+| Identidade de commits do agente | pós MAC-67 | `apps/worker-code/src/executor/runJob.ts`, compose runners | ✅ autor `Ranielli Montagna <raniellimontagna@hotmail.com>` + `Co-authored-by: Codex <noreply@openai.com>` |
 
 Provider LLM é híbrido: Verboo (MAC-13) + OmniRoute/OAuth (MAC-48) — ver §5 e ADR-0006.
 

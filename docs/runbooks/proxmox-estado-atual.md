@@ -5,7 +5,8 @@ descobertos na prática. Complementa o [proxmox-setup.md](./proxmox-setup.md) (q
 descreve o passo a passo do zero). **Leia isto antes de mexer no ambiente de outra
 máquina** — evita re-descobrir as armadilhas abaixo.
 
-> Última atualização: 2026-06-15 (Fase 7 deployada — pgvector + multi-agent).
+> Última atualização: 2026-06-16 (auto-merge opt-in, loop critic 3x,
+> identidade de commits do agente e dashboards validados em prod).
 
 ---
 
@@ -142,6 +143,27 @@ qm destroy <ID>        # VM
 ---
 
 ## Status do deploy
+
+> **Atualização 2026-06-16 (MAC-67 pós-deploy):** auto-merge opt-in validado em
+> produção com issues descartáveis `MAC-84` e `MAC-85`. Fluxo confirmado:
+> `ai-ready` + `auto-merge` cria run, pausa em aprovação humana, `approved`
+> retoma via webhook Linear, abre PR, mergeia automaticamente na `main`, remove
+> branch remota e move a issue para `Done`.
+>
+> **Loop critic:** `AGENT_MAX_REVIEW_ROUNDS=3` está ativo no orchestrator. O E2E
+> `MAC-85` exercitou as 3 voltas de revisão e terminou com
+> `APROVADO COM RESSALVAS`; a ressalva operacional não bloqueou o auto-merge.
+>
+> **Identidade de commits do agente:** runner em produção recebe
+> `GIT_AUTHOR_NAME=Ranielli Montagna`,
+> `GIT_AUTHOR_EMAIL=raniellimontagna@hotmail.com`,
+> `GIT_COAUTHOR_NAME=Codex` e `GIT_COAUTHOR_EMAIL=noreply@openai.com`.
+> Commit real validado: `ff9460f` em `MAC-85`, com autor/committer corretos e
+> trailer `Co-authored-by: Codex <noreply@openai.com>`.
+>
+> **Observabilidade:** dashboards Grafana provisionados com painéis de
+> auto-merge, vereditos do critic, ressalvas, sandbox e custo code+critic. API do
+> Grafana confirmou os painéis carregados após deploy de `observability`.
 
 > **Atualização 2026-06-16:** runner MAC-28 usa Docker como sandbox executor em
 > produção: cada comando de validação roda em container efêmero com o worktree

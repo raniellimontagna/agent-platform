@@ -77,3 +77,16 @@ Esse modo compara score agregado e score por cenário contra
 - `worker-json-repair`: resposta inicial inválida/truncada e repair para JSON.
 - `noop-review-safe`: cenário sem mudanças, validando no-op verde.
 - `forbidden-file-preserved`: alteração cirúrgica preservando arquivo proibido.
+
+## Próxima evolução recomendada
+
+O auto-merge em produção torna regressão silenciosa de qualidade mais cara. A
+próxima versão do harness deve cobrir, sem GitHub/Linear/prod:
+
+- decisão de auto-merge para `APROVADO`, `APROVADO COM RESSALVAS` operacional e
+  ressalva não-operacional;
+- limite de até 3 voltas do critic antes de seguir para PR;
+- geração da mensagem de commit com `Ref:` e `Co-authored-by`;
+- cenários de revisão que exigem recode e cenários de revisão no-op;
+- relatório que destaque veredito, motivo de bloqueio e resultado esperado do
+  auto-merge.
