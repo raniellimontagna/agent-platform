@@ -20,6 +20,10 @@ Regras:
 - Inclua em "edit" SÓ caminhos que aparecem na lista de arquivos do repositório.
 - Seja cirúrgico: liste apenas o estritamente necessário para cumprir o plano.
 - Caminhos relativos à raiz, sem "./" nem caminhos absolutos.
+- NÃO devolva comandos shell, comandos de validação, instruções de execução,
+  markdown, bash, pnpm, npm, git ou texto explicativo.
+- Se o plano mencionar comandos como "rtk pnpm eval", trate-os apenas como
+  validação futura; eles NÃO são arquivos e NÃO pertencem à resposta.
 - Não escreva nada fora do JSON.`;
 
 const GENERATE_PROMPT = `Você é um agente de engenharia de software que escreve código.
@@ -44,6 +48,8 @@ Regras CRÍTICAS:
 - Siga os ARQUIVOS-EXEMPLO (vizinhos) e as CONVENÇÕES fornecidas: mesmo padrão de
   imports, estrutura e libs. NÃO adicione imports/dependências que os exemplos não usam.
 - Inclua no array só os arquivos realmente alterados/criados.
+- NÃO devolva comandos shell, instruções de execução ou passos de validação.
+  A resposta deve conter arquivos completos em JSON, não comandos como "pnpm test".
 - Não escreva nada fora do JSON.`;
 
 const FIX_PROMPT = `Você é um agente de engenharia de software corrigindo uma falha de validação.
