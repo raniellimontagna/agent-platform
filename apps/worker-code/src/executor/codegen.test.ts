@@ -2,7 +2,7 @@ import type { LlmClient } from '@agent-platform/llm';
 import type { Logger } from 'pino';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { completeJson, extractJson } from './codegen.js';
+import { completeJson, extractJson, filterDocumentationTargets } from './codegen.js';
 
 /** LlmClient fake: devolve as respostas da fila em ordem (repete a última). */
 function fakeLlm(responses: string[]): {
@@ -93,5 +93,42 @@ describe('completeJson', () => {
     const { llm, lastMaxTokens } = fakeLlm(['{"ok": true}']);
     await completeJson(llm, { ...opts, maxTokens: 1234 }, schema, noopLog, 1);
     expect(lastMaxTokens()).toBe(1234);
+  });
+});
+
+describe('filterDocumentationTargets', () => {
+  it('remove markdown e docs quando a issue não pede documentação explicitamente', () => {
+    const result = filterDocumentationTargets(
+      {
+        edit: ['src/index.ts', 'docs/runbooks/eval-harness.md', 'README.md'],
+        create: ['src/new.ts', 'docs/new-runbook.md'],
+      },
+      { title: 'Eval Harness v2 para auto-merge', description: '' },
+    );
+
+    expect(result.selection).toEqual({
+      edit: ['src/index.ts'],
+      create: ['src/new.ts'],
+    });
+    expect(result.droppedDocs).toEqual([
+      'docs/runbooks/eval-harness.md',
+      'README.md',
+      'docs/new-runbook.md',
+    ]);
+  });
+
+  it('mantém markdown e docs quando a issue pede documentação explicitamente', () => {
+    const selection = {
+      edit: ['docs/runbooks/eval-harness.md'],
+      create: ['README.md'],
+    };
+
+    const result = filterDocumentationTargets(selection, {
+      title: 'Documentar eval harness',
+      description: '',
+    });
+
+    expect(result.selection).toEqual(selection);
+    expect(result.droppedDocs).toEqual([]);
   });
 });
