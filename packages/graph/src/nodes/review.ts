@@ -1,7 +1,7 @@
 import type { LinearGateway } from '@agent-platform/linear';
 import { type LlmClient, type TokenUsage, estimateCostUsd } from '@agent-platform/llm';
 import type { AgentStateType } from '../state.js';
-import { verdictOf } from './report.js';
+import { hasOnlyOperationalCaveats, verdictOf } from './report.js';
 
 const SYSTEM_PROMPT = `Você é um revisor de código sênior e crítico.
 Recebe a issue, o plano aprovado e o diff das alterações geradas por outro agente.
@@ -36,6 +36,7 @@ export function decideAfterReview(
   const verdict = verdictOf(args.review);
   const actionable = /REPROVAD/i.test(verdict) || /RESSALVA/i.test(verdict);
   if (!actionable) return 'pr';
+  if (hasOnlyOperationalCaveats(args.review)) return 'pr';
   if (args.reviewRounds >= opts.maxReviewRounds) return 'pr';
   if (args.totalCostUsd >= opts.maxCostPerRunUsd) return 'pr';
   // Guarda de no-progress: parecer da volta atual igual ao anterior → para.
