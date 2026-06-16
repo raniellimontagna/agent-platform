@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { compareReports } from './runEval.js';
+import { compareReports, renderMarkdown } from './runEval.js';
 import type { EvalReport, EvalResult } from './types.js';
 
 describe('compareReports', () => {
@@ -32,7 +32,73 @@ describe('compareReports', () => {
   });
 });
 
-function result(id: string, score: number): EvalResult {
+describe('renderMarkdown', () => {
+  it('expõe veredito, auto-merge, bloqueio, review flow e política de commit', () => {
+    const reviewResult = result('critic-v2', 100, [
+      {
+        name: 'critic verdict',
+        passed: true,
+        detail: 'APROVADO COM RESSALVAS (operacional)',
+      },
+      {
+        name: 'auto-merge policy',
+        passed: true,
+        detail: 'auto-merge expected: allowed',
+      },
+      {
+        name: 'review flow',
+        passed: true,
+        detail: 'review no-op after 3 critic rounds; proceed to PR',
+      },
+      {
+        name: 'commit trailers',
+        passed: true,
+        detail: 'commit includes Ref: MAC-85 and Co-authored-by: Codex <noreply@openai.com>',
+      },
+    ]);
+
+    const blockedResult = result('blocked-v2', 60, [
+      {
+        name: 'critic verdict',
+        passed: true,
+        detail: 'APROVADO COM RESSALVAS (não-operacional)',
+      },
+      {
+        name: 'auto-merge policy',
+        passed: false,
+        detail: 'auto-merge blocked',
+      },
+      {
+        name: 'merge block reason',
+        passed: false,
+        detail: 'ressalva não-operacional exige PR sem auto-merge',
+      },
+      {
+        name: 'review flow',
+        passed: false,
+        detail: 'review requires recode before PR',
+      },
+    ]);
+
+    const markdown = renderMarkdown(report([reviewResult, blockedResult]));
+
+    expect(markdown).toContain('Verdict: APROVADO COM RESSALVAS (operacional)');
+    expect(markdown).toContain('Expected auto-merge: auto-merge expected: allowed');
+    expect(markdown).toContain('Review flow: review no-op after 3 critic rounds; proceed to PR');
+    expect(markdown).toContain(
+      'Commit policy: commit includes Ref: MAC-85 and Co-authored-by: Codex <noreply@openai.com>',
+    );
+    expect(markdown).toContain('Expected auto-merge: auto-merge blocked');
+    expect(markdown).toContain('Block reason: ressalva não-operacional exige PR sem auto-merge');
+    expect(markdown).toContain('Review flow: review requires recode before PR');
+  });
+});
+
+function result(
+  id: string,
+  score: number,
+  checks: EvalResult['checks'] = [],
+): EvalResult {
   return {
     id,
     title: id,
@@ -40,7 +106,7 @@ function result(id: string, score: number): EvalResult {
     score,
     changedFiles: [],
     commands: [],
-    checks: [],
+    checks,
     artifactDir: `/tmp/${id}`,
   };
 }

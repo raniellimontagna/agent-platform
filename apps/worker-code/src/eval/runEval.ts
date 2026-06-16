@@ -154,7 +154,7 @@ async function loadScenarios(fixturesDir: string): Promise<EvalScenario[]> {
   return scenarios.sort((a, b) => a.id.localeCompare(b.id));
 }
 
-function renderMarkdown(report: EvalReport): string {
+export function renderMarkdown(report: EvalReport): string {
   const lines = [
     '# Agent Eval Report',
     '',
@@ -171,9 +171,17 @@ function renderMarkdown(report: EvalReport): string {
   lines.push('');
 
   for (const result of report.results) {
+    const summary = summarizeResult(result);
     lines.push(`## ${result.id}: ${result.title}`);
     lines.push('');
     lines.push(`Result: ${result.passed ? 'PASS' : 'FAIL'} (${result.score})`);
+    lines.push(`Verdict: ${summary.verdict}`);
+    lines.push(`Expected auto-merge: ${summary.autoMerge}`);
+    if (summary.blockReason) {
+      lines.push(`Block reason: ${summary.blockReason}`);
+    }
+    lines.push(`Review flow: ${summary.reviewFlow}`);
+    lines.push(`Commit policy: ${summary.commitPolicy}`);
     lines.push(`Changed files: ${result.changedFiles.join(', ') || '(none)'}`);
     if (result.dryRun) {
       lines.push(`Dry-run branch: ${result.dryRun.branch}`);
@@ -189,6 +197,119 @@ function renderMarkdown(report: EvalReport): string {
   }
 
   return `${lines.join('\n')}\n`;
+}
+
+function summarizeResult(result: EvalResult): {
+  verdict: string;
+  autoMerge: string;
+  blockReason?: string;
+  reviewFlow: string;
+  commitPolicy: string;
+} {
+  const verdictCheck = findRelevantCheck(result, [
+    'verdict',
+    'critic verdict',
+    'review verdict',
+    'aprovado',
+    'ressalvas',
+  ]);
+  const autoMergeCheck = findRelevantCheck(result, ['auto-merge', 'automerge']);
+  const blockCheck = findRelevantCheckByPriority(result, [
+    ['block reason', 'merge block reason'],
+    ['blocked reason', 'bloqueio', 'bloquear'],
+  ]);
+  const reviewChecks = findRelevantChecksByPriority(result, [
+    ['review flow', 'review outcome', 'review result'],
+    ['critic rounds', 'review rounds', 'max rounds'],
+    ['no-op', 'noop', 'recode', 'follow-up-pr', 'pull-request', 'proceed to pr'],
+  ]);
+  const commitChecks = findRelevantChecks(result, [
+    'commit',
+    'ref:',
+    'co-authored-by',
+    'coauthored',
+  ]);
+
+  return {
+    verdict: requireDescription(
+      verdictCheck,
+      result.passed ? 'not explicitly reported' : 'failed without explicit verdict',
+    ),
+    autoMerge: requireDescription(autoMergeCheck, 'not explicitly reported'),
+    blockReason: describeCheck(blockCheck),
+    reviewFlow: joinCheckDetails(reviewChecks) ?? 'not explicitly reported',
+    commitPolicy: joinCheckDetails(commitChecks) ?? 'not explicitly reported',
+  };
+}
+
+function findRelevantCheck(
+  result: EvalResult,
+  keywords: string[],
+): EvalResult['checks'][number] | undefined {
+  return result.checks.find(
+    (check) => matchesKeywords(check.name, keywords) || matchesKeywords(check.detail, keywords),
+  );
+}
+
+function findRelevantCheckByPriority(
+  result: EvalResult,
+  keywordGroups: string[][],
+): EvalResult['checks'][number] | undefined {
+  for (const keywords of keywordGroups) {
+    const match = findRelevantCheck(result, keywords);
+    if (match) return match;
+  }
+  return undefined;
+}
+
+function findRelevantChecks(result: EvalResult, keywords: string[]): EvalResult['checks'] {
+  return result.checks.filter(
+    (check) => matchesKeywords(check.name, keywords) || matchesKeywords(check.detail, keywords),
+  );
+}
+
+function findRelevantChecksByPriority(
+  result: EvalResult,
+  keywordGroups: string[][],
+): EvalResult['checks'] {
+  const matches: EvalResult['checks'] = [];
+  const seen = new Set<string>();
+
+  for (const keywords of keywordGroups) {
+    for (const check of findRelevantChecks(result, keywords)) {
+      const key = `${check.name}\u0000${check.detail}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      matches.push(check);
+    }
+  }
+
+  return matches;
+}
+
+function matchesKeywords(value: string, keywords: string[]): boolean {
+  const normalized = value.toLowerCase();
+  return keywords.some((keyword) => normalized.includes(keyword.toLowerCase()));
+}
+
+function describeCheck(
+  check?: EvalResult['checks'][number],
+  fallback?: string,
+): string | undefined {
+  if (!check) return fallback;
+  return check.detail?.trim() || `${check.passed ? 'PASS' : 'FAIL'} ${check.name}`;
+}
+
+function requireDescription(check: EvalResult['checks'][number] | undefined, fallback: string): string {
+  return describeCheck(check, fallback) ?? fallback;
+}
+
+function joinCheckDetails(checks: EvalResult['checks']): string | undefined {
+  if (checks.length === 0) return undefined;
+  const details = checks
+    .map((check) => describeCheck(check, check.name))
+    .filter((detail): detail is string => Boolean(detail));
+  return [...new Set(details)].join(' | ');
 }
 
 async function readLatestReport(outRoot: string): Promise<EvalReport | undefined> {

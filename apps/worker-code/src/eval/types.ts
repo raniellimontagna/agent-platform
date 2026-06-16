@@ -6,6 +6,20 @@ const evalFileSchema = z.object({
   content: z.string(),
 });
 
+const evalReviewVerdictSchema = z.enum([
+  'APROVADO',
+  'APROVADO_COM_RESSALVAS',
+  'MUDANCAS_SOLICITADAS',
+]);
+
+const evalReviewCaveatTypeSchema = z.enum([
+  'none',
+  'operational',
+  'non-operational',
+]);
+
+const evalReviewActionSchema = z.enum(['noop', 'recode', 'pull-request']);
+
 export const evalScenarioSchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1),
@@ -36,6 +50,23 @@ export const evalScenarioSchema = z.object({
         )
         .default([]),
       maxFixAttempts: z.number().int().min(0).default(2),
+      commitMessage: z.string().default(''),
+      review: z
+        .object({
+          maxRounds: z.number().int().min(1).max(3).default(3),
+          rounds: z
+            .array(
+              z.object({
+                verdict: evalReviewVerdictSchema,
+                rationale: z.string().default(''),
+                caveatType: evalReviewCaveatTypeSchema.default('none'),
+                action: evalReviewActionSchema.default('pull-request'),
+                autoMergeBlockedReason: z.string().default(''),
+              }),
+            )
+            .default([]),
+        })
+        .optional(),
     })
     .optional(),
   commands: z.array(z.string()).default([]),
@@ -50,6 +81,28 @@ export const evalScenarioSchema = z.object({
         }),
       )
       .default([]),
+    verdict: evalReviewVerdictSchema.optional(),
+    autoMerge: z
+      .object({
+        expected: z.boolean(),
+        blockReason: z.string().default(''),
+        rationaleType: evalReviewCaveatTypeSchema.default('none'),
+      })
+      .optional(),
+    reviewFlow: z
+      .object({
+        outcome: evalReviewActionSchema,
+        criticRounds: z.number().int().min(0).max(3),
+      })
+      .optional(),
+    commit: z
+      .object({
+        mustIncludeRef: z.boolean().default(false),
+        mustIncludeCoAuthoredBy: z.boolean().default(false),
+        expectedAuthorName: z.string().default(''),
+        expectedAuthorEmail: z.string().default(''),
+      })
+      .optional(),
   }),
 });
 
@@ -70,6 +123,23 @@ export interface EvalResult {
   commands: CommandResult[];
   checks: EvalCheck[];
   artifactDir: string;
+  verdict?: 'APROVADO' | 'APROVADO_COM_RESSALVAS' | 'MUDANCAS_SOLICITADAS';
+  autoMerge?: {
+    expected: boolean;
+    blocked: boolean;
+    blockReason?: string;
+    rationaleType?: 'none' | 'operational' | 'non-operational';
+  };
+  reviewFlow?: {
+    outcome: 'noop' | 'recode' | 'pull-request';
+    criticRounds: number;
+  };
+  commit?: {
+    hasRef: boolean;
+    hasCoAuthoredBy: boolean;
+    authorName?: string;
+    authorEmail?: string;
+  };
   dryRun?: {
     branch: string;
     commitSha?: string;

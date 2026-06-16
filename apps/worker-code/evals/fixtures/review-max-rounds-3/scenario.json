@@ -1,0 +1,74 @@
+{
+  "id": "review-max-rounds-3",
+  "version": 2,
+  "title": "Critic loop stops after 3 rounds and proceeds to PR",
+  "mode": "local",
+  "deterministic": true,
+  "externalCalls": {
+    "github": false,
+    "linear": false,
+    "litellm": false,
+    "production": false
+  },
+  "input": {
+    "agentMaxReviewRounds": 3,
+    "pullRequest": {
+      "number": 284,
+      "title": "feat(worker): harden critic loop fixture",
+      "body": "Local deterministic eval scenario for critic loop max rounds."
+    },
+    "commit": {
+      "authorName": "Ranielli Montagna",
+      "authorEmail": "raniellimontagna@hotmail.com",
+      "message": "feat(worker): harden critic loop fixture\n\nRef: MAC-85\nCo-authored-by: Codex <noreply@openai.com>"
+    },
+    "reviewFlow": [
+      {
+        "round": 1,
+        "actor": "critic",
+        "verdict": "RECODE",
+        "reason": "Normalize error handling before review can pass.",
+        "requiresCodeChanges": true
+      },
+      {
+        "round": 2,
+        "actor": "critic",
+        "verdict": "RECODE",
+        "reason": "Keep iterating on naming and guard clauses.",
+        "requiresCodeChanges": true
+      },
+      {
+        "round": 3,
+        "actor": "critic",
+        "verdict": "RECODE",
+        "reason": "Remaining feedback is non-blocking after max rounds.",
+        "requiresCodeChanges": true
+      }
+    ]
+  },
+  "expected": {
+    "finalVerdict": "FOLLOW_UP_IN_PR",
+    "reviewOutcome": "max_rounds_reached",
+    "roundsExecuted": 3,
+    "proceedToPullRequest": true,
+    "autoMerge": {
+      "allowed": false,
+      "reason": "Critic requested recode in all 3 allowed rounds; follow-up must continue in PR."
+    },
+    "commitChecks": {
+      "author": true,
+      "refTrailer": true,
+      "coAuthoredByTrailer": true
+    },
+    "report": {
+      "verdict": "FOLLOW_UP_IN_PR",
+      "autoMergeExpected": "blocked",
+      "blockReason": "max review rounds reached",
+      "reviewResult": "recode"
+    }
+  },
+  "notes": [
+    "This fixture is fully local and deterministic.",
+    "It validates AGENT_MAX_REVIEW_ROUNDS=3 behavior without any network dependency."
+  ]
+}

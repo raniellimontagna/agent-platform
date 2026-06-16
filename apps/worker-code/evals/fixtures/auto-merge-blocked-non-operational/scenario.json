@@ -1,0 +1,63 @@
+{
+  "id": "auto-merge-blocked-non-operational",
+  "version": 2,
+  "title": "Auto-merge blocked for non-operational remark",
+  "description": "Local deterministic fixture covering a critic verdict of APROVADO COM RESSALVAS where a non-operational remark must block auto-merge and require PR follow-up.",
+  "deterministic": true,
+  "localOnly": true,
+  "externalCalls": {
+    "github": false,
+    "linear": false,
+    "litellm": false,
+    "production": false
+  },
+  "agent": {
+    "name": "Ranielli Montagna",
+    "email": "raniellimontagna@hotmail.com"
+  },
+  "commit": {
+    "subject": "feat(eval): prevent merge when product remark exists",
+    "body": "Add deterministic eval fixture for blocked auto-merge.",
+    "ref": "Ref: MAC-85",
+    "trailers": [
+      "Co-authored-by: Codex <noreply@openai.com>"
+    ]
+  },
+  "review": {
+    "mode": "critic",
+    "maxRounds": 3,
+    "rounds": [
+      {
+        "round": 1,
+        "verdict": "APROVADO COM RESSALVAS",
+        "summary": "A product-facing inconsistency must be addressed before merge.",
+        "remarks": [
+          {
+            "type": "non-operational",
+            "code": "USER_VISIBLE_BEHAVIOR",
+            "message": "The change alters user-visible behavior without the required safeguard or documentation update."
+          }
+        ],
+        "requiresRecode": false,
+        "noop": true
+      }
+    ]
+  },
+  "expected": {
+    "finalVerdict": "APROVADO COM RESSALVAS",
+    "reviewOutcome": "follow_pr",
+    "autoMerge": {
+      "allowed": false,
+      "reason": "Non-operational remark blocks auto-merge."
+    },
+    "pullRequest": {
+      "shouldOpen": true,
+      "shouldRequestChanges": false
+    },
+    "commitChecks": {
+      "requiresRef": true,
+      "requiresCoAuthoredBy": true
+    },
+    "blockReason": "USER_VISIBLE_BEHAVIOR"
+  }
+}

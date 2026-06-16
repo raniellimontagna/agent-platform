@@ -1,0 +1,74 @@
+{
+  "id": "auto-merge-approved",
+  "title": "Auto-merge when critic verdict is APROVADO",
+  "description": "Local deterministic fixture for eval harness v2 covering a fully approved review with no caveats, no external integrations, and auto-merge allowed.",
+  "repo": {
+    "files": {
+      "src/index.ts": "export const status = 'pending';\n",
+      "README.md": "# Eval Fixture\n\nLocal only.\n"
+    }
+  },
+  "candidate": {
+    "files": {
+      "src/index.ts": "export const status = 'approved';\n"
+    },
+    "delete": []
+  },
+  "workerDryRun": {
+    "plan": "1. Update the local fixture status constant.\n2. Keep changes isolated to src/index.ts.\n3. Prepare PR metadata for an approved auto-merge path.",
+    "branch": "agent/eval-auto-merge-approved",
+    "prTitle": "feat(eval): approve local auto-merge fixture",
+    "summary": "Marks the deterministic local eval fixture as approved for auto-merge.",
+    "files": [
+      {
+        "path": "src/index.ts",
+        "content": "export const status = 'approved';\n"
+      }
+    ],
+    "llmResponses": [],
+    "fixes": [],
+    "maxFixAttempts": 0,
+    "commitMessage": "feat(eval): approve local auto-merge fixture\n\nRef: MAC-84\nCo-authored-by: Codex <noreply@openai.com>",
+    "review": {
+      "maxRounds": 3,
+      "rounds": [
+        {
+          "verdict": "APROVADO",
+          "rationale": "Mudança local, determinística e segura para auto-merge.",
+          "caveatType": "none",
+          "action": "noop",
+          "autoMergeBlockedReason": ""
+        }
+      ]
+    }
+  },
+  "commands": [],
+  "expected": {
+    "changedFiles": [
+      "src/index.ts"
+    ],
+    "forbiddenFiles": [],
+    "requiredContent": [
+      {
+        "path": "src/index.ts",
+        "includes": "approved"
+      }
+    ],
+    "verdict": "APROVADO",
+    "autoMerge": {
+      "expected": true,
+      "blockReason": "",
+      "rationaleType": "none"
+    },
+    "reviewFlow": {
+      "outcome": "noop",
+      "criticRounds": 1
+    },
+    "commit": {
+      "mustIncludeRef": true,
+      "mustIncludeCoAuthoredBy": true,
+      "expectedAuthorName": "Ranielli Montagna",
+      "expectedAuthorEmail": "raniellimontagna@hotmail.com"
+    }
+  }
+}

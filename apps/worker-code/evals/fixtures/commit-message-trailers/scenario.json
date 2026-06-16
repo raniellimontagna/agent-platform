@@ -1,0 +1,61 @@
+{
+  "id": "commit-message-trailers",
+  "version": 2,
+  "title": "Commit message includes Ref and Co-authored-by trailers",
+  "mode": "local",
+  "deterministic": true,
+  "externalCalls": {
+    "github": false,
+    "linear": false,
+    "litellm": false,
+    "production": false
+  },
+  "input": {
+    "review": {
+      "verdict": "APROVADO",
+      "classification": "approved",
+      "operationalConcern": false,
+      "summary": "No changes requested; ready to merge.",
+      "requiresCodeChanges": false
+    },
+    "commit": {
+      "authorName": "Ranielli Montagna",
+      "authorEmail": "raniellimontagna@hotmail.com",
+      "subject": "feat(worker): validate commit trailers in eval harness",
+      "body": "Ensure deterministic verification of commit metadata.\n\nRef: MAC-85\nCo-authored-by: Codex <noreply@openai.com>"
+    }
+  },
+  "expected": {
+    "finalVerdict": "APROVADO",
+    "reviewOutcome": "no_op",
+    "proceedToPullRequest": true,
+    "autoMerge": {
+      "allowed": true,
+      "reason": "Approved review with valid commit metadata and no blocking remarks."
+    },
+    "commitChecks": {
+      "author": {
+        "valid": true,
+        "expected": "Ranielli Montagna <raniellimontagna@hotmail.com>"
+      },
+      "refTrailer": {
+        "valid": true,
+        "expectedPrefix": "Ref:"
+      },
+      "coAuthoredByTrailer": {
+        "valid": true,
+        "expected": "Co-authored-by: Codex <noreply@openai.com>"
+      }
+    },
+    "report": {
+      "verdict": "APROVADO",
+      "autoMergeExpected": "allowed",
+      "blockReason": null,
+      "reviewResult": "no-op"
+    }
+  },
+  "notes": [
+    "This fixture validates commit identity and trailer rules required for agent commits.",
+    "The scenario must remain fully offline and deterministic."
+  ]
+}

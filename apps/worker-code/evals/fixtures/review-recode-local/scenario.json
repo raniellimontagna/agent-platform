@@ -1,0 +1,89 @@
+{
+  "id": "review-recode-local",
+  "title": "Local review requests recode before PR continuation",
+  "mode": "local",
+  "deterministic": true,
+  "description": "Simulates a fully local review cycle where the critic finds blocking issues and requires recode before the flow can continue. No GitHub, Linear, LiteLLM or production services are used.",
+  "inputs": {
+    "agentMaxReviewRounds": 3,
+    "commit": {
+      "authorName": "Ranielli Montagna",
+      "authorEmail": "raniellimontagna@hotmail.com",
+      "message": "test(eval): recode after blocking review\n\nRef: MAC-85\nCo-authored-by: Codex <noreply@openai.com>"
+    },
+    "review": {
+      "rounds": [
+        {
+          "round": 1,
+          "verdict": "MUDANCAS_SOLICITADAS",
+          "classification": "recode",
+          "summary": "Blocking issue found; implementation must be revised before PR progression.",
+          "autoMerge": {
+            "expected": false,
+            "blocked": true,
+            "reason": "recode-required"
+          },
+          "criticFeedback": [
+            {
+              "type": "blocking",
+              "message": "Behavior diverges from the expected contract and requires code changes."
+            }
+          ],
+          "requiresRecode": true,
+          "continueReview": true
+        },
+        {
+          "round": 2,
+          "verdict": "APROVADO COM RESSALVAS",
+          "classification": "operational-caveat",
+          "summary": "Recode addressed the issue; remaining note is operational only.",
+          "autoMerge": {
+            "expected": true,
+            "blocked": false,
+            "reason": null
+          },
+          "criticFeedback": [
+            {
+              "type": "operational",
+              "message": "Monitor the rollout, but no product-level blocker remains."
+            }
+          ],
+          "requiresRecode": false,
+          "continueReview": false
+        }
+      ]
+    }
+  },
+  "expected": {
+    "finalVerdict": "APROVADO COM RESSALVAS",
+    "reviewOutcome": "recode",
+    "roundsUsed": 2,
+    "proceedToPullRequest": true,
+    "requiresRecode": true,
+    "autoMerge": {
+      "expected": true,
+      "blocked": false,
+      "reason": null
+    },
+    "commitChecks": {
+      "author": {
+        "name": "Ranielli Montagna",
+        "email": "raniellimontagna@hotmail.com"
+      },
+      "mustContainRef": true,
+      "mustContainCoAuthoredBy": true
+    },
+    "report": {
+      "verdict": "APROVADO COM RESSALVAS",
+      "autoMergeExpected": "enabled",
+      "blockReason": "recode-required on round 1, resolved on round 2",
+      "reviewFlowResult": "recode"
+    }
+  },
+  "offline": {
+    "github": false,
+    "linear": false,
+    "litellm": false,
+    "production": false
+  }
+}
