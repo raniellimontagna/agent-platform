@@ -1,7 +1,9 @@
 {
   "uid": "quality-memory",
   "title": "Agent Platform — Qualidade & Memória",
-  "tags": ["agent-platform"],
+  "tags": [
+    "agent-platform"
+  ],
   "timezone": "browser",
   "schemaVersion": 39,
   "version": 2,
@@ -336,6 +338,86 @@
           "format": "table",
           "rawQuery": true,
           "rawSql": "SELECT created_at, linear_issue_identifier AS issue, tests_passed, fix_attempts, sandbox_backend, sandbox_image, sandbox_network, sandbox_command_count, round((sandbox_total_duration_ms / 1000.0)::numeric, 1) AS sandbox_s, round((sandbox_max_command_duration_ms / 1000.0)::numeric, 1) AS max_cmd_s, sandbox_failed_command FROM runs WHERE sandbox_backend IS NOT NULL ORDER BY created_at DESC LIMIT 50;"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "title": "Vereditos do critic",
+      "type": "piechart",
+      "datasource": {
+        "type": "postgres",
+        "uid": "orchestrator_pg"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 44
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT coalesce(verdict, 'sem review') AS metric, count(*) AS value FROM runs GROUP BY 1 ORDER BY value DESC;"
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "title": "Runs com ressalvas (%)",
+      "type": "stat",
+      "datasource": {
+        "type": "postgres",
+        "uid": "orchestrator_pg"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "orange"
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 44
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT round(100.0 * count(*) FILTER (WHERE verdict = 'APROVADO COM RESSALVAS') / NULLIF(count(*) FILTER (WHERE verdict IS NOT NULL), 0), 1) AS pct FROM runs;"
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "title": "Custo code+critic por run (USD)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "postgres",
+        "uid": "orchestrator_pg"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 52
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT r.created_at AS time, r.linear_issue_identifier AS metric, coalesce(sum(s.cost_usd), 0) AS value FROM runs r JOIN run_steps s ON s.run_id = r.id WHERE $__timeFilter(r.created_at) AND s.model LIKE '%critic%' GROUP BY r.created_at, r.linear_issue_identifier ORDER BY r.created_at;"
         }
       ]
     }
