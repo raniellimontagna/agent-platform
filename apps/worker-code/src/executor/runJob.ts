@@ -147,6 +147,15 @@ export async function runJob(job: Job): Promise<JobResult> {
       const message = buildCommitMessage(job, gen.prTitle, gen.summary);
       const commit = await commitAll(dir, message);
       if (!commit.committed) {
+        if (reviseMode) {
+          base.diff = await diffAgainst(dir, job.baseBranch);
+          base.pushed = true;
+          for (const r of validation.results) commands.push(r);
+          base.testsPassed = validation.passed;
+          log.info({ branch: job.branch, fixAttempts }, 'review produced no commitable changes');
+          log.info({ testsPassed: validation.passed, fixAttempts }, 'validation finished');
+          return { ...base, status: 'succeeded' };
+        }
         throw new Error('geração de código não produziu mudanças commitáveis');
       }
       base.commitSha = commit.sha;
