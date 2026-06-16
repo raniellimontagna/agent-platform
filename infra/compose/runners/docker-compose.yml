@@ -15,6 +15,12 @@ services:
       LITELLM_API_KEY: ${LITELLM_API_KEY}
       ORCHESTRATOR_BASE_URL: ${ORCHESTRATOR_BASE_URL}
       RUNNER_AUTH_TOKEN: ${RUNNER_AUTH_TOKEN}
+      AGENT_SANDBOX_BACKEND: ${AGENT_SANDBOX_BACKEND:-docker}
+      AGENT_SANDBOX_IMAGE: ${AGENT_SANDBOX_IMAGE:-agent-platform/worker-code:latest}
+      AGENT_SANDBOX_NETWORK: ${AGENT_SANDBOX_NETWORK:-bridge}
+      AGENT_SANDBOX_CPUS: ${AGENT_SANDBOX_CPUS:-2}
+      AGENT_SANDBOX_MEMORY: ${AGENT_SANDBOX_MEMORY:-2g}
+      AGENT_SANDBOX_PIDS_LIMIT: ${AGENT_SANDBOX_PIDS_LIMIT:-512}
     volumes:
       - /srv/agent-runners/worktrees:/srv/agent-runners/worktrees
       - /srv/agent-runners/artifacts:/srv/agent-runners/artifacts

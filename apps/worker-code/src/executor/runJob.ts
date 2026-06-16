@@ -6,8 +6,9 @@ import type { CommandResult, Job, JobResult } from '../types.js';
 import { applyFix, generateAndApplyCode } from './codegen.js';
 import { checkCommand } from './commandPolicy.js';
 import { commitAll, diffAgainst, pushBranch } from './git.js';
+import { runSandboxedCommand } from './sandbox.js';
 import { summarizeFailureTail } from './validation.js';
-import { prepareWorktree, runCommand } from './worktree.js';
+import { prepareWorktree } from './worktree.js';
 
 const llm = createLlmClient({
   baseUrl: env.LITELLM_BASE_URL,
@@ -24,7 +25,12 @@ const COMMAND_ALLOWLIST = env.AGENT_COMMAND_ALLOWLIST.split(',')
  * Roda um comando do job aplicando a allowlist (MAC-31). Comando bloqueado não
  * executa: devolve um CommandResult de auditoria (exitCode 126) com o motivo.
  */
-async function runGuarded(command: string, dir: string, log: Logger): Promise<CommandResult> {
+async function runGuarded(
+  command: string,
+  dir: string,
+  runId: string,
+  log: Logger,
+): Promise<CommandResult> {
   const check = checkCommand(command, COMMAND_ALLOWLIST);
   if (!check.allowed) {
     log.warn({ command, reason: check.reason }, 'comando bloqueado pela allowlist');
@@ -36,7 +42,7 @@ async function runGuarded(command: string, dir: string, log: Logger): Promise<Co
       durationMs: 0,
     };
   }
-  return runCommand(command, dir);
+  return runSandboxedCommand({ command, cwd: dir, runId, env });
 }
 
 export { summarizeFailureTail };
@@ -48,12 +54,13 @@ export { summarizeFailureTail };
 async function runValidation(
   cmds: string[],
   dir: string,
+  runId: string,
   log: Logger,
 ): Promise<{ passed: boolean; results: CommandResult[]; failureTail: string }> {
   const results: CommandResult[] = [];
   for (const cmd of cmds) {
     log.info({ cmd }, 'running validation command');
-    const result = await runGuarded(cmd, dir, log);
+    const result = await runGuarded(cmd, dir, runId, log);
     results.push(result);
     if (result.exitCode !== 0) {
       log.warn({ cmd, exitCode: result.exitCode }, 'validation failed');
@@ -106,7 +113,7 @@ export async function runJob(job: Job): Promise<JobResult> {
       // Self-correction (fix intra-run): valida no worktree; se falhar, corrige e
       // revalida até passar ou esgotar AGENT_MAX_FIX_ATTEMPTS. Pusha o estado final
       // uma vez (best-effort mesmo se ainda falhar — humano decide no PR).
-      let validation = await runValidation(job.commands, dir, log);
+      let validation = await runValidation(job.commands, dir, job.runId, log);
       let fixAttempts = 0;
       // Acumula os arquivos tocados ao longo das tentativas — um fix pode criar um
       // arquivo novo cujo erro só aparece na revalidação seguinte; sem isso a próxima
@@ -131,7 +138,7 @@ export async function runJob(job: Job): Promise<JobResult> {
           log.warn({ err, attempt: fixAttempts }, 'fix falhou — encerrando o loop');
           break;
         }
-        validation = await runValidation(job.commands, dir, log);
+        validation = await runValidation(job.commands, dir, job.runId, log);
       }
       base.fixAttempts = fixAttempts;
 
@@ -166,7 +173,7 @@ export async function runJob(job: Job): Promise<JobResult> {
     // Fluxo de validação de infra (sem plano): comandos são FATAIS (ciclo antigo).
     for (const cmd of job.commands) {
       log.info({ cmd }, 'running command');
-      const result = await runGuarded(cmd, dir, log);
+      const result = await runGuarded(cmd, dir, job.runId, log);
       commands.push(result);
       if (result.exitCode !== 0) {
         log.warn({ cmd, exitCode: result.exitCode }, 'command failed');

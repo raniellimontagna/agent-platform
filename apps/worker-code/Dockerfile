@@ -19,8 +19,9 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
 RUN pnpm --filter "@agent-platform/worker-code..." build
 
 FROM base AS deploy
-# git + ca-certificates para clonar via HTTPS (validação do cert TLS do GitHub)
-RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
+# git + ca-certificates para clonar via HTTPS; docker.io fornece o client usado
+# pelo sandbox executor contra o docker.sock montado na VM de runners.
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates docker.io \
     && rm -rf /var/lib/apt/lists/*
 # Copia o workspace já buildado (mantém os symlinks dos workspace packages).
 COPY --from=build /app /app

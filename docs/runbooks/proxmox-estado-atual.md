@@ -143,6 +143,13 @@ qm destroy <ID>        # VM
 
 ## Status do deploy
 
+> **Atualização 2026-06-16:** runner MAC-28 usa Docker como sandbox executor em
+> produção: cada comando de validação roda em container efêmero com o worktree
+> montado, sem herdar secrets do worker. Config principal:
+> `AGENT_SANDBOX_BACKEND=docker`, `AGENT_SANDBOX_IMAGE`,
+> `AGENT_SANDBOX_NETWORK`, `AGENT_SANDBOX_CPUS`, `AGENT_SANDBOX_MEMORY` e
+> `AGENT_SANDBOX_PIDS_LIMIT`.
+
 > **Atualização 2026-06-15 (Fase 7 deployada):** as 4 VMs estão deployadas e o loop
 > autônomo roda ponta a ponta em prod. Orchestrator com Postgres+pgvector (migrations
 > 0000→0009), embeddings locais, registries de agente/tool, scheduler, artifact store
@@ -165,7 +172,7 @@ Bloqueios originais antes do primeiro deploy dos composes em `infra/compose/<vm>
 |---------------|--------------------------------------------------------------------------|
 | gateway       | Chaves LLM: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `VERBOO_API_KEY`       |
 | orchestrator  | `LINEAR_API_KEY`, `GITHUB_TOKEN`, `LITELLM_API_KEY`, creds Postgres       |
-| runners       | **`apps/worker-code` não existe no repo** — não há app pra buildar/rodar  |
+| runners       | Histórico: dependia da implementação do `apps/worker-code`; hoje resolvido |
 | observability | Só `GRAFANA_USER`/`GRAFANA_PASSWORD` — sobe sem secret externo            |
 
 Passos interativos ainda pendentes (não automatizáveis sem o usuário):

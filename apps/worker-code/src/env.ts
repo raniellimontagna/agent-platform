@@ -26,6 +26,15 @@ const envSchema = z.object({
   AGENT_COMMAND_ALLOWLIST: z.string().default('pnpm,node,npm,npx,git'),
   // Self-correction: máximo de tentativas de fix após falha de validação.
   AGENT_MAX_FIX_ATTEMPTS: z.coerce.number().default(2),
+
+  // Sandbox executor (MAC-28). `process` mantém dev/test simples; produção usa
+  // containers efêmeros via Docker socket montado na VM de runners.
+  AGENT_SANDBOX_BACKEND: z.enum(['process', 'docker']).default('process'),
+  AGENT_SANDBOX_IMAGE: z.string().min(1).default('agent-platform/worker-code:latest'),
+  AGENT_SANDBOX_NETWORK: z.string().min(1).default('bridge'),
+  AGENT_SANDBOX_CPUS: z.coerce.number().positive().default(2),
+  AGENT_SANDBOX_MEMORY: z.string().min(1).default('2g'),
+  AGENT_SANDBOX_PIDS_LIMIT: z.coerce.number().int().positive().default(512),
 });
 
 export type Env = z.infer<typeof envSchema>;
