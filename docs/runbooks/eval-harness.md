@@ -37,3 +37,13 @@ Quando `workerDryRun.llmResponses` está presente, o harness usa o codegen real
 (`generateAndApplyCode` e `applyFix`) com um `LlmClient` fake que devolve as
 respostas JSON em ordem. Isso permite testar seleção de arquivos, aplicação de
 conteúdo e self-correction sem chamar LiteLLM.
+
+## Catálogo atual
+
+- `docs-note`: criação simples de documentação sem tocar em config.
+- `code-change`: mudança pequena de código + teste.
+- `worker-dry-run-fix`: fluxo dry-run com fix fake depois de falha.
+- `worker-codegen-fake`: codegen real + `LlmClient` fake + fix real.
+- `worker-json-repair`: resposta inicial inválida/truncada e repair para JSON.
+- `noop-review-safe`: cenário sem mudanças, validando no-op verde.
+- `forbidden-file-preserved`: alteração cirúrgica preservando arquivo proibido.
