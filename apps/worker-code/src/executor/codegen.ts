@@ -87,6 +87,7 @@ const responseSchema = z.object({
 /** Limites para não estourar o contexto do modelo ao injetar conteúdo. */
 const MAX_EDIT_FILES = 15;
 const MAX_FILE_CHARS = 20_000;
+const MAX_GENERATE_FILES_PER_CALL = 2;
 const SELECT_MAX_TOKENS = 1_500;
 const GENERATE_MAX_TOKENS = 24_000;
 const FIX_MAX_TOKENS = 16_000;
@@ -303,6 +304,14 @@ async function applyFiles(
   return applied;
 }
 
+function chunkArray<T>(items: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
+}
+
 /**
  * Gera o código via alias `strong_coder` e aplica os arquivos no worktree (MAC-17).
  *
@@ -337,60 +346,87 @@ export async function generateAndApplyCode(args: CodegenArgs): Promise<CodegenRe
   log.info({ edit: selection.edit, create: selection.create }, 'files selected');
 
   const current = await readCurrentFiles(dir, repoSet, selection.edit);
-  const currentBlock = current
-    .map((f) => `\n## ${f.path}\n\`\`\`\n${f.content}\n\`\`\``)
-    .join('\n');
-  const createBlock = selection.create.length
-    ? `\n# Arquivos a criar\n${selection.create.join('\n')}`
-    : '';
+  const currentByPath = new Map(current.map((file) => [file.path, file]));
+  const targets = [
+    ...current.map((file) => ({ kind: 'edit' as const, path: file.path })),
+    ...selection.create.map((path) => ({ kind: 'create' as const, path })),
+  ];
 
-  // Arquivos-exemplo vizinhos dos alvos a criar — o modelo espelha o padrão real.
-  const examples = await buildExamples(dir, repoFiles, selection);
-  log.info(
-    { hasConventions: Boolean(conventions), hasExamples: Boolean(examples) },
-    'context built',
-  );
+  const generatedFiles: { path: string; content: string }[] = [];
+  const summaries: string[] = [];
+  let prTitle = '';
 
-  log.info('requesting code generation');
-  const parsed = await completeJson(
-    llm,
-    {
-      temperature: 0.1,
-      maxTokens: GENERATE_MAX_TOKENS,
-      onUsage: addUsage,
-      messages: [
-        { role: 'system', content: GENERATE_PROMPT },
-        {
-          role: 'user',
-          content: [
-            `# Issue: ${title}`,
-            description ? `\n${description}` : '',
-            `\n# Plano aprovado\n${plan}`,
-            conventions ? `\n# Convenções do projeto\n${conventions}` : '',
-            examples ? `\n# Arquivos-exemplo (siga este padrão)${examples}` : '',
-            lessons ? `\n# Lições de runs anteriores (evite repetir estes erros)\n${lessons}` : '',
-            reviewFeedback
-              ? `\n# Parecer da revisão a endereçar (corrija estes pontos, preservando o resto)\n${reviewFeedback}`
-              : '',
-            `\n# Conteúdo atual dos arquivos a modificar${currentBlock || '\n(nenhum)'}`,
-            createBlock,
-          ].join('\n'),
-        },
-      ],
-    },
-    responseSchema,
-    log,
-  );
+  for (const [index, chunk] of chunkArray(targets, MAX_GENERATE_FILES_PER_CALL).entries()) {
+    const chunkEdit = chunk.filter((target) => target.kind === 'edit').map((target) => target.path);
+    const chunkCreate = chunk
+      .filter((target) => target.kind === 'create')
+      .map((target) => target.path);
+    const currentBlock = chunkEdit
+      .map((path) => {
+        const file = currentByPath.get(path);
+        return file ? `\n## ${file.path}\n\`\`\`\n${file.content}\n\`\`\`` : '';
+      })
+      .join('\n');
+    const createBlock = chunkCreate.length
+      ? `\n# Arquivos a criar neste lote\n${chunkCreate.join('\n')}`
+      : '';
+    const examples = await buildExamples(dir, repoFiles, { edit: chunkEdit, create: chunkCreate });
 
-  if (parsed.files.length === 0) {
+    log.info(
+      {
+        chunk: index + 1,
+        totalChunks: Math.ceil(targets.length / MAX_GENERATE_FILES_PER_CALL),
+        edit: chunkEdit,
+        create: chunkCreate,
+        hasExamples: Boolean(examples),
+      },
+      'requesting code generation chunk',
+    );
+    const parsed = await completeJson(
+      llm,
+      {
+        temperature: 0.1,
+        maxTokens: GENERATE_MAX_TOKENS,
+        onUsage: addUsage,
+        messages: [
+          { role: 'system', content: GENERATE_PROMPT },
+          {
+            role: 'user',
+            content: [
+              `# Issue: ${title}`,
+              description ? `\n${description}` : '',
+              `\n# Plano aprovado\n${plan}`,
+              conventions ? `\n# Convenções do projeto\n${conventions}` : '',
+              examples ? `\n# Arquivos-exemplo (siga este padrão)${examples}` : '',
+              lessons
+                ? `\n# Lições de runs anteriores (evite repetir estes erros)\n${lessons}`
+                : '',
+              reviewFeedback
+                ? `\n# Parecer da revisão a endereçar (corrija estes pontos, preservando o resto)\n${reviewFeedback}`
+                : '',
+              `\n# Conteúdo atual dos arquivos a modificar neste lote${currentBlock || '\n(nenhum)'}`,
+              createBlock,
+            ].join('\n'),
+          },
+        ],
+      },
+      responseSchema,
+      log,
+    );
+    if (!prTitle && parsed.prTitle.trim()) prTitle = parsed.prTitle;
+    if (parsed.summary.trim()) summaries.push(parsed.summary);
+    generatedFiles.push(...parsed.files);
+  }
+
+  if (generatedFiles.length === 0) {
     throw new Error('modelo não retornou nenhum arquivo para alterar');
   }
 
-  const filesChanged = await applyFiles(dir, parsed.files);
+  const filesChanged = await applyFiles(dir, generatedFiles);
 
   const costUsd = estimateCostUsd('strong_coder', usage);
   log.info({ filesChanged, usage, costUsd }, 'applied generated files');
-  return { summary: parsed.summary, filesChanged, prTitle: parsed.prTitle, costUsd };
+  return { summary: summaries.join(' '), filesChanged, prTitle, costUsd };
 }
 
 export interface FixArgs {
