@@ -25,6 +25,10 @@ O fallback operacional vive no `router_settings` do LiteLLM. Mantenha o timeout 
 Router menor que o timeout dos clientes (`LLM_TIMEOUT_MS` do runner/orchestrator)
 para o combo degradado falhar dentro do gateway antes do cliente abortar.
 
+`store_model_in_db` deve ficar `false`: a config versionada precisa ser a fonte da
+verdade. Se ficar `true`, modelos persistidos no banco do LiteLLM podem manter rotas
+antigas para OmniRoute mesmo depois de deploy do YAML.
+
 O proxy também tem budget global em `litellm-config.yaml`:
 
 ```yaml
