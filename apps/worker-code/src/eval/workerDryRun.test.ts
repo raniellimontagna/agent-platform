@@ -30,6 +30,31 @@ describe('runWorkerDryRun', () => {
       await rm(workdir, { recursive: true, force: true });
     }
   });
+
+  it('usa generateAndApplyCode/applyFix reais com LLM fake', async () => {
+    const workdir = await mkdtemp(join(tmpdir(), 'worker-dry-run-llm-'));
+    const artifactDir = join(workdir, 'artifacts');
+    await mkdir(artifactDir);
+    try {
+      await writeFiles(workdir, codegenScenario.repo.files);
+      await initRepo(workdir);
+
+      const result = await runWorkerDryRun({
+        scenario: codegenScenario,
+        workdir,
+        artifactDir,
+      });
+
+      expect(result.pushed).toBe(false);
+      expect(result.fixAttempts).toBe(1);
+      expect(result.prTitle).toBe('feat(eval): add triple helper');
+      expect(result.filesChanged).toEqual(['math.js']);
+      expect(result.diff).toContain('return value * 3');
+      expect(commandsPassed(result.commands, codegenScenario.commands)).toBe(true);
+    } finally {
+      await rm(workdir, { recursive: true, force: true });
+    }
+  });
 });
 
 const scenario: EvalScenario = {
@@ -69,6 +94,34 @@ const scenario: EvalScenario = {
         ],
       },
     ],
+    maxFixAttempts: 2,
+  },
+  commands: ['node math.test.js'],
+  expected: {
+    changedFiles: ['math.js'],
+    forbiddenFiles: ['package.json'],
+    requiredContent: [{ path: 'math.js', includes: 'return value * 3' }],
+  },
+};
+
+const codegenScenario: EvalScenario = {
+  id: 'worker-dry-run-llm-test',
+  title: 'Worker dry-run LLM fake test',
+  description: 'Test fixture',
+  repo: scenario.repo,
+  candidate: { files: {}, delete: [] },
+  workerDryRun: {
+    plan: 'Add triple.',
+    branch: 'agent/eval-dry-run-llm-test',
+    prTitle: 'feat(eval): add triple helper',
+    summary: 'Adds triple via fake LLM.',
+    files: [],
+    llmResponses: [
+      '{"edit":["math.js"],"create":[]}',
+      '{"prTitle":"feat(eval): add triple helper","summary":"Adds triple via fake LLM.","files":[{"path":"math.js","content":"export function double(value) {\\n  return value * 2;\\n}\\n\\nexport function triple(value) {\\n  return value * 2;\\n}\\n"}]}',
+      '{"summary":"Fix triple.","files":[{"path":"math.js","content":"export function double(value) {\\n  return value * 2;\\n}\\n\\nexport function triple(value) {\\n  return value * 3;\\n}\\n"}]}',
+    ],
+    fixes: [],
     maxFixAttempts: 2,
   },
   commands: ['node math.test.js'],
