@@ -1,0 +1,12 @@
+[Unit]
+Description=Agent Platform OmniRoute TCP proxy
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/bin/socat TCP-LISTEN:20128,bind=<proxmox-lan-ip>,fork,reuseaddr TCP:<agent-gateway-ip>:20128
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
