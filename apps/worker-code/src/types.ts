@@ -31,6 +31,16 @@ export interface CommandResult {
   durationMs: number;
 }
 
+export interface SandboxSummary {
+  backend: 'process' | 'docker';
+  image?: string;
+  network?: string;
+  commandCount: number;
+  totalDurationMs: number;
+  maxCommandDurationMs: number;
+  failedCommand?: string;
+}
+
 export interface JobResult {
   runId: string;
   status: 'succeeded' | 'failed';
@@ -55,4 +65,6 @@ export interface JobResult {
   prTitle?: string;
   /** Quantas correções de auto-fix rodaram após falha de validação (0 = passou de primeira). */
   fixAttempts?: number;
+  /** Resumo agregado da execução de validação no sandbox (observabilidade). */
+  sandbox?: SandboxSummary;
 }

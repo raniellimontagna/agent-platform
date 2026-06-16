@@ -20,6 +20,17 @@ export interface CommandResult {
   exitCode: number;
   stdout: string;
   stderr: string;
+  durationMs?: number;
+}
+
+export interface SandboxSummary {
+  backend: 'process' | 'docker';
+  image?: string;
+  network?: string;
+  commandCount: number;
+  totalDurationMs: number;
+  maxCommandDurationMs: number;
+  failedCommand?: string;
 }
 
 /** Corpo do job enviado ao runner (MAC-39: despachado via dispatch injetado). */
@@ -51,6 +62,7 @@ export interface RunnerResult {
   costUsd?: number;
   prTitle?: string;
   fixAttempts?: number;
+  sandbox?: SandboxSummary;
 }
 
 /** Despacha um job pro runner e devolve o resultado (impl no orchestrator). */
@@ -148,6 +160,7 @@ export function makeCoderNode(deps: CoderDeps, opts: { revise?: boolean } = {}) 
         testsPassed: result.testsPassed,
         testSummary,
         fixAttempts: result.fixAttempts,
+        sandbox: result.sandbox,
         codeCostUsd: result.costUsd,
         prTitle: result.prTitle,
         // Mantém `coding` no sucesso → roteia para o nó review (MAC-18) → pr.

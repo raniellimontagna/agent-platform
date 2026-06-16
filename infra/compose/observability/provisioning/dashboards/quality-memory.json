@@ -4,31 +4,53 @@
   "tags": ["agent-platform"],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "refresh": "30s",
-  "time": { "from": "now-30d", "to": "now" },
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
   "panels": [
     {
       "id": 1,
       "title": "Validação verde (%)",
       "type": "stat",
-      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
+      "datasource": {
+        "type": "postgres",
+        "uid": "orchestrator_pg"
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "red", "value": null },
-              { "color": "yellow", "value": 50 },
-              { "color": "green", "value": 80 }
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 50
+              },
+              {
+                "color": "green",
+                "value": 80
+              }
             ]
           }
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
       "targets": [
         {
           "refId": "A",
@@ -42,12 +64,26 @@
       "id": 2,
       "title": "Reprovação do critic (%)",
       "type": "stat",
-      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
+      "datasource": {
+        "type": "postgres",
+        "uid": "orchestrator_pg"
+      },
       "fieldConfig": {
-        "defaults": { "unit": "percent", "color": { "mode": "fixed", "fixedColor": "red" } },
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "red"
+          }
+        },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
       "targets": [
         {
           "refId": "A",
@@ -61,9 +97,22 @@
       "id": 3,
       "title": "Runs que precisaram de fix (%)",
       "type": "stat",
-      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
-      "fieldConfig": { "defaults": { "unit": "percent" }, "overrides": [] },
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "datasource": {
+        "type": "postgres",
+        "uid": "orchestrator_pg"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
       "targets": [
         {
           "refId": "A",
@@ -77,12 +126,26 @@
       "id": 4,
       "title": "Auto-correção que salvou (%)",
       "type": "stat",
-      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
+      "datasource": {
+        "type": "postgres",
+        "uid": "orchestrator_pg"
+      },
       "fieldConfig": {
-        "defaults": { "unit": "percent", "color": { "mode": "fixed", "fixedColor": "green" } },
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "green"
+          }
+        },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
       "targets": [
         {
           "refId": "A",
@@ -96,8 +159,16 @@
       "id": 5,
       "title": "Distribuição de fix_attempts",
       "type": "barchart",
-      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "datasource": {
+        "type": "postgres",
+        "uid": "orchestrator_pg"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 4
+      },
       "targets": [
         {
           "refId": "A",
@@ -111,8 +182,16 @@
       "id": 6,
       "title": "Lições por source",
       "type": "barchart",
-      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "datasource": {
+        "type": "postgres",
+        "uid": "orchestrator_pg"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 4
+      },
       "targets": [
         {
           "refId": "A",
@@ -126,8 +205,16 @@
       "id": 7,
       "title": "Total de lições",
       "type": "stat",
-      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 12 },
+      "datasource": {
+        "type": "postgres",
+        "uid": "orchestrator_pg"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 12
+      },
       "targets": [
         {
           "refId": "A",
@@ -141,8 +228,16 @@
       "id": 8,
       "title": "Lições acumuladas",
       "type": "timeseries",
-      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
-      "gridPos": { "h": 8, "w": 18, "x": 6, "y": 12 },
+      "datasource": {
+        "type": "postgres",
+        "uid": "orchestrator_pg"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 18,
+        "x": 6,
+        "y": 12
+      },
       "targets": [
         {
           "refId": "A",
@@ -156,14 +251,91 @@
       "id": 9,
       "title": "Lições recentes",
       "type": "table",
-      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 20 },
+      "datasource": {
+        "type": "postgres",
+        "uid": "orchestrator_pg"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
       "targets": [
         {
           "refId": "A",
           "format": "table",
           "rawQuery": true,
           "rawSql": "SELECT created_at, repo, source, text FROM lessons ORDER BY created_at DESC LIMIT 50;"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Sandbox validação por backend (%)",
+      "type": "barchart",
+      "datasource": {
+        "type": "postgres",
+        "uid": "orchestrator_pg"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 28
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT coalesce(sandbox_backend, 'unknown') AS metric, round(100.0 * count(*) FILTER (WHERE tests_passed) / NULLIF(count(*) FILTER (WHERE tests_passed IS NOT NULL), 0), 1) AS value FROM runs WHERE sandbox_backend IS NOT NULL GROUP BY 1 ORDER BY 1;"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "title": "Sandbox comandos por run",
+      "type": "barchart",
+      "datasource": {
+        "type": "postgres",
+        "uid": "orchestrator_pg"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 28
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT sandbox_command_count::text AS metric, count(*) AS value FROM runs WHERE sandbox_command_count IS NOT NULL GROUP BY sandbox_command_count ORDER BY sandbox_command_count;"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "title": "Sandbox recentes",
+      "type": "table",
+      "datasource": {
+        "type": "postgres",
+        "uid": "orchestrator_pg"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 36
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT created_at, linear_issue_identifier AS issue, tests_passed, fix_attempts, sandbox_backend, sandbox_image, sandbox_network, sandbox_command_count, round((sandbox_total_duration_ms / 1000.0)::numeric, 1) AS sandbox_s, round((sandbox_max_command_duration_ms / 1000.0)::numeric, 1) AS max_cmd_s, sandbox_failed_command FROM runs WHERE sandbox_backend IS NOT NULL ORDER BY created_at DESC LIMIT 50;"
         }
       ]
     }
