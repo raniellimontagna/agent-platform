@@ -23,7 +23,8 @@ como fallback de último recurso.
 
 O fallback operacional vive no `router_settings` do LiteLLM. Mantenha o timeout do
 Router menor que o timeout dos clientes (`LLM_TIMEOUT_MS` do runner/orchestrator)
-para o combo degradado falhar dentro do gateway antes do cliente abortar.
+para o combo degradado falhar dentro do gateway antes do cliente abortar. Para
+codegen, o gateway usa 240s e o runner usa 300s.
 
 `store_model_in_db` deve ficar `false`: a config versionada precisa ser a fonte da
 verdade. Se ficar `true`, modelos persistidos no banco do LiteLLM podem manter rotas
@@ -33,12 +34,12 @@ O proxy também tem budget global em `litellm-config.yaml`:
 
 ```yaml
 litellm_settings:
-  request_timeout: 45
+  request_timeout: 240
   num_retries: 0
   max_budget: 25.0
   budget_duration: 30d
 router_settings:
-  timeout: 45
+  timeout: 240
   num_retries: 0
 ```
 
