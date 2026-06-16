@@ -121,7 +121,12 @@ export function extractJson(raw: string): unknown {
   const start = candidate.indexOf('{');
   const end = candidate.lastIndexOf('}');
   if (start === -1 || end === -1 || end <= start) {
-    throw new Error('resposta do modelo não contém JSON');
+    const sample = candidate.replace(/\s+/g, ' ').slice(0, 240);
+    throw new Error(
+      sample
+        ? `resposta do modelo não contém JSON. Amostra: ${sample}`
+        : 'resposta do modelo não contém JSON',
+    );
   }
   return JSON.parse(candidate.slice(start, end + 1));
 }
