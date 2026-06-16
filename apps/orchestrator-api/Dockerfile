@@ -8,6 +8,9 @@ RUN corepack enable
 WORKDIR /app
 
 FROM base AS build
+# onnxruntime-node baixa providers CUDA/TensorRT no postinstall em linux/x64.
+# Embeddings rodam em CPU; pular esse download evita OOM no build do LXC.
+ENV ONNXRUNTIME_NODE_INSTALL=skip
 # Copia o workspace todo (.dockerignore tira node_modules/dist/.git).
 COPY . .
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
