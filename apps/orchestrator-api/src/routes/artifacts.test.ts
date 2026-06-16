@@ -40,7 +40,11 @@ describe('GET /runs/:id/artifacts', () => {
 describe('GET /artifacts/:id', () => {
   it('devolve o artefato com content', async () => {
     vi.mocked(getArtifact).mockResolvedValue({
-      id: 'a1', runId: 'run-1', kind: 'patch', content: 'diff', createdAt: new Date('2026-01-01'),
+      id: 'a1',
+      runId: 'run-1',
+      kind: 'patch',
+      content: 'diff',
+      createdAt: new Date('2026-01-01'),
     } as never);
     const res = await app.request('/artifacts/a1');
     expect(res.status).toBe(200);

@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
 import type { Lesson } from '@agent-platform/memory';
+import { describe, expect, it, vi } from 'vitest';
 import { buildLessonLoader } from './lessonLoader.js';
 
 function lesson(text: string): Lesson {
@@ -30,7 +30,11 @@ describe('buildLessonLoader', () => {
   });
 
   it('cai pra recência quando o embed falha', async () => {
-    const d = deps({ embed: vi.fn(async () => { throw new Error('sem modelo'); }) });
+    const d = deps({
+      embed: vi.fn(async () => {
+        throw new Error('sem modelo');
+      }),
+    });
     const out = await buildLessonLoader('o/r', d)('corrigir auth');
     expect(out).toBe('- recência A');
   });

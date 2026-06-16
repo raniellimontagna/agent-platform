@@ -24,9 +24,7 @@ export function shouldAutoMerge(state: {
   review?: string;
 }): boolean {
   return (
-    state.autoMerge === true &&
-    state.testsPassed === true &&
-    verdictOf(state.review) === 'APROVADO'
+    state.autoMerge === true && state.testsPassed === true && verdictOf(state.review) === 'APROVADO'
   );
 }
 

@@ -3,6 +3,7 @@ import { isValidCron } from '../cron.js';
 import { env } from '../env.js';
 import { logger } from '../logger.js';
 import { listRunsBySchedule } from '../runs.js';
+import { removeScheduleJob, upsertScheduleJob } from '../scheduleQueue.js';
 import {
   createSchedule,
   deleteSchedule,
@@ -10,7 +11,6 @@ import {
   listSchedules,
   updateSchedule,
 } from '../schedules.js';
-import { removeScheduleJob, upsertScheduleJob } from '../scheduleQueue.js';
 
 export const schedulesRoute = new Hono();
 

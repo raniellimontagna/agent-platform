@@ -5,7 +5,10 @@ const MODEL = 'Xenova/all-MiniLM-L6-v2';
 
 // Pipeline carregado sob demanda (lazy) e cacheado no escopo do módulo. O import
 // do transformers é dinâmico p/ não pesar quem só precisa de EMBEDDING_DIM.
-type Extractor = (text: string, opts: { pooling: 'mean'; normalize: boolean }) => Promise<{ data: Float32Array }>;
+type Extractor = (
+  text: string,
+  opts: { pooling: 'mean'; normalize: boolean },
+) => Promise<{ data: Float32Array }>;
 let extractorPromise: Promise<Extractor> | null = null;
 
 async function getExtractor(): Promise<Extractor> {

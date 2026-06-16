@@ -43,7 +43,11 @@ export function registerTools(server: McpServer, client: OrchestratorClient): vo
   server.tool(
     'list_lessons',
     'Lições aprendidas (Memory Layer) de um repo. Com `query`, busca por relevância (semântica); sem, retorna as mais recentes.',
-    { repo: z.string(), limit: z.number().int().positive().optional(), query: z.string().optional() },
+    {
+      repo: z.string(),
+      limit: z.number().int().positive().optional(),
+      query: z.string().optional(),
+    },
     ({ repo, limit, query }) => asTool(() => client.listLessons(repo, limit, query)),
   );
 
@@ -69,8 +73,11 @@ export function registerTools(server: McpServer, client: OrchestratorClient): vo
     ({ key, status, risk }) => asTool(() => client.listTools({ key, status, risk })),
   );
 
-  server.tool('get_tool', 'Detalha uma ferramenta registrada pelo id.', { id: z.string() }, ({ id }) =>
-    asTool(() => client.getTool(id)),
+  server.tool(
+    'get_tool',
+    'Detalha uma ferramenta registrada pelo id.',
+    { id: z.string() },
+    ({ id }) => asTool(() => client.getTool(id)),
   );
 
   server.tool('agent_status', 'Status do agente (pausado ou ativo).', {}, () =>

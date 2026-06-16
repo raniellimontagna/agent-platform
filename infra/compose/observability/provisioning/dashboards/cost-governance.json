@@ -16,7 +16,12 @@
       "fieldConfig": { "defaults": { "unit": "currencyUSD", "decimals": 4 }, "overrides": [] },
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
       "targets": [
-        { "refId": "A", "format": "table", "rawQuery": true, "rawSql": "SELECT round(coalesce(sum(cost_usd), 0)::numeric, 4) AS total FROM run_steps;" }
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT round(coalesce(sum(cost_usd), 0)::numeric, 4) AS total FROM run_steps;"
+        }
       ]
     },
     {
@@ -27,7 +32,12 @@
       "fieldConfig": { "defaults": { "unit": "currencyUSD", "decimals": 4 }, "overrides": [] },
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
       "targets": [
-        { "refId": "A", "format": "table", "rawQuery": true, "rawSql": "SELECT round(coalesce(sum(cost_usd), 0)::numeric, 4) AS custo_24h FROM run_steps WHERE created_at > now() - interval '24 hours';" }
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT round(coalesce(sum(cost_usd), 0)::numeric, 4) AS custo_24h FROM run_steps WHERE created_at > now() - interval '24 hours';"
+        }
       ]
     },
     {
@@ -38,7 +48,12 @@
       "fieldConfig": { "defaults": { "unit": "currencyUSD", "decimals": 4 }, "overrides": [] },
       "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
       "targets": [
-        { "refId": "A", "format": "table", "rawQuery": true, "rawSql": "SELECT round((coalesce(sum(cost_usd), 0) / NULLIF(count(DISTINCT run_id), 0))::numeric, 4) AS media FROM run_steps;" }
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT round((coalesce(sum(cost_usd), 0) / NULLIF(count(DISTINCT run_id), 0))::numeric, 4) AS media FROM run_steps;"
+        }
       ]
     },
     {
@@ -46,10 +61,18 @@
       "title": "Aprovações pendentes",
       "type": "stat",
       "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
-      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "orange" } }, "overrides": [] },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "fixed", "fixedColor": "orange" } },
+        "overrides": []
+      },
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
       "targets": [
-        { "refId": "A", "format": "table", "rawQuery": true, "rawSql": "SELECT count(*) AS pendentes FROM approvals WHERE status = 'pending';" }
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT count(*) AS pendentes FROM approvals WHERE status = 'pending';"
+        }
       ]
     },
     {
@@ -59,7 +82,12 @@
       "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
       "targets": [
-        { "refId": "A", "format": "time_series", "rawQuery": true, "rawSql": "SELECT date_trunc('day', created_at) AS time, sum(cost_usd) AS value FROM run_steps WHERE $__timeFilter(created_at) GROUP BY 1 ORDER BY 1;" }
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT date_trunc('day', created_at) AS time, sum(cost_usd) AS value FROM run_steps WHERE $__timeFilter(created_at) GROUP BY 1 ORDER BY 1;"
+        }
       ]
     },
     {
@@ -69,7 +97,12 @@
       "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
       "targets": [
-        { "refId": "A", "format": "table", "rawQuery": true, "rawSql": "SELECT type AS metric, round(coalesce(sum(cost_usd), 0)::numeric, 4) AS value FROM run_steps GROUP BY type ORDER BY value DESC;" }
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT type AS metric, round(coalesce(sum(cost_usd), 0)::numeric, 4) AS value FROM run_steps GROUP BY type ORDER BY value DESC;"
+        }
       ]
     },
     {
@@ -79,7 +112,12 @@
       "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
       "targets": [
-        { "refId": "A", "format": "table", "rawQuery": true, "rawSql": "SELECT reason AS metric, count(*) AS value FROM approvals GROUP BY reason ORDER BY value DESC;" }
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT reason AS metric, count(*) AS value FROM approvals GROUP BY reason ORDER BY value DESC;"
+        }
       ]
     },
     {
@@ -90,7 +128,12 @@
       "fieldConfig": { "defaults": { "decimals": 1 }, "overrides": [] },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
       "targets": [
-        { "refId": "A", "format": "table", "rawQuery": true, "rawSql": "SELECT round((avg(extract(epoch FROM (resolved_at - requested_at))) / 60)::numeric, 1) AS minutos FROM approvals WHERE resolved_at IS NOT NULL;" }
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT round((avg(extract(epoch FROM (resolved_at - requested_at))) / 60)::numeric, 1) AS minutos FROM approvals WHERE resolved_at IS NOT NULL;"
+        }
       ]
     },
     {
@@ -100,7 +143,12 @@
       "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 20 },
       "targets": [
-        { "refId": "A", "format": "table", "rawQuery": true, "rawSql": "SELECT requested_at, reason, status, resolved_by, resolved_at FROM approvals ORDER BY requested_at DESC LIMIT 50;" }
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT requested_at, reason, status, resolved_by, resolved_at FROM approvals ORDER BY requested_at DESC LIMIT 50;"
+        }
       ]
     }
   ]

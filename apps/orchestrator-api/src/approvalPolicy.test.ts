@@ -3,7 +3,14 @@ import { hasCriticalReason, isCriticalReason } from './approvalPolicy.js';
 
 describe('isCriticalReason', () => {
   it('motivos críticos bloqueiam auto-aprovação', () => {
-    for (const r of ['migration', 'auth_security', 'infra', 'deploy', 'critical_deps', 'file_deletion']) {
+    for (const r of [
+      'migration',
+      'auth_security',
+      'infra',
+      'deploy',
+      'critical_deps',
+      'file_deletion',
+    ]) {
       expect(isCriticalReason(r)).toBe(true);
     }
   });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Agent } from './db/schema.js';
 import { createAgentSchema, pickActiveAgent } from './agents.js';
+import type { Agent } from './db/schema.js';
 
 function agent(over: Partial<Agent>): Agent {
   return {
@@ -24,7 +24,12 @@ describe('pickActiveAgent', () => {
 
   it('ignora deprecated e escolhe a active mais recente', () => {
     const old = agent({ id: 'old', version: 'v1', createdAt: new Date('2026-01-01') });
-    const dep = agent({ id: 'dep', version: 'v2', status: 'deprecated', createdAt: new Date('2026-03-01') });
+    const dep = agent({
+      id: 'dep',
+      version: 'v2',
+      status: 'deprecated',
+      createdAt: new Date('2026-03-01'),
+    });
     const fresh = agent({ id: 'fresh', version: 'v3', createdAt: new Date('2026-02-01') });
     expect(pickActiveAgent([old, dep, fresh])?.id).toBe('fresh');
   });
@@ -42,7 +47,11 @@ describe('createAgentSchema', () => {
   });
 
   it('rejeita capabilities que não é array de strings', () => {
-    expect(createAgentSchema.safeParse({ key: 'k', version: 'v1', capabilities: 'x' }).success).toBe(false);
-    expect(createAgentSchema.safeParse({ key: 'k', version: 'v1', capabilities: [1] }).success).toBe(false);
+    expect(
+      createAgentSchema.safeParse({ key: 'k', version: 'v1', capabilities: 'x' }).success,
+    ).toBe(false);
+    expect(
+      createAgentSchema.safeParse({ key: 'k', version: 'v1', capabilities: [1] }).success,
+    ).toBe(false);
   });
 });

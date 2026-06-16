@@ -46,7 +46,8 @@ agentsRoute.get('/agents/:id', async (c) => {
 agentsRoute.post('/agents', async (c) => {
   const body = await c.req.json().catch(() => null);
   const parsed = createAgentSchema.safeParse(body);
-  if (!parsed.success) return c.json({ error: 'payload inválido', issues: parsed.error.issues }, 400);
+  if (!parsed.success)
+    return c.json({ error: 'payload inválido', issues: parsed.error.issues }, 400);
   try {
     const row = await createAgent(parsed.data);
     return c.json(row, 201);

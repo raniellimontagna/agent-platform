@@ -2,8 +2,8 @@ import { serve } from '@hono/node-server';
 import { buildApp } from './app.js';
 import { env } from './env.js';
 import { logger } from './logger.js';
-import { startAgentWorker } from './worker.js';
 import { startScheduleWorker } from './scheduleWorker.js';
+import { startAgentWorker } from './worker.js';
 
 const app = buildApp();
 

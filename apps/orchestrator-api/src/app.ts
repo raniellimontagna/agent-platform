@@ -2,12 +2,12 @@ import { Hono, type MiddlewareHandler } from 'hono';
 import { logger } from './logger.js';
 import { adminRoute } from './routes/admin.js';
 import { agentsRoute } from './routes/agents.js';
-import { toolsRoute } from './routes/tools.js';
 import { artifactsRoute } from './routes/artifacts.js';
 import { health } from './routes/health.js';
 import { runsRoute } from './routes/runs.js';
 import { schedulesRoute } from './routes/schedules.js';
 import { statsRoute } from './routes/stats.js';
+import { toolsRoute } from './routes/tools.js';
 import { webhooks } from './routes/webhooks.js';
 import { isUuid } from './uuid.js';
 

@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import {
   boolean,
   customType,
@@ -12,7 +13,6 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { sql } from 'drizzle-orm';
 // EMBEDDING_DIM duplicado aqui p/ evitar que drizzle-kit (CJS) falhe ao resolver
 // o import dinâmico de ../embeddings.ts. Fonte da verdade: src/embeddings.ts.
 const EMBEDDING_DIM = 384;
@@ -81,27 +81,29 @@ export const approvalStatus = pgEnum('approval_status', ['pending', 'approved', 
 
 export const lessonSource = pgEnum('lesson_source', ['critic', 'validation']);
 
-export const runs = pgTable('runs', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  linearIssueId: text('linear_issue_id').notNull(),
-  linearIssueIdentifier: text('linear_issue_identifier').notNull(),
-  title: text('title').notNull(),
-  status: runStatus('status').notNull().default('pending'),
-  branch: text('branch'),
-  prUrl: text('pr_url'),
-  error: text('error'),
-  testsPassed: boolean('tests_passed'),
-  verdict: text('verdict'),
-  fixAttempts: integer('fix_attempts'),
-  scheduleId: uuid('schedule_id').references(() => schedules.id, { onDelete: 'set null' }),
-  agentId: uuid('agent_id').references(() => agents.id, { onDelete: 'set null' }),
-  autoApprove: boolean('auto_approve').notNull().default(false),
-  autoMerge: boolean('auto_merge').notNull().default(false),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true })
-    .notNull()
-    .defaultNow()
-    .$onUpdate(() => new Date()),
+export const runs = pgTable(
+  'runs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    linearIssueId: text('linear_issue_id').notNull(),
+    linearIssueIdentifier: text('linear_issue_identifier').notNull(),
+    title: text('title').notNull(),
+    status: runStatus('status').notNull().default('pending'),
+    branch: text('branch'),
+    prUrl: text('pr_url'),
+    error: text('error'),
+    testsPassed: boolean('tests_passed'),
+    verdict: text('verdict'),
+    fixAttempts: integer('fix_attempts'),
+    scheduleId: uuid('schedule_id').references(() => schedules.id, { onDelete: 'set null' }),
+    agentId: uuid('agent_id').references(() => agents.id, { onDelete: 'set null' }),
+    autoApprove: boolean('auto_approve').notNull().default(false),
+    autoMerge: boolean('auto_merge').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
   },
   (t) => [
     // MAC-61: no máx. 1 run ativo por agendamento (fecha a race do overlap guard).
@@ -170,14 +172,16 @@ export const artifactKind = pgEnum('artifact_kind', [
 ]);
 
 /** Artefatos produzidos por um run, guardados de forma durável (MAC-44). */
-export const artifacts = pgTable('artifacts', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  runId: uuid('run_id')
-    .notNull()
-    .references(() => runs.id, { onDelete: 'cascade' }),
-  kind: artifactKind('kind').notNull(),
-  content: text('content').notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+export const artifacts = pgTable(
+  'artifacts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    runId: uuid('run_id')
+      .notNull()
+      .references(() => runs.id, { onDelete: 'cascade' }),
+    kind: artifactKind('kind').notNull(),
+    content: text('content').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     // MAC-61: FK não cria índice; listArtifacts filtra por run_id.
@@ -215,10 +219,7 @@ export const agents = pgTable(
     key: text('key').notNull(),
     version: text('version').notNull(),
     description: text('description'),
-    capabilities: jsonb('capabilities')
-      .notNull()
-      .default(sql`'[]'::jsonb`)
-      .$type<string[]>(),
+    capabilities: jsonb('capabilities').notNull().default(sql`'[]'::jsonb`).$type<string[]>(),
     status: agentStatus('status').notNull().default('active'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true })
@@ -241,10 +242,7 @@ export const tools = pgTable(
     version: text('version').notNull(),
     description: text('description'),
     risk: toolRisk('risk').notNull().default('safe'),
-    scopes: jsonb('scopes')
-      .notNull()
-      .default(sql`'[]'::jsonb`)
-      .$type<string[]>(),
+    scopes: jsonb('scopes').notNull().default(sql`'[]'::jsonb`).$type<string[]>(),
     status: toolStatus('status').notNull().default('active'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true })

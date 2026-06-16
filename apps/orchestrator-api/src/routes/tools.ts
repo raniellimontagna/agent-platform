@@ -49,7 +49,8 @@ toolsRoute.get('/tools/:id', async (c) => {
 toolsRoute.post('/tools', async (c) => {
   const body = await c.req.json().catch(() => null);
   const parsed = createToolSchema.safeParse(body);
-  if (!parsed.success) return c.json({ error: 'payload inválido', issues: parsed.error.issues }, 400);
+  if (!parsed.success)
+    return c.json({ error: 'payload inválido', issues: parsed.error.issues }, 400);
   try {
     const row = await createTool(parsed.data);
     return c.json(row, 201);
