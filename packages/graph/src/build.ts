@@ -7,6 +7,7 @@ import { type DispatchFn, makeCoderNode } from './nodes/coder.js';
 import { makePlannerNode } from './nodes/planner.js';
 import { makePrNode } from './nodes/pr.js';
 import { makeReportNode } from './nodes/report.js';
+import { makeMergingNode } from './nodes/merging.js';
 import { makeReviewNode } from './nodes/review.js';
 import { AgentState } from './state.js';
 
@@ -28,6 +29,8 @@ export interface GraphDeps {
   maxReviewRounds?: number;
   /** Teto de custo por run em USD — corta o loop (MAC-40/59). */
   maxCostPerRunUsd?: number;
+  /** Estado "Done" do time no Linear p/ mover a issue após auto-merge (MAC-67). */
+  doneStateId: string;
 }
 
 /**
@@ -73,6 +76,7 @@ export function buildAgentGraph(deps: GraphDeps, checkpointer: PostgresSaver) {
     linear: deps.linear,
     baseBranch: deps.baseBranch ?? 'main',
   });
+  const merging = makeMergingNode({ github: deps.github, linear: deps.linear, doneStateId: deps.doneStateId });
   const report = makeReportNode({ linear: deps.linear });
 
   return new StateGraph(AgentState)
@@ -81,6 +85,7 @@ export function buildAgentGraph(deps: GraphDeps, checkpointer: PostgresSaver) {
     .addNode('revising', revising)
     .addNode('reviewing', review)
     .addNode('pr', pr)
+    .addNode('merging', merging)
     .addNode('report', report)
     .addEdge(START, 'planning')
     .addEdge('planning', 'coding')
@@ -101,7 +106,8 @@ export function buildAgentGraph(deps: GraphDeps, checkpointer: PostgresSaver) {
       (state) => (state.status === 'failed' ? 'report' : 'reviewing'),
       { reviewing: 'reviewing', report: 'report' },
     )
-    .addEdge('pr', 'report')
+    .addEdge('pr', 'merging')
+    .addEdge('merging', 'report')
     .addEdge('report', END)
     .compile({ checkpointer, interruptBefore: ['coding'] });
 }
