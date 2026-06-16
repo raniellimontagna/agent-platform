@@ -11,6 +11,16 @@ Rodar todos os cenários:
 rtk pnpm eval
 ```
 
+Gate recomendado antes de mexer em planner/coder/reviewer/merging:
+
+```bash
+rtk corepack pnpm verify:loop
+```
+
+Esse comando roda build do monorepo, testes e eval. Ele não chama GitHub, Linear
+ou produção, e deve falhar com exit code diferente de zero se qualquer etapa
+quebrar.
+
 Artefatos ficam em `.eval-runs/<timestamp>/` com:
 
 - `report.json`: resultado estruturado para automação.
