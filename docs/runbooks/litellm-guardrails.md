@@ -13,6 +13,12 @@ Runbook para fechar budgets, rate limits e chaves de acesso do gateway LLM.
 | `heavy_coder` | código difícil e recuperação de falhas | 4 RPM / 50k TPM |
 | `critic` | revisão final | 6 RPM / 50k TPM |
 
+Aliases fortes (`research`, `strong_coder`, `heavy_coder`, `critic`) têm fallback
+de último recurso para Verboo (`deepseek-v4-flash`). Esse fallback preserva
+disponibilidade quando OmniRoute/combos falham, mas a qualidade é menor e há menos
+"thinking"; trate resultados nesse modo como candidatos a revisão humana mais
+cuidadosa.
+
 O proxy também tem budget global em `litellm-config.yaml`:
 
 ```yaml
