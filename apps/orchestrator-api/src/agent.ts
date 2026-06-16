@@ -27,7 +27,12 @@ export function getAgent(): Promise<Agent> {
 }
 
 async function init(): Promise<Agent> {
-  const llm = createLlmClient({ baseUrl: env.LITELLM_BASE_URL, apiKey: env.LITELLM_API_KEY });
+  const llm = createLlmClient({
+    baseUrl: env.LITELLM_BASE_URL,
+    apiKey: env.LITELLM_API_KEY,
+    timeoutMs: env.LLM_TIMEOUT_MS,
+    maxRetries: env.LLM_MAX_RETRIES,
+  });
   const linear = createLinearGateway(env.LINEAR_API_KEY);
   const checkpointer = await createCheckpointer(env.DATABASE_URL);
 

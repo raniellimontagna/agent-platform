@@ -10,6 +10,9 @@ const envSchema = z.object({
 
   LITELLM_BASE_URL: z.string().url(),
   LITELLM_API_KEY: z.string().min(1),
+  // O gateway precisa tempo suficiente para aplicar fallback antes do cliente abortar.
+  LLM_TIMEOUT_MS: z.coerce.number().default(180_000),
+  LLM_MAX_RETRIES: z.coerce.number().default(0),
 
   LINEAR_API_KEY: z.string().min(1),
   LINEAR_WEBHOOK_SECRET: z.string().min(1),
