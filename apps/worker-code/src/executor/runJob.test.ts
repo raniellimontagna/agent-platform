@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { CommandResult } from '../types.js';
-import { summarizeFailureTail } from './runJob.js';
+import type { Job } from '../types.js';
+import { buildCommitMessage, summarizeFailureTail } from './runJob.js';
 
 function cmd(command: string, exitCode: number, stderr = '', stdout = ''): CommandResult {
   return { command, exitCode, stdout, stderr, durationMs: 1 };
@@ -23,5 +24,29 @@ describe('summarizeFailureTail', () => {
   it('cai no stdout quando o stderr está vazio', () => {
     const out = summarizeFailureTail([cmd('pnpm test', 1, '', 'FAIL src/x.test.ts')]);
     expect(out).toBe('$ pnpm test\nFAIL src/x.test.ts');
+  });
+});
+
+describe('buildCommitMessage', () => {
+  const job = {
+    issueIdentifier: 'MAC-84',
+    title: 'Teste descartável',
+  } as Job;
+
+  it('adiciona Ref e Co-authored-by quando coautor está configurado', () => {
+    const msg = buildCommitMessage(job, 'docs(runbooks): add note', 'Resumo curto.', {
+      name: 'Codex',
+      email: 'noreply@openai.com',
+    });
+
+    expect(msg).toBe(
+      'docs(runbooks): add note\n\nResumo curto.\n\nRef: MAC-84\nCo-authored-by: Codex <noreply@openai.com>',
+    );
+  });
+
+  it('não adiciona Co-authored-by incompleto', () => {
+    const msg = buildCommitMessage(job, 'docs: add note', '', { name: 'Codex' });
+
+    expect(msg).toBe('docs: add note\n\nRef: MAC-84');
   });
 });
