@@ -87,6 +87,9 @@ const responseSchema = z.object({
 /** Limites para não estourar o contexto do modelo ao injetar conteúdo. */
 const MAX_EDIT_FILES = 15;
 const MAX_FILE_CHARS = 20_000;
+const SELECT_MAX_TOKENS = 1_500;
+const GENERATE_MAX_TOKENS = 24_000;
+const FIX_MAX_TOKENS = 16_000;
 
 export interface CodegenResult {
   summary: string;
@@ -152,6 +155,7 @@ export async function completeJson<S extends z.ZodTypeAny>(
   opts: {
     messages: { role: 'system' | 'user'; content: string }[];
     temperature: number;
+    maxTokens?: number;
     onUsage?: (usage: TokenUsage) => void;
   },
   schema: S,
@@ -166,6 +170,7 @@ export async function completeJson<S extends z.ZodTypeAny>(
     const raw = await llm.complete({
       alias: 'strong_coder',
       temperature: opts.temperature,
+      maxTokens: opts.maxTokens,
       jsonMode: true,
       messages: opts.messages,
       onUsage: opts.onUsage,
@@ -188,6 +193,7 @@ export async function completeJson<S extends z.ZodTypeAny>(
       const repaired = await llm.complete({
         alias: 'strong_coder',
         temperature: 0,
+        maxTokens: opts.maxTokens,
         jsonMode: true,
         onUsage: opts.onUsage,
         messages: [
@@ -238,6 +244,7 @@ async function selectFiles(
     llm,
     {
       temperature: 0,
+      maxTokens: SELECT_MAX_TOKENS,
       onUsage,
       messages: [
         { role: 'system', content: SELECT_PROMPT },
@@ -349,6 +356,7 @@ export async function generateAndApplyCode(args: CodegenArgs): Promise<CodegenRe
     llm,
     {
       temperature: 0.1,
+      maxTokens: GENERATE_MAX_TOKENS,
       onUsage: addUsage,
       messages: [
         { role: 'system', content: GENERATE_PROMPT },
@@ -432,6 +440,7 @@ export async function applyFix(args: FixArgs): Promise<FixResult> {
     llm,
     {
       temperature: 0.1,
+      maxTokens: FIX_MAX_TOKENS,
       onUsage: (u) => {
         usage.promptTokens += u.promptTokens;
         usage.completionTokens += u.completionTokens;

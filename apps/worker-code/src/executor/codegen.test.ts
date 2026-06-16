@@ -5,13 +5,22 @@ import { z } from 'zod';
 import { completeJson, extractJson } from './codegen.js';
 
 /** LlmClient fake: devolve as respostas da fila em ordem (repete a última). */
-function fakeLlm(responses: string[]): { llm: LlmClient; calls: () => number } {
+function fakeLlm(responses: string[]): {
+  llm: LlmClient;
+  calls: () => number;
+  lastMaxTokens: () => number | undefined;
+} {
   let i = 0;
+  let maxTokens: number | undefined;
   return {
     llm: {
-      complete: async () => responses[Math.min(i++, responses.length - 1)] ?? '',
+      complete: async (opts) => {
+        maxTokens = opts.maxTokens;
+        return responses[Math.min(i++, responses.length - 1)] ?? '';
+      },
     },
     calls: () => i,
+    lastMaxTokens: () => maxTokens,
   };
 }
 
@@ -78,5 +87,11 @@ describe('completeJson', () => {
     const { llm, calls } = fakeLlm(['{"bad": true}', '{"ok":', '{"ok": true}']);
     expect(await completeJson(llm, opts, schema, noopLog, 2)).toEqual({ ok: true });
     expect(calls()).toBe(3);
+  });
+
+  it('encaminha maxTokens para o cliente LLM', async () => {
+    const { llm, lastMaxTokens } = fakeLlm(['{"ok": true}']);
+    await completeJson(llm, { ...opts, maxTokens: 1234 }, schema, noopLog, 1);
+    expect(lastMaxTokens()).toBe(1234);
   });
 });
