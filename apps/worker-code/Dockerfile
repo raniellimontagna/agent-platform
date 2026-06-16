@@ -8,6 +8,9 @@ RUN corepack enable
 WORKDIR /app
 
 FROM base AS build
+# onnxruntime-node baixa providers CUDA/TensorRT no postinstall em linux/x64.
+# O runner não usa GPU; pular esse download evita builds lentos/OOM.
+ENV ONNXRUNTIME_NODE_INSTALL=skip
 # Copia o workspace todo (.dockerignore tira node_modules/dist/.git).
 COPY . .
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
