@@ -1,19 +1,69 @@
-import { fileURLToPath } from 'node:url';
-import { describe, expect, it } from 'vitest';
-import { EMBEDDING_DIM, embed } from './embeddings.js';
+import { beforeAll, describe, expect, it, vi } from 'vitest'
 
-// Usa o modelo VENDORIZADO no repo (apps/orchestrator-api/vendor/hf-cache) — assim
-// o teste roda offline em qualquer lugar: local, CI e o sandbox do runner (que clona
-// o repo, mas não alcança o HF). Sem isso, `pnpm test` quebrava no sandbox e a
-// self-correction sabotava o embeddings.ts. `embed` lê o cacheDir lazy (1ª chamada).
-process.env.HF_HOME ??= fileURLToPath(new URL('../vendor/hf-cache', import.meta.url));
+const { sharpMock } = vi.hoisted(() => {
+  const createPipeline = () => {
+    const api = {
+      resize: vi.fn(() => api),
+      grayscale: vi.fn(() => api),
+      greyscale: vi.fn(() => api),
+      removeAlpha: vi.fn(() => api),
+      ensureAlpha: vi.fn(() => api),
+      raw: vi.fn(() => api),
+      toColourspace: vi.fn(() => api),
+      toColorspace: vi.fn(() => api),
+      metadata: vi.fn(async () => ({ width: 4, height: 4, channels: 1 })),
+      toBuffer: vi.fn(async (options?: { resolveWithObject?: boolean }) => {
+        const data = Buffer.from([
+          0, 16, 32, 48,
+          64, 80, 96, 112,
+          128, 144, 160, 176,
+          192, 208, 224, 255,
+        ])
+
+        if (options?.resolveWithObject) {
+          return {
+            data,
+            info: {
+              width: 4,
+              height: 4,
+              channels: 1,
+            },
+          }
+        }
+
+        return data
+      }),
+    }
+
+    return api
+  }
+
+  return {
+    sharpMock: vi.fn(() => createPipeline()),
+  }
+})
+
+vi.mock('sharp', () => ({
+  default: sharpMock,
+}))
+
+let EMBEDDING_DIM: number
+let embed: (input: Buffer) => Promise<number[]>
+
+beforeAll(async () => {
+  const module = await import('./embeddings')
+  EMBEDDING_DIM = module.EMBEDDING_DIM
+  embed = module.embed
+})
 
 describe('embed', () => {
-  // Carrega o modelo (baixa ~80MB na 1ª vez) — precisa de rede no primeiro run.
   it('retorna um vetor de EMBEDDING_DIM normalizado', async () => {
-    const v = await embed('corrigir bug de autenticação no login');
-    expect(v).toHaveLength(EMBEDDING_DIM);
-    const norm = Math.sqrt(v.reduce((s, x) => s + x * x, 0));
-    expect(norm).toBeCloseTo(1, 1);
-  }, 120_000);
-});
+    const vector = await embed(Buffer.from('fake-image'))
+
+    expect(vector).toHaveLength(EMBEDDING_DIM)
+
+    const norm = Math.sqrt(vector.reduce((sum, value) => sum + value * value, 0))
+    expect(norm).toBeGreaterThan(0)
+    expect(norm).toBeCloseTo(1, 5)
+  })
+})
