@@ -312,6 +312,39 @@ function chunkArray<T>(items: T[], size: number): T[][] {
   return chunks;
 }
 
+function isDocumentationPath(path: string): boolean {
+  const normalized = path.replace(/^\/+/, '').toLowerCase();
+  return normalized.startsWith('docs/') || normalized.endsWith('.md');
+}
+
+function issueExplicitlyRequestsDocs(title: string, description: string): boolean {
+  return /\b(doc|docs|documentation|readme|runbook|documenta(?:r|ção|cao))\b/i.test(
+    `${title}\n${description}`,
+  );
+}
+
+export function filterDocumentationTargets(
+  selection: { edit: string[]; create: string[] },
+  ctx: { title: string; description: string },
+): { selection: { edit: string[]; create: string[] }; droppedDocs: string[] } {
+  if (issueExplicitlyRequestsDocs(ctx.title, ctx.description)) {
+    return { selection, droppedDocs: [] };
+  }
+
+  const droppedDocs = [...selection.edit, ...selection.create].filter(isDocumentationPath);
+  if (droppedDocs.length === 0) {
+    return { selection, droppedDocs };
+  }
+
+  return {
+    selection: {
+      edit: selection.edit.filter((path) => !isDocumentationPath(path)),
+      create: selection.create.filter((path) => !isDocumentationPath(path)),
+    },
+    droppedDocs,
+  };
+}
+
 /**
  * Gera o código via alias `strong_coder` e aplica os arquivos no worktree (MAC-17).
  *
@@ -337,12 +370,19 @@ export async function generateAndApplyCode(args: CodegenArgs): Promise<CodegenRe
   };
 
   log.info({ fileCount: repoFiles.length }, 'selecting files to change');
-  const selection = await selectFiles(
+  const rawSelection = await selectFiles(
     llm,
     { title, description, plan, fileTree, conventions, reviewFeedback },
     log,
     addUsage,
   );
+  const { selection, droppedDocs } = filterDocumentationTargets(rawSelection, {
+    title,
+    description,
+  });
+  if (droppedDocs.length > 0) {
+    log.info({ droppedDocs }, 'documentation targets ignored');
+  }
   log.info({ edit: selection.edit, create: selection.create }, 'files selected');
 
   const current = await readCurrentFiles(dir, repoSet, selection.edit);
