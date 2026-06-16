@@ -4,16 +4,27 @@
   "tags": ["agent-platform"],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "refresh": "30s",
-  "time": { "from": "now-7d", "to": "now" },
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
   "panels": [
     {
       "id": 1,
       "title": "Total de runs",
       "type": "stat",
-      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "datasource": {
+        "type": "postgres",
+        "uid": "orchestrator_pg"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
       "targets": [
         {
           "refId": "A",
@@ -27,12 +38,25 @@
       "id": 2,
       "title": "Completos",
       "type": "stat",
-      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
+      "datasource": {
+        "type": "postgres",
+        "uid": "orchestrator_pg"
+      },
       "fieldConfig": {
-        "defaults": { "color": { "mode": "fixed", "fixedColor": "green" } },
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "green"
+          }
+        },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
       "targets": [
         {
           "refId": "A",
@@ -46,12 +70,25 @@
       "id": 3,
       "title": "Falhas",
       "type": "stat",
-      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
+      "datasource": {
+        "type": "postgres",
+        "uid": "orchestrator_pg"
+      },
       "fieldConfig": {
-        "defaults": { "color": { "mode": "fixed", "fixedColor": "red" } },
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "red"
+          }
+        },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
       "targets": [
         {
           "refId": "A",
@@ -65,8 +102,16 @@
       "id": 4,
       "title": "Duração média das etapas (s)",
       "type": "stat",
-      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "datasource": {
+        "type": "postgres",
+        "uid": "orchestrator_pg"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
       "targets": [
         {
           "refId": "A",
@@ -80,8 +125,16 @@
       "id": 5,
       "title": "Runs por status (por hora)",
       "type": "timeseries",
-      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 4 },
+      "datasource": {
+        "type": "postgres",
+        "uid": "orchestrator_pg"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      },
       "targets": [
         {
           "refId": "A",
@@ -93,16 +146,24 @@
     },
     {
       "id": 6,
-      "title": "Execuções recentes",
+      "title": "Execuções recentes + sandbox",
       "type": "table",
-      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 12 },
+      "datasource": {
+        "type": "postgres",
+        "uid": "orchestrator_pg"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 12
+      },
       "targets": [
         {
           "refId": "A",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT created_at, linear_issue_identifier AS issue, title, status, branch, pr_url FROM runs ORDER BY created_at DESC LIMIT 50;"
+          "rawSql": "SELECT created_at, linear_issue_identifier AS issue, title, status, branch, pr_url, sandbox_backend, sandbox_image, round((sandbox_total_duration_ms / 1000.0)::numeric, 1) AS sandbox_s, sandbox_command_count, sandbox_failed_command FROM runs ORDER BY created_at DESC LIMIT 50;"
         }
       ]
     },
@@ -110,23 +171,42 @@
       "id": 7,
       "title": "Taxa de sucesso (%)",
       "type": "stat",
-      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
+      "datasource": {
+        "type": "postgres",
+        "uid": "orchestrator_pg"
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "red", "value": null },
-              { "color": "yellow", "value": 50 },
-              { "color": "green", "value": 80 }
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 50
+              },
+              {
+                "color": "green",
+                "value": 80
+              }
             ]
           }
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 22 },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 22
+      },
       "targets": [
         {
           "refId": "A",
@@ -140,18 +220,130 @@
       "id": 8,
       "title": "Runs ativos agora",
       "type": "stat",
-      "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
+      "datasource": {
+        "type": "postgres",
+        "uid": "orchestrator_pg"
+      },
       "fieldConfig": {
-        "defaults": { "color": { "mode": "fixed", "fixedColor": "blue" } },
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          }
+        },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 22 },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 22
+      },
       "targets": [
         {
           "refId": "A",
           "format": "table",
           "rawQuery": true,
           "rawSql": "SELECT count(*) AS \"ativos\" FROM runs WHERE status IN ('pending','planning','awaiting_approval','executing','reviewing')"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Sandbox backend atual",
+      "type": "piechart",
+      "datasource": {
+        "type": "postgres",
+        "uid": "orchestrator_pg"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 0,
+        "y": 26
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT coalesce(sandbox_backend, 'unknown') AS metric, count(*) AS value FROM runs GROUP BY 1 ORDER BY value DESC;"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Sandbox duração média / p95 (s)",
+      "type": "stat",
+      "datasource": {
+        "type": "postgres",
+        "uid": "orchestrator_pg"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 8,
+        "y": 26
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT round(avg(sandbox_total_duration_ms / 1000.0)::numeric, 1) AS media_s, round(percentile_cont(0.95) WITHIN GROUP (ORDER BY sandbox_total_duration_ms / 1000.0)::numeric, 1) AS p95_s FROM runs WHERE sandbox_total_duration_ms IS NOT NULL;"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "title": "Sandbox falhas por comando",
+      "type": "barchart",
+      "datasource": {
+        "type": "postgres",
+        "uid": "orchestrator_pg"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 16,
+        "y": 26
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT coalesce(sandbox_failed_command, '(sem falha)') AS metric, count(*) AS value FROM runs WHERE sandbox_backend IS NOT NULL GROUP BY 1 ORDER BY value DESC LIMIT 10;"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "title": "Duração sandbox por run (s)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "postgres",
+        "uid": "orchestrator_pg"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 32
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT created_at AS time, linear_issue_identifier AS metric, sandbox_total_duration_ms / 1000.0 AS value FROM runs WHERE $__timeFilter(created_at) AND sandbox_total_duration_ms IS NOT NULL ORDER BY created_at;"
         }
       ]
     }

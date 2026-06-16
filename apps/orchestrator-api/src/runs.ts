@@ -123,6 +123,15 @@ export async function updateRunStatus(
     testsPassed?: boolean;
     verdict?: string;
     fixAttempts?: number;
+    sandbox?: {
+      backend: 'process' | 'docker';
+      image?: string;
+      network?: string;
+      commandCount: number;
+      totalDurationMs: number;
+      maxCommandDurationMs: number;
+      failedCommand?: string;
+    };
   },
 ): Promise<void> {
   await db
@@ -135,6 +144,17 @@ export async function updateRunStatus(
       ...(extra?.testsPassed !== undefined ? { testsPassed: extra.testsPassed } : {}),
       ...(extra?.verdict !== undefined ? { verdict: extra.verdict } : {}),
       ...(extra?.fixAttempts !== undefined ? { fixAttempts: extra.fixAttempts } : {}),
+      ...(extra?.sandbox
+        ? {
+            sandboxBackend: extra.sandbox.backend,
+            sandboxImage: extra.sandbox.image,
+            sandboxNetwork: extra.sandbox.network,
+            sandboxCommandCount: extra.sandbox.commandCount,
+            sandboxTotalDurationMs: extra.sandbox.totalDurationMs,
+            sandboxMaxCommandDurationMs: extra.sandbox.maxCommandDurationMs,
+            sandboxFailedCommand: extra.sandbox.failedCommand,
+          }
+        : {}),
     })
     .where(eq(schema.runs.id, runId));
 }

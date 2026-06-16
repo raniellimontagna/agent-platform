@@ -29,3 +29,6 @@ drizzle/meta/_journal.json.bak
 
 # RTK
 .rtk/gain.json
+
+# Local MCP session state
+.mcp/
