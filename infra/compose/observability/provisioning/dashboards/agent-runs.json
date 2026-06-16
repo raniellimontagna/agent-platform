@@ -1,7 +1,9 @@
 {
   "uid": "agent-runs",
   "title": "Agent Platform — Execuções",
-  "tags": ["agent-platform"],
+  "tags": [
+    "agent-platform"
+  ],
   "timezone": "browser",
   "schemaVersion": 39,
   "version": 2,
@@ -344,6 +346,109 @@
           "format": "time_series",
           "rawQuery": true,
           "rawSql": "SELECT created_at AS time, linear_issue_identifier AS metric, sandbox_total_duration_ms / 1000.0 AS value FROM runs WHERE $__timeFilter(created_at) AND sandbox_total_duration_ms IS NOT NULL ORDER BY created_at;"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "title": "Auto-merge opt-in (%)",
+      "type": "stat",
+      "datasource": {
+        "type": "postgres",
+        "uid": "orchestrator_pg"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 22
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT round(100.0 * count(*) FILTER (WHERE auto_merge) / NULLIF(count(*), 0), 1) AS pct FROM runs;"
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "title": "Auto-merge concluido (%)",
+      "type": "stat",
+      "datasource": {
+        "type": "postgres",
+        "uid": "orchestrator_pg"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 50
+              },
+              {
+                "color": "green",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 22
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT round(100.0 * count(*) FILTER (WHERE status = 'completed') / NULLIF(count(*), 0), 1) AS pct FROM runs WHERE auto_merge;"
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "title": "Auto-merge recentes",
+      "type": "table",
+      "datasource": {
+        "type": "postgres",
+        "uid": "orchestrator_pg"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 40
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT created_at, linear_issue_identifier AS issue, status, verdict, tests_passed, pr_url, branch FROM runs WHERE auto_merge ORDER BY created_at DESC LIMIT 50;"
         }
       ]
     }
