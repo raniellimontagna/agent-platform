@@ -111,6 +111,32 @@ describe('createWorkerManager.dispatch', () => {
     expect(posts).toBe(1);
   });
 
+  it('aplica timeout configurável no POST síncrono do job', async () => {
+    vi.useFakeTimers();
+    const fetchImpl = vi.fn((url: string, init?: RequestInit) => {
+      if (url.endsWith('/health')) return Promise.resolve(res({ ok: true }));
+      return new Promise<Response>((_, reject) => {
+        init?.signal?.addEventListener('abort', () => reject(new Error('aborted')));
+      });
+    }) as unknown as typeof fetch;
+    const wm = createWorkerManager({
+      baseUrls: ['http://a'],
+      authToken: 'tok',
+      fetchImpl,
+      jobTimeoutMs: 50,
+    });
+
+    const dispatched = wm.dispatch(body);
+    const rejected = expect(dispatched).rejects.toThrow('aborted');
+    await vi.advanceTimersByTimeAsync(50);
+    await rejected;
+    expect(fetchImpl).toHaveBeenCalledWith(
+      'http://a/jobs/sync',
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+    vi.useRealTimers();
+  });
+
   it('lança quando todos estão fora', async () => {
     const fetchImpl = vi.fn(async () => res({ ok: false, status: 503 })) as unknown as typeof fetch;
     const wm = createWorkerManager({
