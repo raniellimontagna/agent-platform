@@ -158,6 +158,15 @@ describe('selectFixCandidateFiles', () => {
     ).toEqual(['apps/worker-code/src/eval/scoring.ts']);
   });
 
+  it('usa sufixo de caminho quando o erro vem relativo ao pacote', () => {
+    expect(
+      selectFixCandidateFiles(
+        ['apps/worker-code/src/eval/runEval.ts', 'apps/worker-code/src/eval/scoring.ts'],
+        "src/eval/scoring.ts(224,27): error TS18048: 'command' is possibly 'undefined'.",
+      ),
+    ).toEqual(['apps/worker-code/src/eval/scoring.ts']);
+  });
+
   it('limita o fallback quando não consegue inferir arquivos do erro', () => {
     const files = Array.from({ length: 10 }, (_, index) => `src/file${index}.ts`);
 
