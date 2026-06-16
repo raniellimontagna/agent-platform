@@ -6,6 +6,7 @@ import type { CommandResult, Job, JobResult } from '../types.js';
 import { applyFix, generateAndApplyCode } from './codegen.js';
 import { checkCommand } from './commandPolicy.js';
 import { commitAll, diffAgainst, pushBranch } from './git.js';
+import { summarizeFailureTail } from './validation.js';
 import { prepareWorktree, runCommand } from './worktree.js';
 
 const llm = createLlmClient({
@@ -18,17 +19,6 @@ const llm = createLlmClient({
 const COMMAND_ALLOWLIST = env.AGENT_COMMAND_ALLOWLIST.split(',')
   .map((b) => b.trim())
   .filter(Boolean);
-
-/**
- * Tail do primeiro comando que falhou: linha do comando + final do stderr (ou
- * stdout). É o contexto de erro que alimenta o self-correction. Exportado p/ teste.
- */
-export function summarizeFailureTail(commands: CommandResult[]): string {
-  const failed = commands.find((c) => c.exitCode !== 0);
-  if (!failed) return '';
-  const tail = (failed.stderr || failed.stdout || '').trim().slice(-1500);
-  return `$ ${failed.command}\n${tail}`;
-}
 
 /**
  * Roda um comando do job aplicando a allowlist (MAC-31). Comando bloqueado não
@@ -48,6 +38,8 @@ async function runGuarded(command: string, dir: string, log: Logger): Promise<Co
   }
   return runCommand(command, dir);
 }
+
+export { summarizeFailureTail };
 
 /**
  * Roda os comandos de validação no worktree. Para no primeiro que falhar (build
