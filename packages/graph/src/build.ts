@@ -4,10 +4,10 @@ import type { LlmClient } from '@agent-platform/llm';
 import { END, START, StateGraph } from '@langchain/langgraph';
 import { PostgresSaver } from '@langchain/langgraph-checkpoint-postgres';
 import { type DispatchFn, makeCoderNode } from './nodes/coder.js';
+import { makeMergingNode } from './nodes/merging.js';
 import { makePlannerNode } from './nodes/planner.js';
 import { makePrNode } from './nodes/pr.js';
 import { makeReportNode } from './nodes/report.js';
-import { makeMergingNode } from './nodes/merging.js';
 import { makeReviewNode } from './nodes/review.js';
 import { AgentState } from './state.js';
 
@@ -76,40 +76,46 @@ export function buildAgentGraph(deps: GraphDeps, checkpointer: PostgresSaver) {
     linear: deps.linear,
     baseBranch: deps.baseBranch ?? 'main',
   });
-  const merging = makeMergingNode({ github: deps.github, linear: deps.linear, doneStateId: deps.doneStateId });
+  const merging = makeMergingNode({
+    github: deps.github,
+    linear: deps.linear,
+    doneStateId: deps.doneStateId,
+  });
   const report = makeReportNode({ linear: deps.linear });
 
-  return new StateGraph(AgentState)
-    .addNode('planning', planning)
-    .addNode('coding', coding)
-    .addNode('revising', revising)
-    .addNode('reviewing', review)
-    .addNode('pr', pr)
-    .addNode('merging', merging)
-    .addNode('report', report)
-    .addEdge(START, 'planning')
-    .addEdge('planning', 'coding')
-    .addConditionalEdges(
-      'coding',
-      (state) => (state.status === 'failed' ? 'report' : 'reviewing'),
-      { reviewing: 'reviewing', report: 'report' },
-    )
-    // MAC-59: o critic decide revisar (volta pro coder em modo revisão) ou seguir.
-    .addConditionalEdges(
-      'reviewing',
-      (state) => (state.nextAfterReview === 'coding' ? 'revising' : 'pr'),
-      { revising: 'revising', pr: 'pr' },
-    )
-    // O nó de revisão (fora do interruptBefore) re-revisa; falha vai pro report.
-    .addConditionalEdges(
-      'revising',
-      (state) => (state.status === 'failed' ? 'report' : 'reviewing'),
-      { reviewing: 'reviewing', report: 'report' },
-    )
-    .addEdge('pr', 'merging')
-    .addEdge('merging', 'report')
-    .addEdge('report', END)
-    .compile({ checkpointer, interruptBefore: ['coding'] });
+  return (
+    new StateGraph(AgentState)
+      .addNode('planning', planning)
+      .addNode('coding', coding)
+      .addNode('revising', revising)
+      .addNode('reviewing', review)
+      .addNode('pr', pr)
+      .addNode('merging', merging)
+      .addNode('report', report)
+      .addEdge(START, 'planning')
+      .addEdge('planning', 'coding')
+      .addConditionalEdges(
+        'coding',
+        (state) => (state.status === 'failed' ? 'report' : 'reviewing'),
+        { reviewing: 'reviewing', report: 'report' },
+      )
+      // MAC-59: o critic decide revisar (volta pro coder em modo revisão) ou seguir.
+      .addConditionalEdges(
+        'reviewing',
+        (state) => (state.nextAfterReview === 'coding' ? 'revising' : 'pr'),
+        { revising: 'revising', pr: 'pr' },
+      )
+      // O nó de revisão (fora do interruptBefore) re-revisa; falha vai pro report.
+      .addConditionalEdges(
+        'revising',
+        (state) => (state.status === 'failed' ? 'report' : 'reviewing'),
+        { reviewing: 'reviewing', report: 'report' },
+      )
+      .addEdge('pr', 'merging')
+      .addEdge('merging', 'report')
+      .addEdge('report', END)
+      .compile({ checkpointer, interruptBefore: ['coding'] })
+  );
 }
 
 export type AgentGraph = ReturnType<typeof buildAgentGraph>;

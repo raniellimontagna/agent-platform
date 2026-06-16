@@ -21,10 +21,7 @@ describe('decideAfterReview', () => {
   });
 
   it('REPROVADO com rounds == teto → pr', () => {
-    const r = decideAfterReview(
-      { ...base, reviewRounds: 1, review: 'Veredito: REPROVADO' },
-      opts,
-    );
+    const r = decideAfterReview({ ...base, reviewRounds: 1, review: 'Veredito: REPROVADO' }, opts);
     expect(r).toBe('pr');
   });
 
@@ -38,10 +35,7 @@ describe('decideAfterReview', () => {
   });
 
   it('custo acumulado >= teto → pr', () => {
-    const r = decideAfterReview(
-      { ...base, review: 'Veredito: REPROVADO', totalCostUsd: 2 },
-      opts,
-    );
+    const r = decideAfterReview({ ...base, review: 'Veredito: REPROVADO', totalCostUsd: 2 }, opts);
     expect(r).toBe('pr');
   });
 

@@ -112,7 +112,18 @@
       "type": "stat",
       "datasource": { "type": "postgres", "uid": "orchestrator_pg" },
       "fieldConfig": {
-        "defaults": { "unit": "percent", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "yellow", "value": 50 }, { "color": "green", "value": 80 } ] } },
+        "defaults": {
+          "unit": "percent",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 50 },
+              { "color": "green", "value": 80 }
+            ]
+          }
+        },
         "overrides": []
       },
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 22 },

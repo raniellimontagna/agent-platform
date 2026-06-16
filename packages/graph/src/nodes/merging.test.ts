@@ -9,8 +9,13 @@ function deps() {
   };
 }
 const okState = {
-  autoMerge: true, testsPassed: true, review: 'Veredito: APROVADO',
-  prNumber: 7, branch: 'agent/x', issueId: 'iss', status: 'completed',
+  autoMerge: true,
+  testsPassed: true,
+  review: 'Veredito: APROVADO',
+  prNumber: 7,
+  branch: 'agent/x',
+  issueId: 'iss',
+  status: 'completed',
 };
 
 describe('makeMergingNode', () => {
@@ -33,7 +38,9 @@ describe('makeMergingNode', () => {
 
   it('merge falha → comenta e segue (non-fatal, não lança)', async () => {
     const d = deps();
-    d.github.mergePullRequest = vi.fn(async () => { throw new Error('not mergeable'); });
+    d.github.mergePullRequest = vi.fn(async () => {
+      throw new Error('not mergeable');
+    });
     const out = await makeMergingNode(d as never)(okState as never);
     expect(d.linear.comment).toHaveBeenCalled();
     expect(d.github.deleteBranch).not.toHaveBeenCalled();

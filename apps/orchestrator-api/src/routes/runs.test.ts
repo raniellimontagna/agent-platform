@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { runsRoute } from './runs.js';
 import { getRun, listRunStepCosts, listRuns } from '../runs.js';
+import { runsRoute } from './runs.js';
 
 vi.mock('../lessonLoader.js', () => ({
   retrieveLessons: vi.fn(),

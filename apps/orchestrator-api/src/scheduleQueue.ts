@@ -18,7 +18,11 @@ export const scheduleQueue = new Queue<ScheduleFireData, unknown, string>(SCHEDU
  * Cria/atualiza o Job Scheduler de um agendamento (cron vive no Redis).
  * A key é o id do schedule — upsert é idempotente (reagendar = re-upsert).
  */
-export async function upsertScheduleJob(s: { id: string; cron: string; tz: string }): Promise<void> {
+export async function upsertScheduleJob(s: {
+  id: string;
+  cron: string;
+  tz: string;
+}): Promise<void> {
   await scheduleQueue.upsertJobScheduler(
     s.id,
     { pattern: s.cron, tz: s.tz },

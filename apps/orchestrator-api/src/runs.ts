@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray, sql } from 'drizzle-orm';
-import { db, schema } from './db/client.js';
 import { resolveDefaultAgent } from './agents.js';
+import { db, schema } from './db/client.js';
 
 export type RunStatus = (typeof schema.runStatus.enumValues)[number];
 export type StepType = (typeof schema.stepType.enumValues)[number];
@@ -172,14 +172,11 @@ export async function runStats(): Promise<RunStats> {
   const [costRow] = await db
     .select({
       totalCostUsd: sql<string>`coalesce(sum(${schema.runSteps.costUsd}), 0)`,
-      costLast24hUsd:
-        sql<string>`coalesce(sum(case when ${schema.runSteps.createdAt} >= now() - interval '24 hours' then ${schema.runSteps.costUsd} else 0 end), 0)`,
+      costLast24hUsd: sql<string>`coalesce(sum(case when ${schema.runSteps.createdAt} >= now() - interval '24 hours' then ${schema.runSteps.costUsd} else 0 end), 0)`,
     })
     .from(schema.runSteps);
 
-  const [lessonsRow] = await db
-    .select({ total: sql<string>`count(*)` })
-    .from(schema.lessons);
+  const [lessonsRow] = await db.select({ total: sql<string>`count(*)` }).from(schema.lessons);
 
   const [fixAttemptsRow] = await db
     .select({ avg: sql<string>`coalesce(avg(${schema.runs.fixAttempts}), 0)` })

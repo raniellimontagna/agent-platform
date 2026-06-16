@@ -1,6 +1,12 @@
 import { Hono } from 'hono';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AgentExistsError, createAgent, getAgent, listAgents, updateAgentStatus } from '../agents.js';
+import {
+  AgentExistsError,
+  createAgent,
+  getAgent,
+  listAgents,
+  updateAgentStatus,
+} from '../agents.js';
 import { agentsRoute } from './agents.js';
 
 vi.mock('../agents.js', async (orig) => ({

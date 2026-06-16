@@ -93,8 +93,7 @@ export async function ensureDefaultAgent(): Promise<void> {
     .values({
       key: env.AGENT_KEY,
       version: 'v1',
-      description:
-        'Pipeline LangGraph atual (planner→coder→reviewing→revising→pr→report)',
+      description: 'Pipeline LangGraph atual (planner→coder→reviewing→revising→pr→report)',
       capabilities: ['typescript', 'node', 'hono', 'feature', 'bugfix', 'refactor', 'single-repo'],
     })
     .onConflictDoNothing({ target: [schema.agents.key, schema.agents.version] });

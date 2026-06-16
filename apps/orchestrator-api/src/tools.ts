@@ -2,7 +2,7 @@ import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db, schema } from './db/client.js';
 import { isUniqueViolation } from './db/pgError.js';
-import type { Tool, NewTool } from './db/schema.js';
+import type { NewTool, Tool } from './db/schema.js';
 
 export type ToolRisk = (typeof schema.toolRisk.enumValues)[number];
 export type ToolStatus = (typeof schema.toolStatus.enumValues)[number];
@@ -92,11 +92,41 @@ export async function updateToolStatus(id: string, status: ToolStatus): Promise<
 
 /** Tools default = as 5 do allowlist do runner (AGENT_COMMAND_ALLOWLIST). */
 const DEFAULT_TOOLS: NewTool[] = [
-  { key: 'git', version: 'v1', risk: 'caution', scopes: ['vcs', 'fs_write'], description: 'Controle de versão (clone/commit/push).' },
-  { key: 'pnpm', version: 'v1', risk: 'dangerous', scopes: ['network', 'exec', 'fs_write'], description: 'Gerenciador de pacotes (install/build/test).' },
-  { key: 'npm', version: 'v1', risk: 'dangerous', scopes: ['network', 'exec', 'fs_write'], description: 'Gerenciador de pacotes Node.' },
-  { key: 'npx', version: 'v1', risk: 'dangerous', scopes: ['network', 'exec', 'fs_write'], description: 'Executor de binários de pacote.' },
-  { key: 'node', version: 'v1', risk: 'caution', scopes: ['exec'], description: 'Runtime JavaScript.' },
+  {
+    key: 'git',
+    version: 'v1',
+    risk: 'caution',
+    scopes: ['vcs', 'fs_write'],
+    description: 'Controle de versão (clone/commit/push).',
+  },
+  {
+    key: 'pnpm',
+    version: 'v1',
+    risk: 'dangerous',
+    scopes: ['network', 'exec', 'fs_write'],
+    description: 'Gerenciador de pacotes (install/build/test).',
+  },
+  {
+    key: 'npm',
+    version: 'v1',
+    risk: 'dangerous',
+    scopes: ['network', 'exec', 'fs_write'],
+    description: 'Gerenciador de pacotes Node.',
+  },
+  {
+    key: 'npx',
+    version: 'v1',
+    risk: 'dangerous',
+    scopes: ['network', 'exec', 'fs_write'],
+    description: 'Executor de binários de pacote.',
+  },
+  {
+    key: 'node',
+    version: 'v1',
+    risk: 'caution',
+    scopes: ['exec'],
+    description: 'Runtime JavaScript.',
+  },
 ];
 
 /** Insere as tools default se não existirem. Idempotente. */

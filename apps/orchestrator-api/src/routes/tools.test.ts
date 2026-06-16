@@ -77,7 +77,12 @@ describe('POST /tools', () => {
       body: JSON.stringify({ key: 'k', version: 'v1', risk: 'safe', scopes: ['exec'] }),
     });
     expect(res.status).toBe(201);
-    expect(createTool).toHaveBeenCalledWith({ key: 'k', version: 'v1', risk: 'safe', scopes: ['exec'] });
+    expect(createTool).toHaveBeenCalledWith({
+      key: 'k',
+      version: 'v1',
+      risk: 'safe',
+      scopes: ['exec'],
+    });
   });
 
   it('400 com payload inválido', async () => {

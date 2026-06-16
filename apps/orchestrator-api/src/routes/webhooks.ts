@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { Hono } from 'hono';
+import { isUniqueViolation } from '../db/pgError.js';
 import { env } from '../env.js';
 import { isPaused } from '../killswitch.js';
 import { logger } from '../logger.js';
@@ -12,7 +13,6 @@ import {
   resolveApproval,
   updateRunStatus,
 } from '../runs.js';
-import { isUniqueViolation } from '../db/pgError.js';
 
 export const webhooks = new Hono();
 

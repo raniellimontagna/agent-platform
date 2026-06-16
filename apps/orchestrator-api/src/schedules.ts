@@ -55,12 +55,19 @@ export async function listSchedules(opts?: { enabledOnly?: boolean }): Promise<s
 
 /** Um agendamento pelo id (null se não existe). */
 export async function getSchedule(id: string): Promise<schema.Schedule | null> {
-  const [row] = await db.select().from(schema.schedules).where(eq(schema.schedules.id, id)).limit(1);
+  const [row] = await db
+    .select()
+    .from(schema.schedules)
+    .where(eq(schema.schedules.id, id))
+    .limit(1);
   return row ?? null;
 }
 
 /** Atualiza campos e devolve a linha (null se não existe). */
-export async function updateSchedule(id: string, patch: SchedulePatch): Promise<schema.Schedule | null> {
+export async function updateSchedule(
+  id: string,
+  patch: SchedulePatch,
+): Promise<schema.Schedule | null> {
   const [row] = await db
     .update(schema.schedules)
     .set({
@@ -88,7 +95,10 @@ export async function deleteSchedule(id: string): Promise<boolean> {
 
 /** Marca o último disparo. */
 export async function touchSchedule(id: string): Promise<void> {
-  await db.update(schema.schedules).set({ lastRunAt: new Date() }).where(eq(schema.schedules.id, id));
+  await db
+    .update(schema.schedules)
+    .set({ lastRunAt: new Date() })
+    .where(eq(schema.schedules.id, id));
 }
 
 /**
@@ -101,7 +111,9 @@ export async function hasActiveRunForSchedule(scheduleId: string): Promise<boole
   const rows = await db
     .select({ id: schema.runs.id })
     .from(schema.runs)
-    .where(and(eq(schema.runs.scheduleId, scheduleId), inArray(schema.runs.status, ACTIVE_STATUSES)))
+    .where(
+      and(eq(schema.runs.scheduleId, scheduleId), inArray(schema.runs.status, ACTIVE_STATUSES)),
+    )
     .limit(1);
   return rows.length > 0;
 }
