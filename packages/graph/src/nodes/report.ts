@@ -14,18 +14,38 @@ export function verdictOf(review?: string): string {
 }
 
 /**
+ * Ressalvas operacionais são observações de validação/evidência externa ao diff:
+ * o coder não consegue corrigir sem violar escopo ou inventar evidência. Mantém
+ * bugs/segurança/lógica/testes quebrados como bloqueantes.
+ */
+export function hasOnlyOperationalCaveats(review?: string): boolean {
+  if (!review) return false;
+  if (verdictOf(review) !== 'APROVADO COM RESSALVAS') return false;
+
+  const text = review.toLowerCase();
+  const operational =
+    /valida[cç][aã]o operacional|evid[eê]ncia|consulta ao banco|sandbox_backend|e2e real|p[oó]s-merge|processo/.test(
+      text,
+    );
+  const blocking =
+    /bug|seguran[cç]a|vulnerab|l[oó]gica incorreta|falha funcional|quebra|regress[aã]o|teste(s)? falh/.test(
+      text,
+    );
+
+  return operational && !blocking;
+}
+
+/**
  * Gate do auto-merge (MAC-67): opt-in (label → run.auto_merge) + validação ✅ +
- * critic APROVADO seco. `verdictOf` devolve o texto do veredito, então `===
- * 'APROVADO'` exclui "APROVADO COM RESSALVAS"/"REPROVADO" automaticamente.
+ * critic APROVADO seco ou ressalva operacional não bloqueante.
  */
 export function shouldAutoMerge(state: {
   autoMerge?: boolean;
   testsPassed?: boolean;
   review?: string;
 }): boolean {
-  return (
-    state.autoMerge === true && state.testsPassed === true && verdictOf(state.review) === 'APROVADO'
-  );
+  if (state.autoMerge !== true || state.testsPassed !== true) return false;
+  return verdictOf(state.review) === 'APROVADO' || hasOnlyOperationalCaveats(state.review);
 }
 
 /** Status da validação no sandbox (MAC-29) em texto curto. */

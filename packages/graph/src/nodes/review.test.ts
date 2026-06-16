@@ -20,6 +20,18 @@ describe('decideAfterReview', () => {
     expect(r).toBe('coding');
   });
 
+  it('APROVADO COM RESSALVAS só operacional → pr', () => {
+    const r = decideAfterReview(
+      {
+        ...base,
+        review:
+          'Veredito: APROVADO COM RESSALVAS\nValidação operacional ausente: anexar evidência do E2E real e consulta ao banco com sandbox_backend = docker.',
+      },
+      opts,
+    );
+    expect(r).toBe('pr');
+  });
+
   it('REPROVADO com rounds == teto → pr', () => {
     const r = decideAfterReview({ ...base, reviewRounds: 1, review: 'Veredito: REPROVADO' }, opts);
     expect(r).toBe('pr');
