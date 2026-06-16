@@ -137,6 +137,11 @@ export function extractJson(raw: string): unknown {
   return JSON.parse(candidate.slice(start, end + 1));
 }
 
+function hasJsonObjectStart(raw: string): boolean {
+  const candidate = raw.trim();
+  return candidate.includes('{');
+}
+
 /**
  * Chama o modelo e faz parse do JSON da resposta, com retry — o modelo às vezes
  * devolve prosa em vez de JSON limpo (flakiness). Loga a resposta crua truncada
@@ -177,7 +182,7 @@ export async function completeJson<S extends z.ZodTypeAny>(
   // Passo de "repair" (MAC-57): o modelo às vezes devolve prosa em vez de JSON.
   // Em vez de desistir, reenvia a última resposta suja pedindo SÓ o objeto JSON.
   // Model-agnostic (qualquer combo do gateway) e só roda quando os attempts falharam.
-  if (lastRaw.trim()) {
+  if (lastRaw.trim() && hasJsonObjectStart(lastRaw)) {
     try {
       log.info('repair: re-pedindo JSON limpo');
       const repaired = await llm.complete({
@@ -199,6 +204,8 @@ export async function completeJson<S extends z.ZodTypeAny>(
       lastErr = err;
       log.warn('repair falhou — sem JSON parseável');
     }
+  } else if (lastRaw.trim()) {
+    log.warn({ raw: lastRaw.slice(0, 500) }, 'repair ignorado — resposta sem objeto JSON');
   }
   throw lastErr instanceof Error ? lastErr : new Error('resposta do modelo não contém JSON');
 }
