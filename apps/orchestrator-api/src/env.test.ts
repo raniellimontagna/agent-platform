@@ -8,5 +8,6 @@ describe('env', () => {
     expect(env.NODE_ENV).toBe('test');
     expect(env.PORT).toBe(3000);
     expect(env.DATABASE_URL).toContain('postgres://');
+    expect(env.AGENT_MAX_REVIEW_ROUNDS).toBe(3);
   });
 });

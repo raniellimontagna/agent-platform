@@ -24,7 +24,7 @@ realimenta o coder → re-revisa, com teto, antes de finalizar o PR.
    `REPROVADO` quanto `APROVADO COM RESSALVAS` realimentam o coder. Decisão
    consciente do usuário (quer que passe nas ressalvas), contrabalançada pelo teto
    baixo + guarda de no-progress pra não super-iterar em nits.
-2. **Teto:** `AGENT_MAX_REVIEW_ROUNDS` (env do orchestrator, default **1**). Segue o
+2. **Teto:** `AGENT_MAX_REVIEW_ROUNDS` (env do orchestrator, default **3**). Segue o
    padrão dos outros tetos (`AGENT_MAX_FIX_ATTEMPTS`, cost guard) — flexível sem
    redeploy de código.
 3. **Estratégia incremental:** ao voltar pro coder, o runner **clona a branch de
@@ -138,7 +138,7 @@ subestimam o custo do run. Ajustar os dois campos pra somar.
 
 ## Escopo / não-objetivos
 
-- Teto baixo (default 1) — não vira ferramenta de polimento infinito.
+- Teto baixo (default 3) — permite até três tentativas sem virar ferramenta de polimento infinito.
 - Não bloqueia PR pra sempre — best-effort ao esgotar.
 - **Fora do MVP (follow-up):** coluna `review_rounds` em `runs` + painel Grafana
   (análogo a `fix_attempts`). Decidido com o usuário — não inchar o escopo agora.
