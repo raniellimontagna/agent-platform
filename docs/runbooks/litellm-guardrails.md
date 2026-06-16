@@ -8,20 +8,22 @@ Runbook para fechar budgets, rate limits e chaves de acesso do gateway LLM.
 |---|---|---|
 | `cheap_fast` | tarefas triviais / alto volume | 30 RPM / 60k TPM |
 | `cheap_fast_fb_cost_saver` | fallback barato do `cheap_fast` | 12 RPM / 40k TPM |
-| `research` | contexto, síntese e planejamento | 12 RPM / 80k TPM |
-| `strong_coder` | código comum | 8 RPM / 60k TPM |
-| `heavy_coder` | código difícil e recuperação de falhas | 4 RPM / 50k TPM |
-| `critic` | revisão final | 6 RPM / 50k TPM |
+| `research` | contexto, síntese e planejamento | 20 RPM / 60k TPM |
+| `strong_coder` | código comum | 20 RPM / 60k TPM |
+| `heavy_coder` | código difícil e recuperação de falhas | 12 RPM / 50k TPM |
+| `critic` | revisão final | 12 RPM / 50k TPM |
 
-Aliases fortes (`research`, `strong_coder`, `heavy_coder`, `critic`) têm fallback
-de último recurso para Verboo (`deepseek-v4-flash`). Esse fallback preserva
-disponibilidade quando OmniRoute/combos falham, mas a qualidade é menor e há menos
-"thinking"; trate resultados nesse modo como candidatos a revisão humana mais
-cuidadosa.
+Enquanto os combos OAuth do OmniRoute estiverem degradados, aliases fortes
+(`research`, `strong_coder`, `heavy_coder`, `critic`) usam Verboo
+(`deepseek-v4-flash`) direto. Isso preserva disponibilidade, mas a qualidade é
+menor e há menos "thinking"; trate resultados nesse modo como candidatos a revisão
+humana mais cuidadosa. Quando Antigravity/Codex/Claude estiverem saudáveis, reverta
+os aliases fortes para os combos `cost-saver`/`high-availability` e mantenha Verboo
+como fallback de último recurso.
 
 O fallback operacional vive no `router_settings` do LiteLLM. Mantenha o timeout do
 Router menor que o timeout dos clientes (`LLM_TIMEOUT_MS` do runner/orchestrator)
-para o combo degradado falhar dentro do gateway e permitir a queda para Verboo.
+para o combo degradado falhar dentro do gateway antes do cliente abortar.
 
 O proxy também tem budget global em `litellm-config.yaml`:
 
