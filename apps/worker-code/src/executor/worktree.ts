@@ -1,7 +1,6 @@
 import { spawn } from 'node:child_process';
 import { rm } from 'node:fs/promises';
 import { join } from 'node:path';
-import { env } from '../env.js';
 import type { CommandResult } from '../types.js';
 
 /** Executa um comando, capturando stdout/stderr e código de saída. */
@@ -36,7 +35,7 @@ export function runCommand(command: string, cwd: string): Promise<CommandResult>
 
 /** Diretório de worktree isolado para um run. */
 export function worktreePath(runId: string): string {
-  return join(env.RUNNER_WORKDIR, runId);
+  return join(runnerWorkdir(), runId);
 }
 
 /**
@@ -58,7 +57,7 @@ export async function prepareWorktree(args: {
   // Clona a base (main) — mantém o ref local `main` p/ calcular o diff do PR.
   const clone = await runCommand(
     `git clone --depth 1 --branch ${args.baseBranch} ${args.repoUrl} ${dir}`,
-    env.RUNNER_WORKDIR,
+    runnerWorkdir(),
   );
   if (clone.exitCode !== 0) {
     throw new Error(`git clone failed: ${clone.stderr || clone.stdout}`);
@@ -88,4 +87,10 @@ export async function prepareWorktree(args: {
 /** Remove o worktree de um run (limpeza). */
 export async function cleanupWorktree(runId: string): Promise<void> {
   await rm(worktreePath(runId), { recursive: true, force: true });
+}
+
+function runnerWorkdir(): string {
+  const value = process.env.RUNNER_WORKDIR;
+  if (!value) throw new Error('RUNNER_WORKDIR env obrigatório');
+  return value;
 }

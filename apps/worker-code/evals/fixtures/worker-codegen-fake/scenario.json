@@ -1,0 +1,35 @@
+{
+  "id": "worker-codegen-fake",
+  "title": "Dry-run com codegen real e LLM fake",
+  "description": "Exercita generateAndApplyCode e applyFix reais usando respostas JSON scriptadas.",
+  "repo": {
+    "files": {
+      "package.json": "{\"type\":\"module\",\"scripts\":{\"test\":\"node math.test.js\"}}\n",
+      "math.js": "export function double(value) {\n  return value * 2;\n}\n",
+      "math.test.js": "import { double, triple } from './math.js';\nif (double(4) !== 8) throw new Error('double failed');\nif (triple(4) !== 12) throw new Error('triple failed');\n"
+    }
+  },
+  "workerDryRun": {
+    "plan": "Adicionar a função triple em math.js preservando double.",
+    "branch": "agent/eval-worker-codegen-fake",
+    "prTitle": "feat(eval): add triple helper",
+    "summary": "Adiciona triple via codegen fake.",
+    "llmResponses": [
+      "{\"edit\":[\"math.js\"],\"create\":[]}",
+      "{\"prTitle\":\"feat(eval): add triple helper\",\"summary\":\"Adiciona triple via codegen fake.\",\"files\":[{\"path\":\"math.js\",\"content\":\"export function double(value) {\\n  return value * 2;\\n}\\n\\nexport function triple(value) {\\n  return value * 2;\\n}\\n\"}]}",
+      "{\"summary\":\"Corrige triple para multiplicar por 3.\",\"files\":[{\"path\":\"math.js\",\"content\":\"export function double(value) {\\n  return value * 2;\\n}\\n\\nexport function triple(value) {\\n  return value * 3;\\n}\\n\"}]}"
+    ],
+    "maxFixAttempts": 2
+  },
+  "commands": ["node math.test.js"],
+  "expected": {
+    "changedFiles": ["math.js"],
+    "forbiddenFiles": ["package.json"],
+    "requiredContent": [
+      {
+        "path": "math.js",
+        "includes": "return value * 3"
+      }
+    ]
+  }
+}

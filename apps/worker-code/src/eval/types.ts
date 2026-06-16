@@ -26,6 +26,7 @@ export const evalScenarioSchema = z.object({
       prTitle: z.string().min(1),
       summary: z.string().default(''),
       files: z.array(evalFileSchema).default([]),
+      llmResponses: z.array(z.string()).default([]),
       fixes: z
         .array(
           z.object({
