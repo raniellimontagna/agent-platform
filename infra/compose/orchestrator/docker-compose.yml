@@ -25,6 +25,8 @@ services:
       LINEAR_SCHEDULED_LABEL_ID: ${LINEAR_SCHEDULED_LABEL_ID}
       AGENT_KEY: ${AGENT_KEY:-coder-agent}
       AGENT_MAX_CONCURRENCY: ${AGENT_MAX_CONCURRENCY:-3}
+      LINEAR_AUTO_MERGE_LABEL_ID: ${LINEAR_AUTO_MERGE_LABEL_ID}
+      LINEAR_DONE_STATE_ID: ${LINEAR_DONE_STATE_ID:-79e3b949-6f1f-469d-902d-71d135d18cae}
       # MAC-45: modelo de embedding é baked na imagem (/app/.hf-cache, ver Dockerfile)
       # — sem download em runtime nem volume. HF_HOME só p/ override manual.
     volumes:

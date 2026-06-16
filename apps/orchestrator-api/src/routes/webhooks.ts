@@ -132,6 +132,7 @@ webhooks.post('/webhooks/linear', async (c) => {
       linearIssueId: issueId,
       linearIssueIdentifier: payload.data?.identifier ?? issueId,
       title: payload.data?.title ?? '(sem título)',
+      autoMerge: hasLabel(payload.data, 'auto-merge', env.LINEAR_AUTO_MERGE_LABEL_ID ?? ''),
     });
   } catch (err) {
     // MAC-47: índice único de issue ativa — webhook concorrente da mesma issue.
