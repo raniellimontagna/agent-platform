@@ -19,12 +19,21 @@ disponibilidade quando OmniRoute/combos falham, mas a qualidade é menor e há m
 "thinking"; trate resultados nesse modo como candidatos a revisão humana mais
 cuidadosa.
 
+O fallback operacional vive no `router_settings` do LiteLLM. Mantenha o timeout do
+Router menor que o timeout dos clientes (`LLM_TIMEOUT_MS` do runner/orchestrator)
+para o combo degradado falhar dentro do gateway e permitir a queda para Verboo.
+
 O proxy também tem budget global em `litellm-config.yaml`:
 
 ```yaml
 litellm_settings:
+  request_timeout: 45
+  num_retries: 0
   max_budget: 25.0
   budget_duration: 30d
+router_settings:
+  timeout: 45
+  num_retries: 0
 ```
 
 Esse valor é um disjuntor de MVP. Ajuste para cima quando o consumo real estiver

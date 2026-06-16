@@ -94,10 +94,16 @@ model_list:
 
 litellm_settings:
   drop_params: true
-  request_timeout: 90
+  request_timeout: 45
   num_retries: 0
   max_budget: 25.0
   budget_duration: 30d
+
+router_settings:
+  # Fallback é responsabilidade do Router. Timeouts curtos evitam ficar preso
+  # em combo OAuth degradado e deixam Verboo assumir como cota de segurança.
+  timeout: 45
+  num_retries: 0
   fallbacks:
     - cheap_fast: ["cheap_fast_fb_cost_saver"]
     - research: ["research_fb_verboo"]
