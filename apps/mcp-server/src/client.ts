@@ -72,10 +72,14 @@ export function createClient(cfg: ClientConfig): OrchestratorClient {
     getRunSteps: (runId) => call('GET', `/runs/${id(runId)}/steps`),
     getRunApprovals: (runId) => call('GET', `/runs/${id(runId)}/approvals`),
     listLessons: (repo, limit, q) => call('GET', `/lessons${query({ repo, limit, query: q })}`),
-    listAgents: (filter) => call('GET', `/agents${query({ key: filter?.key, status: filter?.status })}`),
+    listAgents: (filter) =>
+      call('GET', `/agents${query({ key: filter?.key, status: filter?.status })}`),
     getAgent: (agentId) => call('GET', `/agents/${id(agentId)}`),
     listTools: (filter) =>
-      call('GET', `/tools${query({ key: filter?.key, status: filter?.status, risk: filter?.risk })}`),
+      call(
+        'GET',
+        `/tools${query({ key: filter?.key, status: filter?.status, risk: filter?.risk })}`,
+      ),
     getTool: (toolId) => call('GET', `/tools/${id(toolId)}`),
     agentStatus: () => call('GET', '/admin/status'),
     agentConcurrency: () => call('GET', '/admin/concurrency'),

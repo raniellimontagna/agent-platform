@@ -262,7 +262,10 @@ async function readCurrentFiles(
 }
 
 /** Escreve os arquivos no worktree e devolve os caminhos aplicados (DRY codegen/fix). */
-async function applyFiles(dir: string, files: { path: string; content: string }[]): Promise<string[]> {
+async function applyFiles(
+  dir: string,
+  files: { path: string; content: string }[],
+): Promise<string[]> {
   const applied: string[] = [];
   for (const file of files) {
     const full = safeJoin(dir, file.path);
@@ -399,7 +402,9 @@ export async function applyFix(args: FixArgs): Promise<FixResult> {
       // arquivo sumiu entre escrita e releitura — ignora.
     }
   }
-  const currentBlock = current.map((f) => `\n## ${f.path}\n\`\`\`\n${f.content}\n\`\`\``).join('\n');
+  const currentBlock = current
+    .map((f) => `\n## ${f.path}\n\`\`\`\n${f.content}\n\`\`\``)
+    .join('\n');
 
   const usage: TokenUsage = { promptTokens: 0, completionTokens: 0 };
   log.info({ files: filesChanged.length }, 'requesting fix');

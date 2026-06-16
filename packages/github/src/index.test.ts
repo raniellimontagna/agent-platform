@@ -6,7 +6,11 @@ const gw = () => createGithubGateway('tkn', { owner: 'o', repo: 'r' });
 afterEach(() => vi.unstubAllGlobals());
 
 function stubFetch(status: number, body = '') {
-  const f = vi.fn(async () => ({ ok: status >= 200 && status < 300, status, text: async () => body }));
+  const f = vi.fn(async () => ({
+    ok: status >= 200 && status < 300,
+    status,
+    text: async () => body,
+  }));
   vi.stubGlobal('fetch', f);
   return f;
 }

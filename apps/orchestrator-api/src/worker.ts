@@ -1,10 +1,9 @@
-import { Worker } from 'bullmq';
 import { parseRepoRef } from '@agent-platform/github';
 import { verdictOf } from '@agent-platform/graph';
 import { distillLesson } from '@agent-platform/memory';
+import { Worker } from 'bullmq';
 import { getAgent } from './agent.js';
 import { ensureDefaultAgent } from './agents.js';
-import { ensureDefaultTools } from './tools.js';
 import { hasCriticalReason, isCriticalReason } from './approvalPolicy.js';
 import { saveArtifacts } from './artifacts.js';
 import { env } from './env.js';
@@ -22,6 +21,7 @@ import {
   runCostUsd,
   updateRunStatus,
 } from './runs.js';
+import { ensureDefaultTools } from './tools.js';
 
 /**
  * Worker que consome a fila e roda o grafo LangGraph (MAC-14). Cada run usa

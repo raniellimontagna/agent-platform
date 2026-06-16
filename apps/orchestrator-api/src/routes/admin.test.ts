@@ -27,7 +27,11 @@ describe('GET /admin/concurrency', () => {
     vi.mocked(countRunsByStatus).mockResolvedValue({ executing: 2, completed: 5, planning: 1 });
     const res = await app.request('/admin/concurrency', { headers: auth });
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { limit: number; active: number; byStatus: Record<string, number> };
+    const body = (await res.json()) as {
+      limit: number;
+      active: number;
+      byStatus: Record<string, number>;
+    };
     expect(body.limit).toBe(3);
     expect(body.active).toBe(3); // executing 2 + planning 1
     expect(body.byStatus).toEqual({ executing: 2, completed: 5, planning: 1 });

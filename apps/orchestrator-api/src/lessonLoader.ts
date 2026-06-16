@@ -1,6 +1,6 @@
 import { LESSON_CAP, type Lesson, formatLessons } from '@agent-platform/memory';
 import { embed } from './embeddings.js';
-import { searchLessons, listLessons } from './lessons.js';
+import { listLessons, searchLessons } from './lessons.js';
 import { logger } from './logger.js';
 
 export interface RetrievalDeps {

@@ -33,6 +33,10 @@ export async function listArtifacts(runId: string) {
 
 /** Um artefato com content (null se não existe). */
 export async function getArtifact(id: string) {
-  const [row] = await db.select().from(schema.artifacts).where(eq(schema.artifacts.id, id)).limit(1);
+  const [row] = await db
+    .select()
+    .from(schema.artifacts)
+    .where(eq(schema.artifacts.id, id))
+    .limit(1);
   return row ?? null;
 }

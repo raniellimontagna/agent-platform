@@ -1,7 +1,7 @@
+import type { LlmClient } from '@agent-platform/llm';
 import { describe, expect, it } from 'vitest';
 import { type Lesson, formatLessons } from './index.js';
 import { type DistillInput, distillLesson } from './index.js';
-import type { LlmClient } from '@agent-platform/llm';
 
 function lesson(text: string, createdAt = new Date()): Lesson {
   return { id: 'x', repo: 'o/r', source: 'critic', text, runId: 'run', createdAt };
@@ -34,13 +34,19 @@ function fakeLlm(reply: string): LlmClient {
 
 describe('distillLesson', () => {
   it('devolve a regra destilada do parecer do critic', async () => {
-    const input: DistillInput = { source: 'critic', review: 'Veredito: REPROVADO\nFaltou tratar null.' };
+    const input: DistillInput = {
+      source: 'critic',
+      review: 'Veredito: REPROVADO\nFaltou tratar null.',
+    };
     const out = await distillLesson(fakeLlm('Sempre trate null em X porque quebra Y'), input);
     expect(out).toBe('Sempre trate null em X porque quebra Y');
   });
 
   it('devolve null quando o modelo responde NONE', async () => {
-    const out = await distillLesson(fakeLlm('NONE'), { source: 'validation', testSummary: 'timeout' });
+    const out = await distillLesson(fakeLlm('NONE'), {
+      source: 'validation',
+      testSummary: 'timeout',
+    });
     expect(out).toBeNull();
   });
 

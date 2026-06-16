@@ -6,17 +6,12 @@ import { logger } from './logger.js';
 import { JOB_PRIORITY, agentQueue, connection } from './queue.js';
 import { createRun } from './runs.js';
 import {
-  getSchedule,
-  hasActiveRunForSchedule,
-  listSchedules,
-  touchSchedule,
-} from './schedules.js';
-import {
   SCHEDULE_QUEUE,
   type ScheduleFireData,
   removeScheduleJob,
   upsertScheduleJob,
 } from './scheduleQueue.js';
+import { getSchedule, hasActiveRunForSchedule, listSchedules, touchSchedule } from './schedules.js';
 
 /**
  * Worker dos disparos de agendamento (MAC-38). Cada disparo: cria a issue no

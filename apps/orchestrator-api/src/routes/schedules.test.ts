@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { removeScheduleJob, upsertScheduleJob } from '../scheduleQueue.js';
 import {
   createSchedule,
   deleteSchedule,
@@ -7,7 +8,6 @@ import {
   listSchedules,
   updateSchedule,
 } from '../schedules.js';
-import { removeScheduleJob, upsertScheduleJob } from '../scheduleQueue.js';
 import { schedulesRoute } from './schedules.js';
 
 vi.mock('../schedules.js', () => ({
@@ -47,7 +47,12 @@ describe('POST /schedules', () => {
   });
 
   it('cria e registra o scheduler', async () => {
-    vi.mocked(createSchedule).mockResolvedValue({ id: 's1', cron: '0 9 * * 1', tz: 'UTC', enabled: true } as never);
+    vi.mocked(createSchedule).mockResolvedValue({
+      id: 's1',
+      cron: '0 9 * * 1',
+      tz: 'UTC',
+      enabled: true,
+    } as never);
     const res = await app.request('/schedules', {
       method: 'POST',
       headers: { ...auth, 'content-type': 'application/json' },
