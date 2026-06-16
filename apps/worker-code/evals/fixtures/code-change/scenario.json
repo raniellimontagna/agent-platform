@@ -1,0 +1,33 @@
+{
+  "id": "code-change",
+  "title": "Implementa função pequena com teste",
+  "description": "Cenário médio: alterar código e teste esperados, sem mudar configuração do pacote.",
+  "repo": {
+    "files": {
+      "package.json": "{\"type\":\"module\",\"scripts\":{\"test\":\"node math.test.js\"}}\n",
+      "math.js": "export function double(value) {\n  return value * 2;\n}\n",
+      "math.test.js": "import { double } from './math.js';\nif (double(4) !== 8) throw new Error('double failed');\n"
+    }
+  },
+  "candidate": {
+    "files": {
+      "math.js": "export function double(value) {\n  return value * 2;\n}\n\nexport function triple(value) {\n  return value * 3;\n}\n",
+      "math.test.js": "import { double, triple } from './math.js';\nif (double(4) !== 8) throw new Error('double failed');\nif (triple(4) !== 12) throw new Error('triple failed');\n"
+    }
+  },
+  "commands": ["node math.test.js"],
+  "expected": {
+    "changedFiles": ["math.js", "math.test.js"],
+    "forbiddenFiles": ["package.json"],
+    "requiredContent": [
+      {
+        "path": "math.js",
+        "includes": "function triple"
+      },
+      {
+        "path": "math.test.js",
+        "includes": "triple(4)"
+      }
+    ]
+  }
+}
