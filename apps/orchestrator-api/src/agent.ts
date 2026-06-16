@@ -63,6 +63,7 @@ async function init(): Promise<Agent> {
       loadLessons,
       maxReviewRounds: env.AGENT_MAX_REVIEW_ROUNDS,
       maxCostPerRunUsd: env.AGENT_MAX_COST_PER_RUN_USD,
+      doneStateId: env.LINEAR_DONE_STATE_ID,
       runnerRepoUrl: repoUrl,
       dispatch: workerManager.dispatch,
     },
