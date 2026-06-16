@@ -28,68 +28,68 @@ model_list:
       rpm: 12
       tpm: 40000
 
-  # --- fallback de último recurso: Verboo para aliases fortes -----------
-  # Verboo tem cota alta, mas modelo menor/menos "thinking". Use só quando
-  # OmniRoute/combos estiverem fora do ar ou sem quota.
-  - model_name: research_fb_verboo
-    litellm_params:
-      model: openai/deepseek-v4-flash
-      api_key: os.environ/VERBOO_API_KEY
-      api_base: os.environ/VERBOO_API_BASE
-      rpm: 20
-      tpm: 60000
-  - model_name: strong_coder_fb_verboo
-    litellm_params:
-      model: openai/deepseek-v4-flash
-      api_key: os.environ/VERBOO_API_KEY
-      api_base: os.environ/VERBOO_API_BASE
-      rpm: 20
-      tpm: 60000
-  - model_name: heavy_coder_fb_verboo
-    litellm_params:
-      model: openai/deepseek-v4-flash
-      api_key: os.environ/VERBOO_API_KEY
-      api_base: os.environ/VERBOO_API_BASE
-      rpm: 12
-      tpm: 50000
-  - model_name: critic_fb_verboo
-    litellm_params:
-      model: openai/deepseek-v4-flash
-      api_key: os.environ/VERBOO_API_KEY
-      api_base: os.environ/VERBOO_API_BASE
-      rpm: 12
-      tpm: 50000
-
-  # --- cost-saver: padrão para leitura, síntese e código comum ----------
-  - model_name: research
+  # --- combos OAuth: reserva para quando OmniRoute estiver saudável -------
+  - model_name: research_fb_cost_saver
     litellm_params:
       model: openai/combo/cost-saver
       api_key: os.environ/OMNIROUTE_API_KEY
       api_base: http://omniroute:20128/v1
       rpm: 12
       tpm: 80000
-  - model_name: strong_coder
+  - model_name: strong_coder_fb_cost_saver
     litellm_params:
       model: openai/combo/cost-saver
       api_key: os.environ/OMNIROUTE_API_KEY
       api_base: http://omniroute:20128/v1
       rpm: 8
       tpm: 60000
-
-  # --- high-availability: tarefas críticas e revisão final -------------
-  - model_name: heavy_coder
+  - model_name: heavy_coder_fb_high_availability
     litellm_params:
       model: openai/combo/high-availability
       api_key: os.environ/OMNIROUTE_API_KEY
       api_base: http://omniroute:20128/v1
       rpm: 4
       tpm: 50000
-  - model_name: critic
+  - model_name: critic_fb_high_availability
     litellm_params:
       model: openai/combo/high-availability
       api_key: os.environ/OMNIROUTE_API_KEY
       api_base: http://omniroute:20128/v1
       rpm: 6
+      tpm: 50000
+
+  # --- Verboo direto: padrão operacional enquanto OAuth combos degradam ---
+  # Verboo tem cota alta, mas modelo menor/menos "thinking". Mantém a
+  # plataforma disponível; revisar resultados com mais cuidado.
+  - model_name: research
+    litellm_params:
+      model: openai/deepseek-v4-flash
+      api_key: os.environ/VERBOO_API_KEY
+      api_base: os.environ/VERBOO_API_BASE
+      rpm: 20
+      tpm: 60000
+  - model_name: strong_coder
+    litellm_params:
+      model: openai/deepseek-v4-flash
+      api_key: os.environ/VERBOO_API_KEY
+      api_base: os.environ/VERBOO_API_BASE
+      rpm: 20
+      tpm: 60000
+
+  # --- tarefas críticas e revisão final ---------------------------------
+  - model_name: heavy_coder
+    litellm_params:
+      model: openai/deepseek-v4-flash
+      api_key: os.environ/VERBOO_API_KEY
+      api_base: os.environ/VERBOO_API_BASE
+      rpm: 12
+      tpm: 50000
+  - model_name: critic
+    litellm_params:
+      model: openai/deepseek-v4-flash
+      api_key: os.environ/VERBOO_API_KEY
+      api_base: os.environ/VERBOO_API_BASE
+      rpm: 12
       tpm: 50000
 
 litellm_settings:
@@ -106,10 +106,10 @@ router_settings:
   num_retries: 0
   fallbacks:
     - cheap_fast: ["cheap_fast_fb_cost_saver"]
-    - research: ["research_fb_verboo"]
-    - strong_coder: ["strong_coder_fb_verboo"]
-    - heavy_coder: ["heavy_coder_fb_verboo"]
-    - critic: ["critic_fb_verboo"]
+    - research: ["research_fb_cost_saver"]
+    - strong_coder: ["strong_coder_fb_cost_saver"]
+    - heavy_coder: ["heavy_coder_fb_high_availability"]
+    - critic: ["critic_fb_high_availability"]
 
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY
