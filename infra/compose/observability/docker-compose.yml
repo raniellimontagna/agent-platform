@@ -33,7 +33,7 @@ services:
       - "--storage.tsdb.retention.time=15d"
 
   loki:
-    image: grafana/loki:latest
+    image: grafana/loki:2.9.8
     restart: unless-stopped
     ports:
       - "3100:3100"
@@ -43,7 +43,7 @@ services:
     command: -config.file=/etc/loki/local-config.yaml
 
   promtail:
-    image: grafana/promtail:latest
+    image: grafana/promtail:2.9.8
     restart: unless-stopped
     volumes:
       - ./promtail-config.yaml:/etc/promtail/config.yaml:ro

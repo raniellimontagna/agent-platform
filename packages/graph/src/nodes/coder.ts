@@ -151,7 +151,7 @@ export function makeCoderNode(deps: CoderDeps, opts: { revise?: boolean } = {}) 
           `${result.summary ? `\n\n${result.summary}` : ''}${files}${testsBlock}${fixBlock}${errorBlock}`,
       );
 
-      return {
+      const update: Partial<AgentStateType> = {
         branch,
         commitSha: result.commitSha,
         summary: result.summary,
@@ -160,13 +160,14 @@ export function makeCoderNode(deps: CoderDeps, opts: { revise?: boolean } = {}) 
         testsPassed: result.testsPassed,
         testSummary,
         fixAttempts: result.fixAttempts,
-        sandbox: result.sandbox,
         codeCostUsd: result.costUsd,
         prTitle: result.prTitle,
         // Mantém `coding` no sucesso → roteia para o nó review (MAC-18) → pr.
         status: ok ? 'coding' : 'failed',
         error: result.error,
       };
+      if (result.sandbox) update.sandbox = result.sandbox;
+      return update;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       await deps.linear.comment(

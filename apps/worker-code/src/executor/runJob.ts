@@ -150,6 +150,7 @@ export async function runJob(job: Job): Promise<JobResult> {
           base.diff = await diffAgainst(dir, job.baseBranch);
           base.pushed = true;
           for (const r of validation.results) commands.push(r);
+          base.sandbox = summarizeSandbox(commands);
           base.testsPassed = validation.passed;
           log.info({ branch: job.branch, fixAttempts }, 'review produced no commitable changes');
           log.info({ testsPassed: validation.passed, fixAttempts }, 'validation finished');
