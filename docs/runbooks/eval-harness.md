@@ -32,3 +32,8 @@ Fixtures também podem declarar `workerDryRun`. Nesse modo o harness cria uma
 branch local, aplica uma resposta fake de codegen, roda validação, aplica fixes
 fake quando necessário, faz commit local e salva o diff. O resultado sempre traz
 `pushed: false`; GitHub e Linear não são chamados.
+
+Quando `workerDryRun.llmResponses` está presente, o harness usa o codegen real
+(`generateAndApplyCode` e `applyFix`) com um `LlmClient` fake que devolve as
+respostas JSON em ordem. Isso permite testar seleção de arquivos, aplicação de
+conteúdo e self-correction sem chamar LiteLLM.
