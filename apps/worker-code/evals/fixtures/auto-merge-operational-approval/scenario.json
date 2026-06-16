@@ -3,49 +3,66 @@
   "version": 2,
   "title": "Auto-merge allowed for operational approval-with-remarks",
   "description": "Local deterministic fixture covering a critic verdict of APROVADO COM RESSALVAS where the remarks are purely operational and must not block auto-merge.",
-  "deterministic": true,
-  "localOnly": true,
-  "externalCalls": {
-    "github": false,
-    "linear": false,
-    "litellm": false,
-    "production": false
+  "repo": {
+    "provider": "local",
+    "name": "eval-harness-local",
+    "offline": true
   },
-  "agent": {
-    "name": "Ranielli Montagna",
-    "email": "raniellimontagna@hotmail.com"
+  "candidate": {
+    "branch": "test/mac-86-auto-merge-operational-approval",
+    "pullRequest": {
+      "title": "test(eval): operational approval local fixture",
+      "body": "Deterministic local-only scenario for eval harness v2 coverage."
+    },
+    "commit": {
+      "authorName": "Ranielli Montagna",
+      "authorEmail": "raniellimontagna@hotmail.com",
+      "subject": "test(eval): add operational approval local fixture",
+      "body": "Add deterministic eval fixture for operational approval.\n\nRef: MAC-86\nCo-authored-by: Codex <noreply@openai.com>"
+    },
+    "review": {
+      "mode": "critic",
+      "maxRounds": 3,
+      "rounds": [
+        {
+          "round": 1,
+          "verdict": "APROVADO COM RESSALVAS",
+          "summary": "Operational follow-up required after merge.",
+          "remarks": [
+            {
+              "type": "operational",
+              "code": "POST_DEPLOY_MONITORING",
+              "message": "Monitor logs and metrics after deployment for the first 30 minutes."
+            }
+          ],
+          "requiresRecode": false,
+          "noop": true
+        }
+      ]
+    },
+    "deterministic": true,
+    "localOnly": true,
+    "externalCalls": {
+      "github": false,
+      "linear": false,
+      "litellm": false,
+      "production": false
+    }
   },
-  "commit": {
-    "subject": "feat(eval): enable local auto-merge verdict coverage",
-    "body": "Add deterministic eval fixture for operational approval.",
-    "ref": "Ref: MAC-85",
-    "trailers": [
-      "Co-authored-by: Codex <noreply@openai.com>"
-    ]
-  },
-  "review": {
-    "mode": "critic",
-    "maxRounds": 3,
-    "rounds": [
-      {
-        "round": 1,
-        "verdict": "APROVADO COM RESSALVAS",
-        "summary": "Operational follow-up required after merge.",
-        "remarks": [
-          {
-            "type": "operational",
-            "code": "POST_DEPLOY_MONITORING",
-            "message": "Monitor logs and metrics after deployment for the first 30 minutes."
-          }
-        ],
-        "requiresRecode": false,
-        "noop": true
-      }
-    ]
-  },
+  "commands": [
+    "offline-review-simulation"
+  ],
   "expected": {
+    "changedFiles": [],
+    "requiredContent": [
+      "APROVADO COM RESSALVAS",
+      "POST_DEPLOY_MONITORING",
+      "Ref: MAC-86",
+      "Co-authored-by: Codex <noreply@openai.com>"
+    ],
     "finalVerdict": "APROVADO COM RESSALVAS",
     "reviewOutcome": "noop",
+    "proceedToPullRequest": true,
     "autoMerge": {
       "allowed": true,
       "reason": "Only operational remarks were raised."
@@ -55,9 +72,25 @@
       "shouldRequestChanges": false
     },
     "commitChecks": {
-      "requiresRef": true,
-      "requiresCoAuthoredBy": true
+      "author": {
+        "valid": true,
+        "expected": "Ranielli Montagna <raniellimontagna@hotmail.com>"
+      },
+      "refTrailer": {
+        "valid": true,
+        "expectedPrefix": "Ref:"
+      },
+      "coAuthoredByTrailer": {
+        "valid": true,
+        "expected": "Co-authored-by: Codex <noreply@openai.com>"
+      }
     },
-    "blockReason": null
+    "blockReason": null,
+    "report": {
+      "verdict": "APROVADO COM RESSALVAS",
+      "autoMergeExpected": "allowed",
+      "blockReason": null,
+      "reviewResult": "no-op"
+    }
   }
 }

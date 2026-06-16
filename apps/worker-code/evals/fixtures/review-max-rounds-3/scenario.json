@@ -4,14 +4,17 @@
   "title": "Critic loop stops after 3 rounds and proceeds to PR",
   "mode": "local",
   "deterministic": true,
-  "externalCalls": {
-    "github": false,
-    "linear": false,
-    "litellm": false,
-    "production": false
+  "description": "Local deterministic scenario that exercises the critic loop limit and verifies the flow proceeds to PR after 3 recode rounds without using external integrations.",
+  "repo": {
+    "files": [
+      {
+        "path": "src/worker/review-loop.ts",
+        "content": "export function summarizeReview(rounds) {\n  return rounds.length;\n}\n"
+      }
+    ]
   },
-  "input": {
-    "agentMaxReviewRounds": 3,
+  "candidate": {
+    "branch": "test/mac-86-review-max-rounds-3",
     "pullRequest": {
       "number": 284,
       "title": "feat(worker): harden critic loop fixture",
@@ -20,51 +23,75 @@
     "commit": {
       "authorName": "Ranielli Montagna",
       "authorEmail": "raniellimontagna@hotmail.com",
-      "message": "feat(worker): harden critic loop fixture\n\nRef: MAC-85\nCo-authored-by: Codex <noreply@openai.com>"
+      "message": "feat(worker): harden critic loop fixture\n\nRef: MAC-86\nCo-authored-by: Codex <noreply@openai.com>"
     },
-    "reviewFlow": [
-      {
-        "round": 1,
-        "actor": "critic",
-        "verdict": "RECODE",
-        "reason": "Normalize error handling before review can pass.",
-        "requiresCodeChanges": true
-      },
-      {
-        "round": 2,
-        "actor": "critic",
-        "verdict": "RECODE",
-        "reason": "Keep iterating on naming and guard clauses.",
-        "requiresCodeChanges": true
-      },
-      {
-        "round": 3,
-        "actor": "critic",
-        "verdict": "RECODE",
-        "reason": "Remaining feedback is non-blocking after max rounds.",
-        "requiresCodeChanges": true
-      }
-    ]
+    "reviewFlow": {
+      "agentMaxReviewRounds": 3,
+      "rounds": [
+        {
+          "round": 1,
+          "actor": "critic",
+          "verdict": "RECODE",
+          "classification": "recode",
+          "reason": "Normalize error handling before review can pass.",
+          "requiresCodeChanges": true,
+          "continueReview": true
+        },
+        {
+          "round": 2,
+          "actor": "critic",
+          "verdict": "RECODE",
+          "classification": "recode",
+          "reason": "Keep iterating on naming and guard clauses.",
+          "requiresCodeChanges": true,
+          "continueReview": true
+        },
+        {
+          "round": 3,
+          "actor": "critic",
+          "verdict": "RECODE",
+          "classification": "recode",
+          "reason": "Remaining feedback is non-blocking after max rounds.",
+          "requiresCodeChanges": true,
+          "continueReview": false
+        }
+      ]
+    }
   },
+  "commands": [],
   "expected": {
-    "finalVerdict": "FOLLOW_UP_IN_PR",
-    "reviewOutcome": "max_rounds_reached",
-    "roundsExecuted": 3,
-    "proceedToPullRequest": true,
-    "autoMerge": {
-      "allowed": false,
-      "reason": "Critic requested recode in all 3 allowed rounds; follow-up must continue in PR."
-    },
-    "commitChecks": {
-      "author": true,
-      "refTrailer": true,
-      "coAuthoredByTrailer": true
-    },
-    "report": {
-      "verdict": "FOLLOW_UP_IN_PR",
-      "autoMergeExpected": "blocked",
-      "blockReason": "max review rounds reached",
-      "reviewResult": "recode"
+    "changedFiles": [],
+    "requiredContent": [],
+    "eval": {
+      "finalVerdict": "FOLLOW_UP_IN_PR",
+      "reviewOutcome": "max_rounds_reached",
+      "reviewFlowResult": "recode",
+      "roundsExecuted": 3,
+      "proceedToPullRequest": true,
+      "requiresRecode": true,
+      "autoMerge": {
+        "expected": false,
+        "blocked": true,
+        "reason": "max review rounds reached"
+      },
+      "commitChecks": {
+        "authorName": "Ranielli Montagna",
+        "authorEmail": "raniellimontagna@hotmail.com",
+        "mustContainRef": true,
+        "mustContainCoAuthoredBy": true
+      },
+      "offline": {
+        "github": false,
+        "linear": false,
+        "litellm": false,
+        "production": false
+      },
+      "report": {
+        "verdict": "FOLLOW_UP_IN_PR",
+        "autoMergeExpected": "blocked",
+        "blockReason": "max review rounds reached",
+        "reviewFlowResult": "recode"
+      }
     }
   },
   "notes": [

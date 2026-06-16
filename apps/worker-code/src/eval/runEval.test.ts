@@ -51,9 +51,9 @@ describe('renderMarkdown', () => {
         detail: 'review no-op after 3 critic rounds; proceed to PR',
       },
       {
-        name: 'commit trailers',
+        name: 'commit policy',
         passed: true,
-        detail: 'commit includes Ref: MAC-85 and Co-authored-by: Codex <noreply@openai.com>',
+        detail: 'commit includes Ref: MAC-86 and Co-authored-by: Codex <noreply@openai.com>',
       },
     ]);
 
@@ -86,11 +86,38 @@ describe('renderMarkdown', () => {
     expect(markdown).toContain('Expected auto-merge: auto-merge expected: allowed');
     expect(markdown).toContain('Review flow: review no-op after 3 critic rounds; proceed to PR');
     expect(markdown).toContain(
-      'Commit policy: commit includes Ref: MAC-85 and Co-authored-by: Codex <noreply@openai.com>',
+      'Commit policy: commit includes Ref: MAC-86 and Co-authored-by: Codex <noreply@openai.com>',
     );
     expect(markdown).toContain('Expected auto-merge: auto-merge blocked');
     expect(markdown).toContain('Block reason: ressalva não-operacional exige PR sem auto-merge');
     expect(markdown).toContain('Review flow: review requires recode before PR');
+  });
+
+  it('não inventa motivo de bloqueio quando o cenário segue para PR sem bloqueio', () => {
+    const noopResult = result('noop-v2', 100, [
+      {
+        name: 'critic verdict',
+        passed: true,
+        detail: 'APROVADO',
+      },
+      {
+        name: 'auto-merge policy',
+        passed: true,
+        detail: 'auto-merge expected: allowed',
+      },
+      {
+        name: 'review flow',
+        passed: true,
+        detail: 'review no-op; proceed to PR',
+      },
+    ]);
+
+    const markdown = renderMarkdown(report([noopResult]));
+
+    expect(markdown).toContain('Verdict: APROVADO');
+    expect(markdown).toContain('Expected auto-merge: auto-merge expected: allowed');
+    expect(markdown).toContain('Review flow: review no-op; proceed to PR');
+    expect(markdown).not.toContain('Block reason:');
   });
 });
 

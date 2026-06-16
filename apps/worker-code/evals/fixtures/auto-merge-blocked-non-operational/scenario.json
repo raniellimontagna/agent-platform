@@ -11,53 +11,77 @@
     "litellm": false,
     "production": false
   },
-  "agent": {
-    "name": "Ranielli Montagna",
-    "email": "raniellimontagna@hotmail.com"
+  "repo": {
+    "files": {
+      "src/feature.ts": "export const releaseMode = 'candidate';\n",
+      "docs/behavior.md": "# Behavior\n\nCurrent user-visible behavior is documented here.\n"
+    }
   },
-  "commit": {
-    "subject": "feat(eval): prevent merge when product remark exists",
-    "body": "Add deterministic eval fixture for blocked auto-merge.",
-    "ref": "Ref: MAC-85",
-    "trailers": [
-      "Co-authored-by: Codex <noreply@openai.com>"
-    ]
+  "candidate": {
+    "files": {
+      "src/feature.ts": "export const releaseMode = 'candidate-with-user-visible-change';\n"
+    },
+    "delete": []
   },
-  "review": {
-    "mode": "critic",
-    "maxRounds": 3,
-    "rounds": [
+  "workerDryRun": {
+    "agent": {
+      "name": "Ranielli Montagna",
+      "email": "raniellimontagna@hotmail.com"
+    },
+    "plan": "1. Update the local feature flag output.\n2. Keep the change isolated to src/feature.ts.\n3. Surface PR metadata for a blocked auto-merge path.",
+    "branch": "agent/eval-auto-merge-blocked-non-operational",
+    "prTitle": "feat(eval): block auto-merge on product remark",
+    "summary": "Simulates a local deterministic review that must open a PR instead of auto-merging.",
+    "files": [
       {
-        "round": 1,
-        "verdict": "APROVADO COM RESSALVAS",
-        "summary": "A product-facing inconsistency must be addressed before merge.",
-        "remarks": [
-          {
-            "type": "non-operational",
-            "code": "USER_VISIBLE_BEHAVIOR",
-            "message": "The change alters user-visible behavior without the required safeguard or documentation update."
-          }
-        ],
-        "requiresRecode": false,
-        "noop": true
+        "path": "src/feature.ts",
+        "content": "export const releaseMode = 'candidate-with-user-visible-change';\n"
       }
-    ]
+    ],
+    "llmResponses": [],
+    "fixes": [],
+    "maxFixAttempts": 0,
+    "commitMessage": "feat(eval): block auto-merge on product remark\n\nRef: MAC-86\nCo-authored-by: Codex <noreply@openai.com>",
+    "review": {
+      "maxRounds": 3,
+      "rounds": [
+        {
+          "verdict": "APROVADO COM RESSALVAS",
+          "rationale": "Há impacto visível ao usuário sem a salvaguarda ou documentação exigida.",
+          "caveatType": "non-operational",
+          "action": "follow_pr",
+          "autoMergeBlockedReason": "USER_VISIBLE_BEHAVIOR"
+        }
+      ]
+    }
   },
+  "commands": [],
   "expected": {
-    "finalVerdict": "APROVADO COM RESSALVAS",
-    "reviewOutcome": "follow_pr",
+    "changedFiles": [
+      "src/feature.ts"
+    ],
+    "forbiddenFiles": [],
+    "requiredContent": [
+      {
+        "path": "src/feature.ts",
+        "includes": "candidate-with-user-visible-change"
+      }
+    ],
+    "verdict": "APROVADO COM RESSALVAS",
     "autoMerge": {
-      "allowed": false,
-      "reason": "Non-operational remark blocks auto-merge."
+      "expected": false,
+      "blockReason": "USER_VISIBLE_BEHAVIOR",
+      "rationaleType": "non-operational"
     },
-    "pullRequest": {
-      "shouldOpen": true,
-      "shouldRequestChanges": false
+    "reviewFlow": {
+      "outcome": "follow_pr",
+      "criticRounds": 1
     },
-    "commitChecks": {
-      "requiresRef": true,
-      "requiresCoAuthoredBy": true
-    },
-    "blockReason": "USER_VISIBLE_BEHAVIOR"
+    "commit": {
+      "mustIncludeRef": true,
+      "mustIncludeCoAuthoredBy": true,
+      "expectedAuthorName": "Ranielli Montagna",
+      "expectedAuthorEmail": "raniellimontagna@hotmail.com"
+    }
   }
 }

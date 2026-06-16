@@ -1,7 +1,16 @@
 {
   "id": "auto-merge-approved",
+  "version": 2,
   "title": "Auto-merge when critic verdict is APROVADO",
   "description": "Local deterministic fixture for eval harness v2 covering a fully approved review with no caveats, no external integrations, and auto-merge allowed.",
+  "deterministic": true,
+  "localOnly": true,
+  "externalCalls": {
+    "github": false,
+    "linear": false,
+    "litellm": false,
+    "production": false
+  },
   "repo": {
     "files": {
       "src/index.ts": "export const status = 'pending';\n",
@@ -15,6 +24,10 @@
     "delete": []
   },
   "workerDryRun": {
+    "agent": {
+      "name": "Ranielli Montagna",
+      "email": "raniellimontagna@hotmail.com"
+    },
     "plan": "1. Update the local fixture status constant.\n2. Keep changes isolated to src/index.ts.\n3. Prepare PR metadata for an approved auto-merge path.",
     "branch": "agent/eval-auto-merge-approved",
     "prTitle": "feat(eval): approve local auto-merge fixture",
@@ -28,7 +41,7 @@
     "llmResponses": [],
     "fixes": [],
     "maxFixAttempts": 0,
-    "commitMessage": "feat(eval): approve local auto-merge fixture\n\nRef: MAC-84\nCo-authored-by: Codex <noreply@openai.com>",
+    "commitMessage": "feat(eval): approve local auto-merge fixture\n\nRef: MAC-86\nCo-authored-by: Codex <noreply@openai.com>",
     "review": {
       "maxRounds": 3,
       "rounds": [

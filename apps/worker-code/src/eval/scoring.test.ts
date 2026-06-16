@@ -62,6 +62,7 @@ describe('scoreScenario', () => {
         [
           'Verdict: APROVADO COM RESSALVAS',
           'Auto-merge: allowed',
+          'Caveat type: operational',
           'Review outcome: no-op',
           'Review rounds: 1',
         ].join('\n'),
@@ -71,7 +72,7 @@ describe('scoreScenario', () => {
         [
           'feat(eval): add local harness coverage',
           '',
-          'Ref: MAC-85',
+          'Ref: MAC-86',
           'Author: Ranielli Montagna <raniellimontagna@hotmail.com>',
           'Co-authored-by: Codex <noreply@openai.com>',
         ].join('\n'),
@@ -81,6 +82,7 @@ describe('scoreScenario', () => {
         scenario: reviewScenario({
           verdict: 'APROVADO COM RESSALVAS',
           autoMerge: 'allowed',
+          caveatType: 'operational',
           reviewOutcome: 'no-op',
           reviewRounds: 1,
         }),
@@ -96,8 +98,21 @@ describe('scoreScenario', () => {
         ),
       ).toBe(true);
       expect(
+        result.checks.some((check) => check.name === 'commit-ref:commit-message.txt' && check.passed),
+      ).toBe(true);
+      expect(
+        result.checks.some(
+          (check) => check.name === 'commit-co-authored-by:commit-message.txt' && check.passed,
+        ),
+      ).toBe(true);
+      expect(
         result.checks.some(
           (check) => check.name === 'report-content:eval-report.txt:auto-merge' && check.passed,
+        ),
+      ).toBe(true);
+      expect(
+        result.checks.some(
+          (check) => check.name === 'report-content:eval-report.txt:caveat-type' && check.passed,
         ),
       ).toBe(true);
     } finally {
@@ -105,7 +120,7 @@ describe('scoreScenario', () => {
     }
   });
 
-  it('reprova ressalva não operacional que deveria bloquear auto-merge', async () => {
+  it('reprova ressalva não operacional que deveria bloquear auto-merge sem motivo explícito', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'eval-score-'));
     try {
       await writeFile(join(dir, 'README.md'), 'hello eval harness\n');
@@ -114,6 +129,7 @@ describe('scoreScenario', () => {
         [
           'Verdict: APROVADO COM RESSALVAS',
           'Auto-merge: blocked',
+          'Caveat type: non-operational',
           'Review outcome: follow-up-pr',
           'Review rounds: 3',
         ].join('\n'),
@@ -123,7 +139,7 @@ describe('scoreScenario', () => {
         [
           'feat(eval): block auto-merge when needed',
           '',
-          'Ref: MAC-84',
+          'Ref: MAC-86',
           'Author: Ranielli Montagna <raniellimontagna@hotmail.com>',
           'Co-authored-by: Codex <noreply@openai.com>',
         ].join('\n'),
@@ -134,6 +150,7 @@ describe('scoreScenario', () => {
           verdict: 'APROVADO COM RESSALVAS',
           autoMerge: 'blocked',
           blockReason: 'non-operational caveat',
+          caveatType: 'non-operational',
           reviewOutcome: 'follow-up-pr',
           reviewRounds: 3,
         }),
@@ -172,7 +189,7 @@ describe('scoreScenario', () => {
         [
           'feat(eval): continue after critic limit',
           '',
-          'Ref: MAC-85',
+          'Ref: MAC-86',
           'Author: Ranielli Montagna <raniellimontagna@hotmail.com>',
           'Co-authored-by: Codex <noreply@openai.com>',
         ].join('\n'),
@@ -203,6 +220,12 @@ describe('scoreScenario', () => {
             check.name === 'report-content:eval-report.txt:review-outcome' && check.passed,
         ),
       ).toBe(true);
+      expect(
+        result.checks.some(
+          (check) =>
+            check.name === 'report-content:eval-report.txt:review-rounds-limit' && check.passed,
+        ),
+      ).toBe(true);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
@@ -229,6 +252,7 @@ function reviewScenario(args: {
   verdict: string;
   autoMerge: string;
   blockReason?: string;
+  caveatType?: string;
   reviewOutcome: string;
   reviewRounds: number;
 }): EvalScenario {
@@ -249,6 +273,7 @@ function reviewScenario(args: {
           verdict: args.verdict,
           autoMerge: args.autoMerge,
           blockReason: args.blockReason,
+          caveatType: args.caveatType,
           reviewOutcome: args.reviewOutcome,
           reviewRounds: args.reviewRounds,
         },
@@ -258,6 +283,8 @@ function reviewScenario(args: {
           path: 'commit-message.txt',
           authorName: 'Ranielli Montagna',
           authorEmail: 'raniellimontagna@hotmail.com',
+          ref: 'MAC-86',
+          coAuthoredBy: 'Codex <noreply@openai.com>',
           includes: ['Ref:', 'Co-authored-by: Codex <noreply@openai.com>'],
         },
       ],

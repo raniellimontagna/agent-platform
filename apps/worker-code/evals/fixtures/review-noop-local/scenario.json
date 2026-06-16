@@ -1,23 +1,36 @@
 {
   "id": "review-noop-local",
+  "version": 2,
   "title": "Local no-op review keeps implementation and proceeds",
   "mode": "local",
   "deterministic": true,
-  "description": "Simulates a fully local review cycle where the critic approves without requesting code changes. No GitHub, Linear, LiteLLM or production services are used.",
-  "inputs": {
-    "agentMaxReviewRounds": 3,
+  "description": "Local deterministic scenario where the critic approves on the first round without requiring code changes. No GitHub, Linear, LiteLLM or production services are used.",
+  "repo": {
+    "files": [
+      {
+        "path": "src/worker/review-noop.ts",
+        "content": "export function keepImplementation() {\n  return 'unchanged';\n}\n"
+      }
+    ]
+  },
+  "candidate": {
+    "branch": "test/mac-86-review-noop-local",
     "commit": {
       "authorName": "Ranielli Montagna",
       "authorEmail": "raniellimontagna@hotmail.com",
-      "message": "test(eval): keep implementation when review is no-op\n\nRef: MAC-85\nCo-authored-by: Codex <noreply@openai.com>"
+      "message": "test(eval): keep implementation when review is no-op\n\nRef: MAC-86\nCo-authored-by: Codex <noreply@openai.com>"
     },
-    "review": {
+    "reviewFlow": {
+      "agentMaxReviewRounds": 3,
       "rounds": [
         {
           "round": 1,
+          "actor": "critic",
           "verdict": "APROVADO",
           "classification": "noop",
           "summary": "No changes required.",
+          "requiresCodeChanges": false,
+          "continueReview": false,
           "autoMerge": {
             "expected": true,
             "blocked": false,
@@ -28,43 +41,45 @@
               "type": "info",
               "message": "Implementation already satisfies the requested change."
             }
-          ],
-          "requiresRecode": false,
-          "continueReview": false
+          ]
         }
       ]
     }
   },
+  "commands": [],
   "expected": {
-    "finalVerdict": "APROVADO",
-    "reviewOutcome": "noop",
-    "roundsUsed": 1,
-    "proceedToPullRequest": true,
-    "requiresRecode": false,
-    "autoMerge": {
-      "expected": true,
-      "blocked": false,
-      "reason": null
-    },
-    "commitChecks": {
-      "author": {
-        "name": "Ranielli Montagna",
-        "email": "raniellimontagna@hotmail.com"
+    "changedFiles": [],
+    "requiredContent": [],
+    "eval": {
+      "finalVerdict": "APROVADO",
+      "reviewOutcome": "noop",
+      "reviewFlowResult": "no-op",
+      "roundsExecuted": 1,
+      "proceedToPullRequest": true,
+      "requiresRecode": false,
+      "autoMerge": {
+        "expected": true,
+        "blocked": false,
+        "reason": null
       },
-      "mustContainRef": true,
-      "mustContainCoAuthoredBy": true
-    },
-    "report": {
-      "verdict": "APROVADO",
-      "autoMergeExpected": "enabled",
-      "blockReason": null,
-      "reviewFlowResult": "no-op"
+      "commitChecks": {
+        "authorName": "Ranielli Montagna",
+        "authorEmail": "raniellimontagna@hotmail.com",
+        "mustContainRef": true,
+        "mustContainCoAuthoredBy": true
+      },
+      "offline": {
+        "github": false,
+        "linear": false,
+        "litellm": false,
+        "production": false
+      },
+      "report": {
+        "verdict": "APROVADO",
+        "autoMergeExpected": "enabled",
+        "blockReason": null,
+        "reviewFlowResult": "no-op"
+      }
     }
-  },
-  "offline": {
-    "github": false,
-    "linear": false,
-    "litellm": false,
-    "production": false
   }
 }

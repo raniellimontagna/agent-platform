@@ -10,6 +10,7 @@ type ExtendedExpected = EvalScenario['expected'] & {
     verdict: string;
     autoMerge: string;
     blockReason?: string;
+    caveatType?: string;
     reviewOutcome?: string;
     reviewRounds?: number;
   }>;
@@ -17,6 +18,8 @@ type ExtendedExpected = EvalScenario['expected'] & {
     path: string;
     authorName?: string;
     authorEmail?: string;
+    ref?: string;
+    coAuthoredBy?: string;
     includes?: string[];
   }>;
 };
@@ -70,43 +73,101 @@ export async function scoreScenario(args: {
 
   for (const expectation of extendedExpected.reportExpectations ?? []) {
     const content = await readText(join(args.workdir, expectation.path));
-    pushContentCheck(checks, expectation.path, content, 'Verdict', expectation.verdict);
-    pushContentCheck(checks, expectation.path, content, 'Auto-merge', expectation.autoMerge);
+    const report = parseStructuredFields(content);
+
+    pushStructuredFieldCheck(checks, expectation.path, report, 'Verdict', expectation.verdict);
+    pushStructuredFieldCheck(checks, expectation.path, report, 'Auto-merge', expectation.autoMerge);
 
     if (expectation.blockReason) {
-      pushContentCheck(checks, expectation.path, content, 'Block reason', expectation.blockReason);
+      pushStructuredFieldCheck(
+        checks,
+        expectation.path,
+        report,
+        'Block reason',
+        expectation.blockReason,
+      );
+    }
+
+    if (expectation.caveatType) {
+      pushStructuredFieldCheck(
+        checks,
+        expectation.path,
+        report,
+        'Caveat type',
+        expectation.caveatType,
+      );
     }
 
     if (expectation.reviewOutcome) {
-      pushContentCheck(checks, expectation.path, content, 'Review outcome', expectation.reviewOutcome);
+      pushStructuredFieldCheck(
+        checks,
+        expectation.path,
+        report,
+        'Review outcome',
+        expectation.reviewOutcome,
+      );
     }
 
     if (typeof expectation.reviewRounds === 'number') {
-      pushContentCheck(
+      pushStructuredFieldCheck(
         checks,
         expectation.path,
-        content,
+        report,
         'Review rounds',
         String(expectation.reviewRounds),
       );
+      checks.push({
+        name: `report-content:${expectation.path}:review-rounds-limit`,
+        passed: expectation.reviewRounds <= 3,
+        detail:
+          expectation.reviewRounds <= 3
+            ? `review rounds stayed within limit (${expectation.reviewRounds}/3)`
+            : `review rounds exceeded limit (${expectation.reviewRounds}/3)`,
+      });
     }
   }
 
   for (const expectation of extendedExpected.commitExpectations ?? []) {
     const content = await readText(join(args.workdir, expectation.path));
+    const commit = parseStructuredFields(content);
 
     if (expectation.authorName || expectation.authorEmail) {
       const author = `${expectation.authorName || ''} <${expectation.authorEmail || ''}>`;
+      const actualAuthor = commit.get(normalizeFieldName('Author')) || '';
       checks.push({
         name: `commit-author:${expectation.path}`,
-        passed: content.includes(author),
-        detail: content.includes(author) ? `found author "${author}"` : `missing author "${author}"`,
+        passed: actualAuthor === author,
+        detail: actualAuthor === author ? `found author "${author}"` : `expected author "${author}"; got "${actualAuthor || '(missing)'}"`,
+      });
+    }
+
+    if (expectation.ref) {
+      const actualRef = commit.get(normalizeFieldName('Ref')) || '';
+      checks.push({
+        name: `commit-ref:${expectation.path}`,
+        passed: actualRef === expectation.ref,
+        detail:
+          actualRef === expectation.ref
+            ? `found ref "${expectation.ref}"`
+            : `expected ref "${expectation.ref}"; got "${actualRef || '(missing)'}"`,
+      });
+    }
+
+    if (expectation.coAuthoredBy) {
+      const actualCoAuthoredBy = commit.get(normalizeFieldName('Co-authored-by')) || '';
+      checks.push({
+        name: `commit-co-authored-by:${expectation.path}`,
+        passed: actualCoAuthoredBy === expectation.coAuthoredBy,
+        detail:
+          actualCoAuthoredBy === expectation.coAuthoredBy
+            ? `found co-author "${expectation.coAuthoredBy}"`
+            : `expected co-author "${expectation.coAuthoredBy}"; got "${actualCoAuthoredBy || '(missing)'}"`,
       });
     }
 
     for (const required of expectation.includes ?? []) {
       checks.push({
-        name: `commit-content:${expectation.path}`,
+        name: `commit-content:${expectation.path}:${slug(required)}`,
         passed: content.includes(required),
         detail: content.includes(required) ? `found "${required}"` : `missing "${required}"`,
       });
@@ -133,19 +194,46 @@ function sameList(a: string[], b: string[]): boolean {
   return a.length === b.length && a.every((value, index) => value === b[index]);
 }
 
-function pushContentCheck(
+function pushStructuredFieldCheck(
   checks: EvalCheck[],
   path: string,
-  content: string,
+  fields: Map<string, string>,
   label: string,
   expected: string,
 ): void {
-  const required = `${label}: ${expected}`;
+  const actual = fields.get(normalizeFieldName(label)) || '';
   checks.push({
     name: `report-content:${path}:${label.toLowerCase().replace(/\s+/g, '-')}`,
-    passed: content.includes(required),
-    detail: content.includes(required) ? `found "${required}"` : `missing "${required}"`,
+    passed: actual === expected,
+    detail:
+      actual === expected
+        ? `found "${label}: ${expected}"`
+        : `expected "${label}: ${expected}"; got "${actual || '(missing)'}"`,
   });
+}
+
+function parseStructuredFields(content: string): Map<string, string> {
+  const fields = new Map<string, string>();
+
+  for (const line of content.split(/\r?\n/)) {
+    const match = line.match(/^([A-Za-z][A-Za-z- ]*):\s*(.+)$/);
+    if (!match) {
+      continue;
+    }
+
+    const [, rawLabel, rawValue] = match;
+    fields.set(normalizeFieldName(rawLabel), rawValue.trim());
+  }
+
+  return fields;
+}
+
+function normalizeFieldName(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function slug(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 }
 
 async function readText(path: string): Promise<string> {

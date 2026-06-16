@@ -2,32 +2,60 @@
   "id": "commit-message-trailers",
   "version": 2,
   "title": "Commit message includes Ref and Co-authored-by trailers",
-  "mode": "local",
-  "deterministic": true,
-  "externalCalls": {
-    "github": false,
-    "linear": false,
-    "litellm": false,
-    "production": false
+  "description": "Local deterministic fixture validating agent commit identity plus required Ref and Co-authored-by trailers.",
+  "repo": {
+    "provider": "local",
+    "name": "eval-harness-local",
+    "offline": true
   },
-  "input": {
-    "review": {
-      "verdict": "APROVADO",
-      "classification": "approved",
-      "operationalConcern": false,
-      "summary": "No changes requested; ready to merge.",
-      "requiresCodeChanges": false
+  "candidate": {
+    "branch": "test/mac-86-commit-message-trailers",
+    "pullRequest": {
+      "title": "test(eval): validate commit trailers in local fixture",
+      "body": "Deterministic local-only scenario for commit metadata coverage in eval harness v2."
     },
     "commit": {
       "authorName": "Ranielli Montagna",
       "authorEmail": "raniellimontagna@hotmail.com",
-      "subject": "feat(worker): validate commit trailers in eval harness",
-      "body": "Ensure deterministic verification of commit metadata.\n\nRef: MAC-85\nCo-authored-by: Codex <noreply@openai.com>"
+      "subject": "test(eval): validate commit trailers in eval harness",
+      "body": "Ensure deterministic verification of commit metadata.\n\nRef: MAC-86\nCo-authored-by: Codex <noreply@openai.com>"
+    },
+    "review": {
+      "mode": "critic",
+      "maxRounds": 3,
+      "rounds": [
+        {
+          "round": 1,
+          "verdict": "APROVADO",
+          "summary": "No changes requested; ready to merge.",
+          "remarks": [],
+          "requiresRecode": false,
+          "noop": true
+        }
+      ]
+    },
+    "deterministic": true,
+    "localOnly": true,
+    "externalCalls": {
+      "github": false,
+      "linear": false,
+      "litellm": false,
+      "production": false
     }
   },
+  "commands": [
+    "offline-review-simulation"
+  ],
   "expected": {
+    "changedFiles": [],
+    "requiredContent": [
+      "APROVADO",
+      "Ref: MAC-86",
+      "Co-authored-by: Codex <noreply@openai.com>",
+      "Ranielli Montagna <raniellimontagna@hotmail.com>"
+    ],
     "finalVerdict": "APROVADO",
-    "reviewOutcome": "no_op",
+    "reviewOutcome": "noop",
     "proceedToPullRequest": true,
     "autoMerge": {
       "allowed": true,
@@ -47,6 +75,7 @@
         "expected": "Co-authored-by: Codex <noreply@openai.com>"
       }
     },
+    "blockReason": null,
     "report": {
       "verdict": "APROVADO",
       "autoMergeExpected": "allowed",

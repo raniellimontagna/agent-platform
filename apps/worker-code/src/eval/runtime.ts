@@ -5,13 +5,31 @@ import { checkCommand } from '../executor/commandPolicy.js';
 import type { CommandResult } from '../types.js';
 
 const DEFAULT_ALLOWLIST = ['node', 'npm', 'pnpm', 'corepack', 'git'];
+const BLOCKED_ENV_VARS = [
+  'GITHUB_TOKEN',
+  'GH_TOKEN',
+  'LINEAR_API_KEY',
+  'LINEAR_TOKEN',
+  'OPENAI_API_KEY',
+  'LITELLM_API_KEY',
+  'LITELLM_BASE_URL',
+  'LITELLM_URL',
+  'PRODUCTION_API_URL',
+  'PROD_API_URL',
+];
 
 export function runShell(command: string, cwd: string): Promise<CommandResult> {
   const start = Date.now();
   return new Promise((resolve) => {
+    const env = { ...process.env };
+    for (const name of BLOCKED_ENV_VARS) {
+      delete env[name];
+    }
+    env.EVAL_OFFLINE = '1';
+
     const child = spawn('bash', ['-lc', command], {
       cwd,
-      env: { ...process.env },
+      env,
     });
 
     let stdout = '';
