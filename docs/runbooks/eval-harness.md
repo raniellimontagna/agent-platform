@@ -27,3 +27,8 @@ adicionar um cenário, crie uma pasta em
 - `commands`: validações locais sem operadores de shell.
 - `expected.changedFiles`, `expected.forbiddenFiles` e
   `expected.requiredContent`: critérios objetivos de score.
+
+Fixtures também podem declarar `workerDryRun`. Nesse modo o harness cria uma
+branch local, aplica uma resposta fake de codegen, roda validação, aplica fixes
+fake quando necessário, faz commit local e salva o diff. O resultado sempre traz
+`pushed: false`; GitHub e Linear não são chamados.

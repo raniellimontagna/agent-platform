@@ -1,10 +1,16 @@
-import { spawn } from 'node:child_process';
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { checkCommand } from '../executor/commandPolicy.js';
 import type { CommandResult } from '../types.js';
+import {
+  applyCandidate,
+  initRepo,
+  listChangedFiles,
+  runCommands,
+  runShell,
+  writeFiles,
+} from './runtime.js';
 import { scoreScenario } from './scoring.js';
 import {
   type EvalReport,
@@ -12,8 +18,7 @@ import {
   type EvalScenario,
   evalScenarioSchema,
 } from './types.js';
-
-const DEFAULT_ALLOWLIST = ['node', 'npm', 'pnpm', 'corepack', 'git'];
+import { type WorkerDryRunResult, runWorkerDryRun } from './workerDryRun.js';
 
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
@@ -68,9 +73,16 @@ async function runScenario(scenario: EvalScenario, artifactDir: string): Promise
   try {
     await writeFiles(workdir, scenario.repo.files);
     await initRepo(workdir);
-    await applyCandidate(workdir, scenario);
-    const commands = await runCommands(workdir, scenario.commands);
-    const changedFiles = await listChangedFiles(workdir);
+    let commands: CommandResult[];
+    let dryRun: WorkerDryRunResult | undefined;
+    if (scenario.workerDryRun) {
+      dryRun = await runWorkerDryRun({ scenario, workdir, artifactDir });
+      commands = dryRun.commands;
+    } else {
+      await applyCandidate(workdir, scenario.candidate);
+      commands = await runCommands(workdir, scenario.commands);
+    }
+    const changedFiles = dryRun ? [...dryRun.filesChanged].sort() : await listChangedFiles(workdir);
     const scored = await scoreScenario({ scenario, workdir, changedFiles, commands });
     const result: EvalResult = {
       id: scenario.id,
@@ -81,9 +93,13 @@ async function runScenario(scenario: EvalScenario, artifactDir: string): Promise
       commands,
       checks: scored.checks,
       artifactDir,
+      dryRun,
     };
     await writeFile(join(artifactDir, 'result.json'), `${JSON.stringify(result, null, 2)}\n`);
-    await writeFile(join(artifactDir, 'diff.patch'), (await runShell('git diff', workdir)).stdout);
+    await writeFile(
+      join(artifactDir, 'diff.patch'),
+      dryRun?.diff ?? (await runShell('git diff', workdir)).stdout,
+    );
     return result;
   } finally {
     await rm(workdir, { recursive: true, force: true });
@@ -99,67 +115,6 @@ async function loadScenarios(fixturesDir: string): Promise<EvalScenario[]> {
     scenarios.push(evalScenarioSchema.parse(JSON.parse(raw)));
   }
   return scenarios.sort((a, b) => a.id.localeCompare(b.id));
-}
-
-async function writeFiles(root: string, files: Record<string, string>): Promise<void> {
-  for (const [path, content] of Object.entries(files)) {
-    const fullPath = join(root, path);
-    await mkdir(dirname(fullPath), { recursive: true });
-    await writeFile(fullPath, content);
-  }
-}
-
-async function initRepo(workdir: string): Promise<void> {
-  for (const command of [
-    'git init',
-    'git config user.name "Eval Harness"',
-    'git config user.email "eval@example.invalid"',
-    'git add -A',
-    'git commit -m "base fixture"',
-  ]) {
-    const result = await runShell(command, workdir);
-    if (result.exitCode !== 0) {
-      throw new Error(`failed to initialize fixture repo: ${result.stderr || result.stdout}`);
-    }
-  }
-}
-
-async function applyCandidate(workdir: string, scenario: EvalScenario): Promise<void> {
-  await writeFiles(workdir, scenario.candidate.files);
-  for (const path of scenario.candidate.delete) {
-    await rm(join(workdir, path), { recursive: true, force: true });
-  }
-}
-
-async function runCommands(workdir: string, commands: string[]): Promise<CommandResult[]> {
-  const results: CommandResult[] = [];
-  for (const command of commands) {
-    const check = checkCommand(command, DEFAULT_ALLOWLIST);
-    if (!check.allowed) {
-      results.push({
-        command,
-        exitCode: 126,
-        stdout: '',
-        stderr: `bloqueado: ${check.reason}`,
-        durationMs: 0,
-      });
-      break;
-    }
-    const result = await runShell(command, workdir);
-    results.push(result);
-    if (result.exitCode !== 0) break;
-  }
-  return results;
-}
-
-async function listChangedFiles(workdir: string): Promise<string[]> {
-  const result = await runShell('git status --porcelain --untracked-files=all', workdir);
-  if (result.exitCode !== 0) return [];
-  return result.stdout
-    .split('\n')
-    .filter((line) => line.trim().length > 0)
-    .map((line) => line.slice(3).trim())
-    .sort();
 }
 
 function renderMarkdown(report: EvalReport): string {
@@ -178,6 +133,12 @@ function renderMarkdown(report: EvalReport): string {
     lines.push('');
     lines.push(`Result: ${result.passed ? 'PASS' : 'FAIL'} (${result.score})`);
     lines.push(`Changed files: ${result.changedFiles.join(', ') || '(none)'}`);
+    if (result.dryRun) {
+      lines.push(`Dry-run branch: ${result.dryRun.branch}`);
+      lines.push(`Dry-run pushed: ${result.dryRun.pushed}`);
+      lines.push(`Dry-run fixes: ${result.dryRun.fixAttempts}`);
+      lines.push(`Dry-run commit: ${result.dryRun.commitSha ?? '(none)'}`);
+    }
     lines.push('');
     for (const check of result.checks) {
       lines.push(`- ${check.passed ? 'PASS' : 'FAIL'} ${check.name}: ${check.detail}`);
@@ -201,35 +162,6 @@ function parseArgs(argv: string[]): { fixtures?: string; out?: string } {
 function defaultFixturesDir(): string {
   const here = dirname(fileURLToPath(import.meta.url));
   return resolve(here, '../../evals/fixtures');
-}
-
-function runShell(command: string, cwd: string): Promise<CommandResult> {
-  const start = Date.now();
-  return new Promise((resolve) => {
-    const child = spawn('bash', ['-lc', command], {
-      cwd,
-      env: { ...process.env },
-    });
-
-    let stdout = '';
-    let stderr = '';
-    child.stdout.on('data', (chunk) => {
-      stdout += chunk.toString();
-    });
-    child.stderr.on('data', (chunk) => {
-      stderr += chunk.toString();
-    });
-
-    child.on('close', (code) => {
-      resolve({
-        command,
-        exitCode: code ?? -1,
-        stdout,
-        stderr,
-        durationMs: Date.now() - start,
-      });
-    });
-  });
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

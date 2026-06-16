@@ -1,0 +1,47 @@
+{
+  "id": "worker-dry-run-fix",
+  "title": "Dry-run do worker com self-correction fake",
+  "description": "Exercita o fluxo do worker sem push: codegen inicial falha no teste, fix fake corrige, valida, commita localmente e gera diff.",
+  "repo": {
+    "files": {
+      "package.json": "{\"type\":\"module\",\"scripts\":{\"test\":\"node math.test.js\"}}\n",
+      "math.js": "export function double(value) {\n  return value * 2;\n}\n",
+      "math.test.js": "import { double, triple } from './math.js';\nif (double(4) !== 8) throw new Error('double failed');\nif (triple(4) !== 12) throw new Error('triple failed');\n"
+    }
+  },
+  "workerDryRun": {
+    "plan": "Adicionar a função triple em math.js preservando double.",
+    "branch": "agent/eval-worker-dry-run-fix",
+    "prTitle": "feat(eval): add triple helper",
+    "summary": "Adiciona triple e valida via teste local em dry-run.",
+    "files": [
+      {
+        "path": "math.js",
+        "content": "export function double(value) {\n  return value * 2;\n}\n\nexport function triple(value) {\n  return value * 2;\n}\n"
+      }
+    ],
+    "fixes": [
+      {
+        "summary": "Corrige triple para multiplicar por 3.",
+        "files": [
+          {
+            "path": "math.js",
+            "content": "export function double(value) {\n  return value * 2;\n}\n\nexport function triple(value) {\n  return value * 3;\n}\n"
+          }
+        ]
+      }
+    ],
+    "maxFixAttempts": 2
+  },
+  "commands": ["node math.test.js"],
+  "expected": {
+    "changedFiles": ["math.js"],
+    "forbiddenFiles": ["package.json"],
+    "requiredContent": [
+      {
+        "path": "math.js",
+        "includes": "return value * 3"
+      }
+    ]
+  }
+}
