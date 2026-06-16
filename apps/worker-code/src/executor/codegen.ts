@@ -555,7 +555,7 @@ export async function applyFix(args: FixArgs): Promise<FixResult> {
     .join('\n');
 
   const usage: TokenUsage = { promptTokens: 0, completionTokens: 0 };
-  log.info({ files: filesChanged.length }, 'requesting fix');
+  log.info({ files: fixCandidates.length, originalFiles: filesChanged.length }, 'requesting fix');
   const parsed = await completeJson(
     llm,
     {

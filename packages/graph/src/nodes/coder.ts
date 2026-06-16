@@ -129,7 +129,7 @@ export function makeCoderNode(deps: CoderDeps, opts: { revise?: boolean } = {}) 
         lessons,
         reviewFeedback: opts.revise ? (state.reviewFeedback ?? '') : '',
       });
-      const ok = result.status === 'succeeded';
+      const ok = result.status === 'succeeded' && result.testsPassed !== false;
       const errorBlock = result.error ? `\n\n\`\`\`\n${result.error}\n\`\`\`` : '';
       const files = result.filesChanged?.length
         ? `\n\nArquivos: ${result.filesChanged.map((f) => `\`${f}\``).join(', ')}`
@@ -162,7 +162,7 @@ export function makeCoderNode(deps: CoderDeps, opts: { revise?: boolean } = {}) 
         fixAttempts: result.fixAttempts,
         codeCostUsd: result.costUsd,
         prTitle: result.prTitle,
-        // Mantém `coding` no sucesso → roteia para o nó review (MAC-18) → pr.
+        // Mantém `coding` no sucesso validado → roteia para review (MAC-18) → pr.
         status: ok ? 'coding' : 'failed',
         error: result.error,
       };
