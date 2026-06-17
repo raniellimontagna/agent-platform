@@ -33,6 +33,20 @@ describe('summarizeFailureTail', () => {
 
     expect(out).toBe('$ pnpm build\n[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL]\nsrc/eval/scoring.ts(1,1)');
   });
+
+  it('preserva começo e fim de saídas longas', () => {
+    const out = summarizeFailureTail([
+      cmd(
+        'pnpm build',
+        1,
+        `src/eval/scoring.ts(5,26): error TS2305\n${'x'.repeat(4000)}\nELIFECYCLE`,
+      ),
+    ]);
+
+    expect(out).toContain('src/eval/scoring.ts(5,26): error TS2305');
+    expect(out).toContain('[output truncated; keeping first and last diagnostics]');
+    expect(out).toContain('ELIFECYCLE');
+  });
 });
 
 describe('buildCommitMessage', () => {
