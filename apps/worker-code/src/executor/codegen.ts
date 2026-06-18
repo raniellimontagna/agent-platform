@@ -3,6 +3,7 @@ import { dirname, join, resolve } from 'node:path';
 import { type LlmClient, type TokenUsage, estimateCostUsd } from '@agent-platform/llm';
 import type { Logger } from 'pino';
 import { z } from 'zod';
+import { buildSkillInstructions } from './agentSkills.js';
 import { buildExamples, readConventions } from './context.js';
 import { runCommand } from './worktree.js';
 
@@ -151,24 +152,7 @@ function hasJsonObjectStart(raw: string): boolean {
 }
 
 export function buildAgentInstructions(agentKey?: string, capabilities: string[] = []): string {
-  if (agentKey !== 'landing-page-agent') {
-    return capabilities.length > 0
-      ? `Agente selecionado: ${agentKey ?? 'default'} (${capabilities.join(', ')}).`
-      : '';
-  }
-
-  return [
-    'Agente selecionado: landing-page-agent.',
-    'Especialidade: criar landing pages prontas em pouco tempo, com qualidade visual e foco em conversão.',
-    'Instruções específicas:',
-    '- Entregue uma experiência de primeira tela utilizável, não uma página explicativa sobre como construir a LP.',
-    '- Priorize hero forte, proposta de valor clara, CTA visível, prova/benefícios e seção final de conversão.',
-    '- Use visual asset real ou gerado quando o stack permitir; se não houver asset, use composição visual rica com CSS/HTML sem depender de SVG decorativo genérico.',
-    '- Garanta responsividade mobile/desktop, espaçamento consistente e contraste legível.',
-    '- Evite paleta de uma única cor, textos genéricos, cards excessivos e elementos que se sobreponham.',
-    '- Prefira componentes existentes e padrões do projeto; não adicione dependências sem necessidade.',
-    '- A entrega deve estar pronta para rodar no app existente e passar validação do repo.',
-  ].join('\n');
+  return buildSkillInstructions(agentKey, capabilities);
 }
 
 /**

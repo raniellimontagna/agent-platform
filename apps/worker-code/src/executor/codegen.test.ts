@@ -66,10 +66,10 @@ describe('buildAgentInstructions', () => {
     const instructions = buildAgentInstructions('landing-page-agent', ['landing-page']);
 
     expect(instructions).toContain('landing-page-agent');
-    expect(instructions).toContain('landing pages prontas');
-    expect(instructions).toContain('primeira tela utilizável');
+    expect(instructions).toContain('landing-page-production');
+    expect(instructions).toContain('Deliver a real first-screen experience');
     expect(instructions).toContain('CTA');
-    expect(instructions).toContain('responsividade mobile/desktop');
+    expect(instructions).toContain('responsive');
   });
 
   it('não adiciona bloco especializado para o agente default sem capabilities', () => {

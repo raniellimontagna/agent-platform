@@ -1,0 +1,46 @@
+# Agent Skills
+
+O diretório `agent-skills/` contém skills versionadas do agent-platform. Elas
+são carregadas pelo `worker-code` em tempo de execução e injetadas no prompt do
+codegen conforme o agente selecionado.
+
+## Estrutura
+
+- `agent-skills/registry.json`: mapeia agentes para skills.
+- `agent-skills/<skill>/SKILL.md`: instruções da skill, com frontmatter `name`
+  e `description`.
+
+Exemplo:
+
+```json
+{
+  "agentSkills": {
+    "landing-page-agent": ["landing-page-production", "frontend-design"]
+  }
+}
+```
+
+## Como adicionar uma skill
+
+1. Crie `agent-skills/<nome>/SKILL.md`.
+2. Use nome em lowercase com hífens.
+3. Escreva `description` com os gatilhos de uso.
+4. Mantenha o corpo curto e operacional.
+5. Adicione a skill em `agent-skills/registry.json`.
+6. Mapeie a skill para um agente em `agentSkills`.
+7. Cubra a seleção/injeção com testes em `apps/worker-code`.
+8. Rode `rtk pnpm verify`.
+
+## Boas práticas
+
+- Preferir skills locais revisadas no repo a download dinâmico em produção.
+- Não executar scripts de skills externas sem revisão.
+- Separar conhecimento por skill quando isso ajuda o agente a compor funções.
+- Manter fallback seguro: se uma skill não existir, o job não deve quebrar por
+  causa do catálogo.
+
+## Skills atuais
+
+- `landing-page-production`: contrato base para landing pages completas.
+- `frontend-design`: qualidade visual, layout, responsividade e estados de UI.
+- `gsap-motion`: motion com GSAP quando o stack permitir.

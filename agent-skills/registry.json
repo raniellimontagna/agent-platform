@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "agentSkills": {
+    "landing-page-agent": ["landing-page-production", "frontend-design", "gsap-motion"]
+  },
+  "skills": [
+    {
+      "name": "landing-page-production",
+      "path": "agent-skills/landing-page-production/SKILL.md",
+      "description": "Build complete, conversion-focused landing pages quickly inside the existing app."
+    },
+    {
+      "name": "frontend-design",
+      "path": "agent-skills/frontend-design/SKILL.md",
+      "description": "Improve frontend visual quality, layout, typography, responsive behavior, and interaction states."
+    },
+    {
+      "name": "gsap-motion",
+      "path": "agent-skills/gsap-motion/SKILL.md",
+      "description": "Use GSAP for polished motion when the repository already supports frontend animation or can add GSAP safely."
+    }
+  ]
+}
