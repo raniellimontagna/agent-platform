@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 2,
+  "id": "critic-max-rounds-3",
+  "name": "critic-max-rounds-3",
+  "description": "Local deterministic fixture that exercises the critic loop until AGENT_MAX_REVIEW_ROUNDS=3 and then proceeds to PR without auto-merge.",
+  "allowNetwork": false,
+  "allowGitHub": false,
+  "allowLinear": false,
+  "allowLiteLLM": false,
+  "externalCalls": [],
+  "agent": {
+    "name": "Ranielli Montagna",
+    "email": "raniellimontagna@hotmail.com"
+  },
+  "pullRequest": {
+    "number": 303,
+    "title": "test(worker): cover critic max rounds 3",
+    "body": "Implements deterministic local eval fixture for critic loop coverage."
+  },
+  "commit": {
+    "authorName": "Ranielli Montagna",
+    "authorEmail": "raniellimontagna@hotmail.com",
+    "message": "test(worker): cover critic max rounds 3\n\nRef: MAC-85\nCo-authored-by: Codex <noreply@openai.com>"
+  },
+  "review": {
+    "verdict": "APROVADO COM RESSALVAS",
+    "classification": "non_operational",
+    "summary": "Reviewer keeps requesting recode changes until the critic round limit is reached.",
+    "autoMerge": {
+      "expected": false,
+      "blocked": true,
+      "reason": "non_operational_reservation"
+    }
+  },
+  "critic": {
+    "maxRounds": 3,
+    "rounds": [
+      {
+        "round": 1,
+        "action": "recode",
+        "status": "changes_requested",
+        "feedback": "Tighten assertions and keep the fixture fully local."
+      },
+      {
+        "round": 2,
+        "action": "recode",
+        "status": "changes_requested",
+        "feedback": "Clarify expected auto-merge blocking reason in the report."
+      },
+      {
+        "round": 3,
+        "action": "recode",
+        "status": "changes_requested",
+        "feedback": "Stop after the configured maximum number of review rounds."
+      }
+    ],
+    "expected": {
+      "roundsExecuted": 3,
+      "stopReason": "max_rounds_reached",
+      "proceedToPr": true
+    }
+  },
+  "expected": {
+    "finalVerdict": "APROVADO COM RESSALVAS",
+    "reviewOutcome": "recode_required",
+    "autoMerge": false,
+    "autoMergeBlockReason": "non_operational_reservation",
+    "criticRounds": 3,
+    "criticStopReason": "max_rounds_reached",
+    "proceedToPr": true,
+    "commitMustContain": [
+      "Ref:",
+      "Co-authored-by: Codex <noreply@openai.com>"
+    ]
+  }
+}

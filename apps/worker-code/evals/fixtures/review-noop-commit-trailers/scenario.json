@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 2,
+  "scenarioId": "review-noop-commit-trailers",
+  "title": "No-op review keeps approved auto-merge and validates commit trailers",
+  "mode": "local-deterministic",
+  "issue": {
+    "key": "MAC-85",
+    "title": "Validate agent commit identity and trailers on no-op review"
+  },
+  "inputs": {
+    "integrations": {
+      "allowNetwork": false,
+      "allowGitHub": false,
+      "allowLinear": false,
+      "allowLiteLLM": false,
+      "externalCalls": []
+    },
+    "agent": {
+      "name": "Ranielli Montagna",
+      "email": "raniellimontagna@hotmail.com"
+    },
+    "commit": {
+      "message": "test(eval): preserve approved no-op review\n\nRef: MAC-85\nCo-authored-by: Codex <noreply@openai.com>",
+      "mustInclude": [
+        "Ref:",
+        "Co-authored-by: Codex <noreply@openai.com>"
+      ]
+    },
+    "review": {
+      "verdict": "APROVADO",
+      "summary": "Mudanças aprovadas sem pedidos de alteração.",
+      "operationalCaveat": false,
+      "nonOperationalCaveat": false,
+      "requestedChanges": [],
+      "requiresRecode": false,
+      "noop": true
+    },
+    "critic": {
+      "maxRounds": 3,
+      "rounds": []
+    }
+  },
+  "expected": {
+    "verdict": "APROVADO",
+    "reviewAction": "noop",
+    "criticRoundsExecuted": 0,
+    "continueToPr": true,
+    "autoMerge": {
+      "expected": true,
+      "blocked": false,
+      "reason": null
+    },
+    "commit": {
+      "authorName": "Ranielli Montagna",
+      "authorEmail": "raniellimontagna@hotmail.com",
+      "containsRef": true,
+      "containsCoAuthoredBy": true
+    }
+  }
+}

@@ -1,0 +1,96 @@
+{
+  "version": 2,
+  "id": "auto-merge-approved",
+  "title": "Auto-merge for approved review stays enabled",
+  "description": "Deterministic local eval fixture covering an approved review, no-op review outcome, zero critic rounds, and commit metadata required for safe auto-merge.",
+  "repo": {
+    "files": {
+      "src/index.js": "export function formatStatus(status) {\n  return `status:${status}`;\n}\n",
+      "README.md": "# Eval Harness Fixture\n\nInitial fixture content.\n"
+    }
+  },
+  "candidate": {
+    "files": {
+      "README.md": "# Eval Harness Fixture\n\nInitial fixture content.\n\nApproved auto-merge scenario.\n"
+    },
+    "delete": []
+  },
+  "workerDryRun": {
+    "plan": "1. Update README with the approved auto-merge note.\n2. Keep the change local and deterministic.\n3. Prepare PR metadata without external integrations.",
+    "branch": "agent/eval-auto-merge-approved",
+    "prTitle": "docs(eval): document approved auto-merge scenario",
+    "summary": "Adds a deterministic local fixture for an approved review path.",
+    "files": [
+      {
+        "path": "README.md",
+        "content": "# Eval Harness Fixture\n\nInitial fixture content.\n\nApproved auto-merge scenario.\n"
+      }
+    ],
+    "llmResponses": [],
+    "fixes": [],
+    "maxFixAttempts": 2,
+    "commitMessage": "docs(eval): document approved auto-merge scenario\n\nRef: MAC-84\n\nCo-authored-by: Codex <noreply@openai.com>",
+    "commitAuthor": {
+      "name": "Ranielli Montagna",
+      "email": "raniellimontagna@hotmail.com"
+    },
+    "commitTrailers": [
+      "Co-authored-by: Codex <noreply@openai.com>"
+    ],
+    "review": {
+      "verdict": "APROVADO",
+      "notes": [],
+      "autoMergeEligible": true,
+      "blockReason": "",
+      "reviewOutcome": "noop",
+      "criticRounds": 0
+    },
+    "isolation": {
+      "allowNetwork": false,
+      "allowGitHub": false,
+      "allowLinear": false,
+      "allowLiteLLM": false,
+      "externalCalls": []
+    }
+  },
+  "commands": [],
+  "expected": {
+    "changedFiles": [
+      "README.md"
+    ],
+    "forbiddenFiles": [],
+    "requiredContent": [
+      {
+        "path": "README.md",
+        "includes": "Approved auto-merge scenario."
+      }
+    ],
+    "review": {
+      "verdict": "APROVADO",
+      "notes": [],
+      "autoMergeEligible": true,
+      "blockReason": "",
+      "reviewOutcome": "noop",
+      "criticRounds": 0
+    },
+    "commit": {
+      "author": {
+        "name": "Ranielli Montagna",
+        "email": "raniellimontagna@hotmail.com"
+      },
+      "messageIncludes": [
+        "Ref: MAC-84"
+      ],
+      "trailersInclude": [
+        "Co-authored-by: Codex <noreply@openai.com>"
+      ]
+    },
+    "isolation": {
+      "allowNetwork": false,
+      "allowGitHub": false,
+      "allowLinear": false,
+      "allowLiteLLM": false,
+      "externalCalls": []
+    }
+  }
+}

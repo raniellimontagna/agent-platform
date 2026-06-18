@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 2,
+  "id": "auto-merge-operational-caveat",
+  "title": "Auto-merge allowed for APROVADO COM RESSALVAS with operational caveat",
+  "description": "Deterministic local fixture that validates the harness keeps auto-merge enabled when the final verdict is APROVADO COM RESSALVAS and the caveat is strictly operational.",
+  "mode": "local",
+  "deterministic": true,
+  "fixtures": {
+    "allowNetwork": false,
+    "allowGitHub": false,
+    "allowLinear": false,
+    "allowLiteLLM": false,
+    "allowProduction": false,
+    "externalCalls": []
+  },
+  "issue": {
+    "key": "MAC-85",
+    "title": "Exercise auto-merge with critic loop and agent commit identity",
+    "body": "Ensure the worker can produce a compliant agent commit, accept operational caveats, and proceed to auto-merge when the review verdict allows it."
+  },
+  "pullRequest": {
+    "number": 185,
+    "title": "test(worker-code): validate operational caveat still auto-merges",
+    "body": "This PR is evaluated entirely through local fixtures."
+  },
+  "agent": {
+    "name": "Ranielli Montagna",
+    "email": "raniellimontagna@hotmail.com"
+  },
+  "commit": {
+    "sha": "1111111111111111111111111111111111111111",
+    "message": "test(worker-code): validate operational caveat auto-merge\n\nRef: MAC-85\n\nCo-authored-by: Codex <noreply@openai.com>",
+    "mustInclude": [
+      "Ref: MAC-85",
+      "Co-authored-by: Codex <noreply@openai.com>"
+    ]
+  },
+  "review": {
+    "status": "APROVADO COM RESSALVAS",
+    "summary": "Approved with operational caveat only.",
+    "caveats": [
+      {
+        "type": "operational",
+        "code": "DEPLOY_MONITORING",
+        "message": "Monitor logs for the first 15 minutes after deploy because the new path increases worker throughput.",
+        "blocksAutoMerge": false
+      }
+    ]
+  },
+  "critic": {
+    "maxRounds": 3,
+    "rounds": [
+      {
+        "round": 1,
+        "action": "no-op",
+        "outcome": "ready-for-pr",
+        "summary": "No recode required; proceed with the current diff."
+      }
+    ]
+  },
+  "expected": {
+    "finalVerdict": "APROVADO COM RESSALVAS",
+    "reviewOutcome": "no-op",
+    "criticRoundsExecuted": 1,
+    "opensPullRequest": true,
+    "autoMerge": {
+      "enabled": true,
+      "expected": true,
+      "blocked": false,
+      "blockReason": null
+    },
+    "commitValidation": {
+      "authorName": "Ranielli Montagna",
+      "authorEmail": "raniellimontagna@hotmail.com",
+      "hasRef": true,
+      "hasCoAuthoredByCodex": true
+    }
+  }
+}

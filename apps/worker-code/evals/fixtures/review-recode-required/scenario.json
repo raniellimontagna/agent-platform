@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 2,
+  "scenarioId": "review-recode-required",
+  "title": "Review requires recode, exercises critic loop ceiling, and proceeds to PR",
+  "mode": "local-deterministic",
+  "issue": {
+    "key": "MAC-84",
+    "title": "Exercise critic recode loop before PR with local-only fixture"
+  },
+  "inputs": {
+    "integrations": {
+      "allowNetwork": false,
+      "allowGitHub": false,
+      "allowLinear": false,
+      "allowLiteLLM": false,
+      "externalCalls": []
+    },
+    "agent": {
+      "name": "Ranielli Montagna",
+      "email": "raniellimontagna@hotmail.com"
+    },
+    "commit": {
+      "message": "test(eval): apply critic recode changes before pr\n\nRef: MAC-84\nCo-authored-by: Codex <noreply@openai.com>",
+      "mustInclude": [
+        "Ref:",
+        "Co-authored-by: Codex <noreply@openai.com>"
+      ]
+    },
+    "review": {
+      "verdict": "APROVADO COM RESSALVAS",
+      "summary": "A solução pode seguir após os ajustes solicitados pelo critic.",
+      "operationalCaveat": true,
+      "nonOperationalCaveat": false,
+      "requestedChanges": [
+        "Padronizar mensagem de commit do agente com trailer obrigatório.",
+        "Ajustar fluxo para encerrar após a 3ª rodada do critic."
+      ],
+      "requiresRecode": true,
+      "noop": false
+    },
+    "critic": {
+      "maxRounds": 3,
+      "rounds": [
+        {
+          "round": 1,
+          "status": "recode-required",
+          "summary": "Primeira revisão do critic pede ajustes de fluxo."
+        },
+        {
+          "round": 2,
+          "status": "recode-required",
+          "summary": "Segunda revisão confirma necessidade de recode adicional."
+        },
+        {
+          "round": 3,
+          "status": "ceiling-reached",
+          "summary": "Limite de 3 rodadas atingido; fluxo deve seguir para PR."
+        }
+      ]
+    }
+  },
+  "expected": {
+    "verdict": "APROVADO COM RESSALVAS",
+    "reviewAction": "recode",
+    "criticRoundsExecuted": 3,
+    "continueToPr": true,
+    "autoMerge": {
+      "expected": true,
+      "blocked": false,
+      "reason": null
+    },
+    "commit": {
+      "authorName": "Ranielli Montagna",
+      "authorEmail": "raniellimontagna@hotmail.com",
+      "containsRef": true,
+      "containsCoAuthoredBy": true
+    }
+  }
+}
