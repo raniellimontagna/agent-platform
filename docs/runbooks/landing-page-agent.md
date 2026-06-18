@@ -21,6 +21,8 @@ O agente carrega o pacote definido em `agent-skills/registry.json`:
 
 - `landing-page-production`;
 - `frontend-design`;
+- `ui-ux-pro-max`;
+- `accessibility-wcag`;
 - `astro-react-landing`;
 - `seo-page`;
 - `biome-formatting`;
@@ -32,6 +34,9 @@ Essas skills orientam o runner/codegen a:
 - priorizar hero, proposta de valor, CTA, prova/benefícios e conversão final;
 - usar asset visual quando o stack permitir;
 - garantir responsividade mobile/desktop;
+- aplicar direção visual forte sem perder clareza de mensagem;
+- preservar acessibilidade WCAG 2.2 AA básica: semântica, foco, contraste,
+  teclado, labels, target size e reduced motion;
 - usar Astro + React como stack preferencial para LPs do zero;
 - incluir SEO técnico/on-page/schema quando o stack permitir;
 - validar formatação/lint pelo Biome do repo;
@@ -51,6 +56,8 @@ Veja também `docs/runbooks/agent-skills.md`.
   adicionada com segurança.
 - Astro + React é o padrão para LPs novas, mas o agente ainda deve respeitar o
   stack real do repositório quando estiver editando um app existente.
+- A skill `landing-page-production` é a orquestradora do pacote: ela deve
+  equilibrar impacto visual, UX, acessibilidade, SEO, motion e validação.
 
 ## Próximas evoluções
 
