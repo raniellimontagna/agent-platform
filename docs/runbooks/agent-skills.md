@@ -49,3 +49,5 @@ Exemplo:
 - `seo-page`: SEO técnico, on-page, schema, conteúdo e GEO para páginas.
 - `biome-formatting`: formatação/lint com Biome e comandos do monorepo.
 - `gsap-motion`: motion com GSAP quando o stack permitir.
+- `research-data-collection`: coleta pública com fontes, evidências, política de
+  scraping e saída estruturada para agentes downstream.

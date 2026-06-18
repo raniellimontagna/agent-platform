@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  DATA_COLLECTOR_AGENT_KEY,
   DEFAULT_AGENT_KEY,
   LANDING_PAGE_AGENT_KEY,
   REVIEWER_AGENT_KEY,
@@ -76,9 +77,18 @@ describe('agentKeyFromLabels', () => {
     expect(agentKeyFromLabels(['ai-ready', 'agent:landing-page'])).toBe(LANDING_PAGE_AGENT_KEY);
   });
 
+  it('usa data-collector-agent quando a issue tem label agent:data-collector', () => {
+    expect(agentKeyFromLabels(['ai-ready', 'agent:data-collector'])).toBe(DATA_COLLECTOR_AGENT_KEY);
+  });
+
   it('prioriza landing-page-agent se houver mais de uma label de agente', () => {
-    expect(agentKeyFromLabels(['ai-ready', 'agent:reviewer', 'agent:landing-page'])).toBe(
-      LANDING_PAGE_AGENT_KEY,
-    );
+    expect(
+      agentKeyFromLabels([
+        'ai-ready',
+        'agent:reviewer',
+        'agent:data-collector',
+        'agent:landing-page',
+      ]),
+    ).toBe(LANDING_PAGE_AGENT_KEY);
   });
 });
