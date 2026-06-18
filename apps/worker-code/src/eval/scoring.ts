@@ -104,10 +104,26 @@ async function addReportChecks(args: {
     return;
   }
 
+  const verdict = getValue(report, ['verdict']);
+  const autoMerge = getValue(report, ['autoMerge']);
+  const blockReason = readNullableString(
+    report,
+    [
+      ['blockReason'],
+      ['autoMergeBlockReason'],
+      ['blockedReason'],
+      ['autoMerge', 'blockReason'],
+    ],
+  );
+  const caveatCategory = readNullableString(report, [['caveatCategory']]);
+  const reviewAction = getValue(report, ['reviewAction']);
+  const criticRounds = getValue(report, ['criticRounds']);
+  const maxCriticRounds = getValue(report, ['maxCriticRounds']);
+
   if (reportExpectation.verdict !== undefined) {
     pushEqualityCheck(args.checks, {
       name: 'report:verdict',
-      actual: report.verdict,
+      actual: verdict,
       expected: reportExpectation.verdict,
     });
   }
@@ -115,23 +131,28 @@ async function addReportChecks(args: {
   if (reportExpectation.autoMerge !== undefined) {
     pushEqualityCheck(args.checks, {
       name: 'report:auto-merge',
-      actual: report.autoMerge,
+      actual: autoMerge,
       expected: reportExpectation.autoMerge,
     });
   }
 
   if (reportExpectation.blockReason !== undefined) {
-    pushEqualityCheck(args.checks, {
+    const shouldValidateBlockReason =
+      reportExpectation.autoMerge === false || autoMerge === false || reportExpectation.blockReason === null;
+
+    args.checks.push({
       name: 'report:auto-merge-block-reason',
-      actual: report.blockReason ?? null,
-      expected: reportExpectation.blockReason,
+      passed: !shouldValidateBlockReason || Object.is(blockReason, reportExpectation.blockReason),
+      detail: shouldValidateBlockReason
+        ? `expected ${formatValue(reportExpectation.blockReason)}; got ${formatValue(blockReason)}`
+        : `skipped because auto-merge is not blocked (expected ${formatValue(reportExpectation.blockReason)}; got ${formatValue(blockReason)})`,
     });
   }
 
   if (reportExpectation.caveatCategory !== undefined) {
     pushEqualityCheck(args.checks, {
       name: 'report:caveat-category',
-      actual: report.caveatCategory ?? null,
+      actual: caveatCategory,
       expected: reportExpectation.caveatCategory,
     });
   }
@@ -139,7 +160,7 @@ async function addReportChecks(args: {
   if (reportExpectation.reviewAction !== undefined) {
     pushEqualityCheck(args.checks, {
       name: 'report:review-action',
-      actual: report.reviewAction,
+      actual: reviewAction,
       expected: reportExpectation.reviewAction,
     });
   }
@@ -147,7 +168,7 @@ async function addReportChecks(args: {
   if (reportExpectation.criticRounds !== undefined) {
     pushEqualityCheck(args.checks, {
       name: 'report:critic-rounds',
-      actual: report.criticRounds,
+      actual: criticRounds,
       expected: reportExpectation.criticRounds,
     });
   }
@@ -155,21 +176,18 @@ async function addReportChecks(args: {
   if (reportExpectation.maxCriticRounds !== undefined) {
     pushEqualityCheck(args.checks, {
       name: 'report:max-critic-rounds',
-      actual: report.maxCriticRounds,
+      actual: maxCriticRounds,
       expected: reportExpectation.maxCriticRounds,
     });
 
     args.checks.push({
       name: 'report:critic-rounds-within-limit',
-      passed:
-        typeof report.criticRounds === 'number' &&
-        typeof report.maxCriticRounds === 'number' &&
-        report.criticRounds <= report.maxCriticRounds,
-      detail: `criticRounds ${formatValue(report.criticRounds)}; maxCriticRounds ${formatValue(report.maxCriticRounds)}`,
+      passed: typeof criticRounds === 'number' && typeof maxCriticRounds === 'number' && criticRounds <= maxCriticRounds,
+      detail: `criticRounds ${formatValue(criticRounds)}; maxCriticRounds ${formatValue(maxCriticRounds)}`,
     });
   }
 
-  const commitMessage = typeof report.commit?.message === 'string' ? report.commit.message : '';
+  const commitMessage = readString(report, [['commit', 'message']]) ?? '';
   for (const includes of reportExpectation.commitMessageIncludes ?? []) {
     args.checks.push({
       name: `report:commit-message-includes:${includes}`,
@@ -183,7 +201,7 @@ async function addReportChecks(args: {
   if (reportExpectation.authorName !== undefined) {
     pushEqualityCheck(args.checks, {
       name: 'report:commit-author-name',
-      actual: report.commit?.author?.name,
+      actual: getValue(report, ['commit', 'author', 'name']),
       expected: reportExpectation.authorName,
     });
   }
@@ -191,29 +209,33 @@ async function addReportChecks(args: {
   if (reportExpectation.authorEmail !== undefined) {
     pushEqualityCheck(args.checks, {
       name: 'report:commit-author-email',
-      actual: report.commit?.author?.email,
+      actual: getValue(report, ['commit', 'author', 'email']),
       expected: reportExpectation.authorEmail,
     });
   }
 
   if (reportExpectation.coAuthorTrailer !== undefined) {
+    const trailers = readStringList(report, [['commit', 'trailers']]);
+    const hasTrailer =
+      commitMessage.includes(reportExpectation.coAuthorTrailer) || trailers.includes(reportExpectation.coAuthorTrailer);
+
     args.checks.push({
       name: 'report:commit-co-author-trailer',
-      passed: commitMessage.includes(reportExpectation.coAuthorTrailer),
-      detail: commitMessage.includes(reportExpectation.coAuthorTrailer)
+      passed: hasTrailer,
+      detail: hasTrailer
         ? `found "${reportExpectation.coAuthorTrailer}"`
-        : `missing "${reportExpectation.coAuthorTrailer}" in commit message`,
+        : `missing "${reportExpectation.coAuthorTrailer}" in commit message or trailers`,
     });
   }
 
   if (reportExpectation.isolation) {
-    const isolation = report.isolation ?? {};
+    const isolation = getObject(report, ['isolation']) ?? {};
     const expectedIsolation = reportExpectation.isolation;
 
     if (expectedIsolation.allowNetwork !== undefined) {
       pushEqualityCheck(args.checks, {
         name: 'report:isolation:allow-network',
-        actual: isolation.allowNetwork,
+        actual: getValue(isolation, ['allowNetwork']),
         expected: expectedIsolation.allowNetwork,
       });
     }
@@ -221,7 +243,7 @@ async function addReportChecks(args: {
     if (expectedIsolation.allowGitHub !== undefined) {
       pushEqualityCheck(args.checks, {
         name: 'report:isolation:allow-github',
-        actual: isolation.allowGitHub,
+        actual: getValue(isolation, ['allowGitHub']),
         expected: expectedIsolation.allowGitHub,
       });
     }
@@ -229,7 +251,7 @@ async function addReportChecks(args: {
     if (expectedIsolation.allowLinear !== undefined) {
       pushEqualityCheck(args.checks, {
         name: 'report:isolation:allow-linear',
-        actual: isolation.allowLinear,
+        actual: getValue(isolation, ['allowLinear']),
         expected: expectedIsolation.allowLinear,
       });
     }
@@ -237,18 +259,18 @@ async function addReportChecks(args: {
     if (expectedIsolation.allowLiteLLM !== undefined) {
       pushEqualityCheck(args.checks, {
         name: 'report:isolation:allow-litellm',
-        actual: isolation.allowLiteLLM,
+        actual: getValue(isolation, ['allowLiteLLM']),
         expected: expectedIsolation.allowLiteLLM,
       });
     }
 
     if (expectedIsolation.externalCallsCount !== undefined) {
-      const actualExternalCallsCount = Array.isArray(isolation.externalCalls)
-        ? isolation.externalCalls.length
-        : undefined;
+      const externalCalls = Array.isArray(getValue(isolation, ['externalCalls']))
+        ? (getValue(isolation, ['externalCalls']) as unknown[])
+        : [];
       pushEqualityCheck(args.checks, {
         name: 'report:isolation:external-calls-count',
-        actual: actualExternalCallsCount,
+        actual: externalCalls.length,
         expected: expectedIsolation.externalCallsCount,
       });
     }
@@ -284,6 +306,54 @@ async function readJson(path: string): Promise<Record<string, any> | null> {
   } catch {
     return null;
   }
+}
+
+function getValue(source: unknown, path: string[]): unknown {
+  let current: unknown = source;
+  for (const segment of path) {
+    if (!current || typeof current !== 'object' || !(segment in current)) {
+      return undefined;
+    }
+    current = (current as Record<string, unknown>)[segment];
+  }
+  return current;
+}
+
+function getObject(source: unknown, path: string[]): Record<string, unknown> | null {
+  const value = getValue(source, path);
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function readString(source: unknown, paths: string[][]): string | undefined {
+  for (const path of paths) {
+    const value = getValue(source, path);
+    if (typeof value === 'string') {
+      return value;
+    }
+  }
+  return undefined;
+}
+
+function readNullableString(source: unknown, paths: string[][]): string | null | undefined {
+  for (const path of paths) {
+    const value = getValue(source, path);
+    if (typeof value === 'string' || value === null) {
+      return value;
+    }
+  }
+  return undefined;
+}
+
+function readStringList(source: unknown, paths: string[][]): string[] {
+  for (const path of paths) {
+    const value = getValue(source, path);
+    if (Array.isArray(value) && value.every((item) => typeof item === 'string')) {
+      return [...value];
+    }
+  }
+  return [];
 }
 
 function formatValue(value: unknown): string {

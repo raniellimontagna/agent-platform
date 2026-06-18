@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "scenarioId": "review-recode-required",
+  "id": "review-recode-required",
   "title": "Review requires recode, exercises critic loop ceiling, and proceeds to PR",
   "mode": "local-deterministic",
   "issue": {

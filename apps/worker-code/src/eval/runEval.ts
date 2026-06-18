@@ -149,9 +149,23 @@ async function loadScenarios(fixturesDir: string): Promise<EvalScenario[]> {
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     const raw = await readFile(join(fixturesDir, entry.name, 'scenario.json'), 'utf8');
-    scenarios.push(evalScenarioSchema.parse(JSON.parse(raw)));
+    scenarios.push(evalScenarioSchema.parse(normalizeScenarioFixture(JSON.parse(raw))));
   }
   return scenarios.sort((a, b) => a.id.localeCompare(b.id));
+}
+
+export function normalizeScenarioFixture(raw: unknown): unknown {
+  const record = asRecord(raw);
+  if (!record) return raw;
+
+  if (typeof record.id !== 'string' && typeof record.scenarioId === 'string') {
+    return {
+      ...record,
+      id: record.scenarioId,
+    };
+  }
+
+  return raw;
 }
 
 export function renderMarkdown(report: EvalReport): string {
@@ -223,9 +237,14 @@ function extractResultInsights(result: EvalResult): {
   const autoMergeExpected =
     autoMerge === undefined ? undefined : autoMerge ? 'yes' : 'no';
 
-  const blockReason =
-    readString(dryRun, ['autoMergeBlockReason', 'blockReason', 'blockedReason']) ??
-    findCheckDetail(checks, ['block', 'auto-merge']);
+  const structuredBlockReason = readString(dryRun, [
+    'autoMergeBlockReason',
+    'blockReason',
+    'blockedReason',
+  ]);
+  const inferredBlockReason =
+    autoMerge === false ? findAutoMergeBlockReasonFromChecks(checks) : undefined;
+  const blockReason = structuredBlockReason ?? inferredBlockReason;
 
   const rounds =
     readNumberLike(dryRun, ['criticRounds', 'reviewRounds', 'criticRoundCount']) ??
@@ -303,13 +322,53 @@ function inferReviewOutcomeFromChecks(checks: EvalResult['checks']): string | un
 function inferAutoMergeFromChecks(checks: EvalResult['checks']): boolean | undefined {
   for (const check of checks) {
     const haystack = `${check.name} ${check.detail}`.toLowerCase();
-    if (haystack.includes('auto-merge')) {
-      if (haystack.includes('blocked') || haystack.includes('disabled') || haystack.includes('no')) {
-        return false;
-      }
-      if (haystack.includes('allowed') || haystack.includes('enabled') || haystack.includes('yes')) {
-        return true;
-      }
+    if (!haystack.includes('auto-merge')) continue;
+
+    if (
+      haystack.includes('not blocked') ||
+      haystack.includes('not disabled') ||
+      haystack.includes('no block reason') ||
+      haystack.includes('without blockers')
+    ) {
+      return true;
+    }
+
+    if (
+      haystack.includes('blocked') ||
+      haystack.includes('disabled') ||
+      haystack.includes('not allowed') ||
+      haystack.includes('must not merge')
+    ) {
+      return false;
+    }
+
+    if (
+      haystack.includes('allowed') ||
+      haystack.includes('enabled') ||
+      haystack.includes('approved for merge') ||
+      haystack.includes('can merge')
+    ) {
+      return true;
+    }
+
+    if (/(^|\W)yes($|\W)/.test(haystack)) return true;
+    if (/(^|\W)no($|\W)/.test(haystack)) return false;
+  }
+  return undefined;
+}
+
+function findAutoMergeBlockReasonFromChecks(checks: EvalResult['checks']): string | undefined {
+  for (const check of checks) {
+    const haystack = `${check.name} ${check.detail}`.toLowerCase();
+    if (!haystack.includes('auto-merge')) continue;
+    if (haystack.includes('not blocked') || haystack.includes('no block reason')) continue;
+    if (
+      haystack.includes('blocked') ||
+      haystack.includes('disabled') ||
+      haystack.includes('not allowed') ||
+      haystack.includes('must not merge')
+    ) {
+      return check.detail;
     }
   }
   return undefined;
