@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { CommandResult } from '../types.js';
 import { scoreScenario } from './scoring.js';
-import { evalScenarioSchema, type EvalScenario } from './types.js';
+import { type EvalScenario, evalScenarioSchema } from './types.js';
 
 const command = (exitCode: number): CommandResult => ({
   command: 'node test.js',
@@ -120,9 +120,7 @@ describe('scoreScenario', () => {
 
       expect(result.passed).toBe(true);
       expect(result.checks.find((check) => check.name === 'report:verdict')?.passed).toBe(true);
-      expect(result.checks.find((check) => check.name === 'report:auto-merge')?.passed).toBe(
-        true,
-      );
+      expect(result.checks.find((check) => check.name === 'report:auto-merge')?.passed).toBe(true);
       expect(result.checks.find((check) => check.name === 'report:review-action')?.passed).toBe(
         true,
       );
@@ -388,6 +386,40 @@ describe('scoreScenario', () => {
     });
     expect(parsed.expected.review?.notes).toEqual([
       { kind: 'operational', summary: 'operational caveat' },
+    ]);
+  });
+
+  it('normaliza notas textuais de revisão para o shape canônico', () => {
+    const parsed = evalScenarioSchema.parse({
+      version: 2,
+      id: 'non-operational-notes',
+      title: 'Non-operational notes',
+      description: 'Covers string review notes emitted by generated fixtures.',
+      expected: {
+        changedFiles: ['README.md'],
+        review: {
+          verdict: 'APROVADO COM RESSALVAS',
+          notes: [
+            'Non-operational caveat: POLICY_REVIEW_REQUIRED',
+            'A human reviewer must confirm the retention-policy wording before merge.',
+          ],
+          autoMergeEligible: false,
+          blockReason: 'Non-operational caveat: POLICY_REVIEW_REQUIRED',
+          reviewOutcome: 'recode',
+          criticRounds: 1,
+        },
+      },
+    });
+
+    expect(parsed.expected.review?.notes).toEqual([
+      {
+        kind: 'non-operational',
+        summary: 'Non-operational caveat: POLICY_REVIEW_REQUIRED',
+      },
+      {
+        kind: 'non-operational',
+        summary: 'A human reviewer must confirm the retention-policy wording before merge.',
+      },
     ]);
   });
 });

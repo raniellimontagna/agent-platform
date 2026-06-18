@@ -65,7 +65,7 @@ export async function initRepo(workdir: string, branch = 'main'): Promise<void> 
     `git config user.email "${EVAL_GIT_USER_EMAIL}"`,
     'git config commit.gpgsign false',
     'git add -A',
-    'git commit -m "base fixture"',
+    'git commit --allow-empty -m "base fixture"',
   ]) {
     const result = await runShell(command, workdir);
     if (result.exitCode !== 0) {

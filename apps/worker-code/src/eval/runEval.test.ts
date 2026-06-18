@@ -326,11 +326,7 @@ describe('renderMarkdown', () => {
   });
 });
 
-function result(
-  id: string,
-  score: number,
-  overrides: Partial<EvalResult> = {},
-): EvalResult {
+function result(id: string, score: number, overrides: Partial<EvalResult> = {}): EvalResult {
   return {
     id,
     title: id,

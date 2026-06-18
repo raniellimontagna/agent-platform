@@ -106,15 +106,12 @@ async function addReportChecks(args: {
 
   const verdict = getValue(report, ['verdict']);
   const autoMerge = getValue(report, ['autoMerge']);
-  const blockReason = readNullableString(
-    report,
-    [
-      ['blockReason'],
-      ['autoMergeBlockReason'],
-      ['blockedReason'],
-      ['autoMerge', 'blockReason'],
-    ],
-  );
+  const blockReason = readNullableString(report, [
+    ['blockReason'],
+    ['autoMergeBlockReason'],
+    ['blockedReason'],
+    ['autoMerge', 'blockReason'],
+  ]);
   const caveatCategory = readNullableString(report, [['caveatCategory']]);
   const reviewAction = getValue(report, ['reviewAction']);
   const criticRounds = getValue(report, ['criticRounds']);
@@ -138,7 +135,9 @@ async function addReportChecks(args: {
 
   if (reportExpectation.blockReason !== undefined) {
     const shouldValidateBlockReason =
-      reportExpectation.autoMerge === false || autoMerge === false || reportExpectation.blockReason === null;
+      reportExpectation.autoMerge === false ||
+      autoMerge === false ||
+      reportExpectation.blockReason === null;
 
     args.checks.push({
       name: 'report:auto-merge-block-reason',
@@ -182,7 +181,10 @@ async function addReportChecks(args: {
 
     args.checks.push({
       name: 'report:critic-rounds-within-limit',
-      passed: typeof criticRounds === 'number' && typeof maxCriticRounds === 'number' && criticRounds <= maxCriticRounds,
+      passed:
+        typeof criticRounds === 'number' &&
+        typeof maxCriticRounds === 'number' &&
+        criticRounds <= maxCriticRounds,
       detail: `criticRounds ${formatValue(criticRounds)}; maxCriticRounds ${formatValue(maxCriticRounds)}`,
     });
   }
@@ -217,7 +219,8 @@ async function addReportChecks(args: {
   if (reportExpectation.coAuthorTrailer !== undefined) {
     const trailers = readStringList(report, [['commit', 'trailers']]);
     const hasTrailer =
-      commitMessage.includes(reportExpectation.coAuthorTrailer) || trailers.includes(reportExpectation.coAuthorTrailer);
+      commitMessage.includes(reportExpectation.coAuthorTrailer) ||
+      trailers.includes(reportExpectation.coAuthorTrailer);
 
     args.checks.push({
       name: 'report:commit-co-author-trailer',
@@ -300,9 +303,9 @@ async function readText(path: string): Promise<string> {
   }
 }
 
-async function readJson(path: string): Promise<Record<string, any> | null> {
+async function readJson(path: string): Promise<Record<string, unknown> | null> {
   try {
-    return JSON.parse(await readFile(path, 'utf8')) as Record<string, any>;
+    return JSON.parse(await readFile(path, 'utf8')) as Record<string, unknown>;
   } catch {
     return null;
   }
