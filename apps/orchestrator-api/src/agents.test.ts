@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_AGENT_KEY,
+  LANDING_PAGE_AGENT_KEY,
   REVIEWER_AGENT_KEY,
   agentKeyFromLabels,
   createAgentSchema,
@@ -69,5 +70,15 @@ describe('agentKeyFromLabels', () => {
 
   it('usa reviewer-agent quando a issue tem label agent:reviewer', () => {
     expect(agentKeyFromLabels(['ai-ready', 'agent:reviewer'])).toBe(REVIEWER_AGENT_KEY);
+  });
+
+  it('usa landing-page-agent quando a issue tem label agent:landing-page', () => {
+    expect(agentKeyFromLabels(['ai-ready', 'agent:landing-page'])).toBe(LANDING_PAGE_AGENT_KEY);
+  });
+
+  it('prioriza landing-page-agent se houver mais de uma label de agente', () => {
+    expect(agentKeyFromLabels(['ai-ready', 'agent:reviewer', 'agent:landing-page'])).toBe(
+      LANDING_PAGE_AGENT_KEY,
+    );
   });
 });

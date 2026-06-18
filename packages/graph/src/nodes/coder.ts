@@ -46,6 +46,8 @@ export interface RunnerJobBody {
   commands: string[];
   lessons: string;
   reviewFeedback: string;
+  agentKey?: string;
+  agentCapabilities?: string[];
 }
 
 export interface RunnerResult {
@@ -128,6 +130,8 @@ export function makeCoderNode(deps: CoderDeps, opts: { revise?: boolean } = {}) 
         commands: deps.testCommands,
         lessons,
         reviewFeedback: opts.revise ? (state.reviewFeedback ?? '') : '',
+        agentKey: state.agentKey,
+        agentCapabilities: state.agentCapabilities,
       });
       const ok = result.status === 'succeeded' && result.testsPassed !== false;
       const errorBlock = result.error ? `\n\n\`\`\`\n${result.error}\n\`\`\`` : '';

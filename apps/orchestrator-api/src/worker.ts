@@ -2,8 +2,8 @@ import { parseRepoRef } from '@agent-platform/github';
 import { verdictOf } from '@agent-platform/graph';
 import { distillLesson } from '@agent-platform/memory';
 import { Worker } from 'bullmq';
-import { getAgent } from './agent.js';
-import { ensureDefaultAgents } from './agents.js';
+import { getAgent as getRuntimeAgent } from './agent.js';
+import { ensureDefaultAgents, getAgent as getCatalogAgent } from './agents.js';
 import { hasCriticalReason, isCriticalReason } from './approvalPolicy.js';
 import { saveArtifacts } from './artifacts.js';
 import { env } from './env.js';
@@ -31,7 +31,7 @@ import { ensureDefaultTools } from './tools.js';
  * - kind `resume`: retoma após aprovação → roda coding (MAC-17) → fim.
  */
 export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, string>> {
-  const { graph, linear, llm } = await getAgent();
+  const { graph, linear, llm } = await getRuntimeAgent();
 
   // MAC-42/MAC-90: garante os agentes built-in no catálogo (idempotente). Não-fatal.
   try {
@@ -92,6 +92,7 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
       if (job.data.kind === 'plan') {
         const issue = await linear.getIssue(job.data.issueId);
         const run = await getRun(runId);
+        const selectedAgent = run?.agentId ? await getCatalogAgent(run.agentId) : null;
         await updateRunStatus(runId, 'planning');
         result = await graph.invoke(
           {
@@ -102,6 +103,8 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
             description: issue.description,
             status: 'planning',
             autoMerge: run?.autoMerge ?? false,
+            agentKey: selectedAgent?.key,
+            agentCapabilities: selectedAgent?.capabilities,
           },
           config,
         );

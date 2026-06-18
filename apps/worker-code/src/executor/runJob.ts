@@ -103,6 +103,8 @@ export async function runJob(job: Job): Promise<JobResult> {
         plan: job.plan,
         lessons: job.lessons,
         reviewFeedback: job.reviewFeedback,
+        agentKey: job.agentKey,
+        agentCapabilities: job.agentCapabilities,
         log,
       });
       base.summary = gen.summary;
@@ -130,6 +132,8 @@ export async function runJob(job: Job): Promise<JobResult> {
             failureTail: validation.failureTail,
             plan: job.plan,
             title: job.title,
+            agentKey: job.agentKey,
+            agentCapabilities: job.agentCapabilities,
             log,
           });
           base.costUsd = (base.costUsd ?? 0) + fix.costUsd;

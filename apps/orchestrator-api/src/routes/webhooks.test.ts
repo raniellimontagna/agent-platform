@@ -84,4 +84,37 @@ describe('POST /webhooks/linear', () => {
       { priority: 10 },
     );
   });
+
+  it('seleciona landing-page-agent quando a issue tem label agent:landing-page', async () => {
+    vi.mocked(resolveAgentByKey).mockResolvedValue({ id: 'landing-id' } as never);
+    vi.mocked(createRun).mockResolvedValue('run-landing');
+    const body = JSON.stringify({
+      action: 'update',
+      type: 'Issue',
+      data: {
+        id: 'issue-landing',
+        identifier: 'MAC-91',
+        title: 'Criar landing page',
+        labels: [{ name: 'approved' }, { name: 'ai-ready' }, { name: 'agent:landing-page' }],
+      },
+      updatedFrom: { labels: [{ name: 'approved' }] },
+    });
+
+    const res = await app.request('/webhooks/linear', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'linear-signature': signed(body) },
+      body,
+    });
+
+    expect(res.status).toBe(200);
+    expect(resolveAgentByKey).toHaveBeenCalledWith('landing-page-agent');
+    expect(createRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        linearIssueId: 'issue-landing',
+        linearIssueIdentifier: 'MAC-91',
+        title: 'Criar landing page',
+        agentId: 'landing-id',
+      }),
+    );
+  });
 });
