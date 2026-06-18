@@ -22,7 +22,7 @@ describe('extractResearchUrls', () => {
   it('deduplica URLs e remove pontuação final', () => {
     expect(
       extractResearchUrls(
-        'Veja https://example.com/docs, e https://example.com/docs. Depois https://x.test/a)',
+        'Veja https://example.com/docs, e [https://example.com/docs](<https://example.com/docs>). Depois `https://x.test/a`)',
       ),
     ).toEqual(['https://example.com/docs', 'https://x.test/a']);
   });
