@@ -44,8 +44,10 @@ describe('agentSkills', () => {
 
     expect(instructions).toContain('Agente selecionado: data-collector-agent');
     expect(instructions).toContain('## Skill: research-data-collection');
+    expect(instructions).toContain('## Skill: instagram-public-research');
     expect(instructions).toContain('Collect useful evidence, not raw dumps');
     expect(instructions).toContain('Do not bypass paywalls');
+    expect(instructions).toContain('This is a research-only skill');
   });
 
   it('usa fallback especializado quando o registry não existe', async () => {
