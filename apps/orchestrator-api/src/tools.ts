@@ -90,7 +90,7 @@ export async function updateToolStatus(id: string, status: ToolStatus): Promise<
   return row ?? null;
 }
 
-/** Tools default = as 5 do allowlist do runner (AGENT_COMMAND_ALLOWLIST). */
+/** Tools default = allowlist atual do runner + tools planejadas no catálogo. */
 const DEFAULT_TOOLS: NewTool[] = [
   {
     key: 'git',
@@ -126,6 +126,37 @@ const DEFAULT_TOOLS: NewTool[] = [
     risk: 'caution',
     scopes: ['exec'],
     description: 'Runtime JavaScript.',
+  },
+  {
+    key: 'python',
+    version: 'v1',
+    risk: 'caution',
+    scopes: ['exec', 'fs_read', 'fs_write'],
+    description:
+      'Runtime Python para scripts de coleta/normalização. Ainda não está no allowlist padrão do runner.',
+  },
+  {
+    key: 'playwright',
+    version: 'v1',
+    risk: 'dangerous',
+    scopes: ['network', 'browser', 'fs_write'],
+    description:
+      'Automação de browser para páginas dinâmicas, screenshots e inspeção visual controlada.',
+  },
+  {
+    key: 'firecrawl',
+    version: 'v1',
+    risk: 'caution',
+    scopes: ['network', 'web_extract'],
+    description: 'Extração/crawling via Firecrawl API para páginas públicas e conteúdo crawlável.',
+  },
+  {
+    key: 'scrapling',
+    version: 'v1',
+    risk: 'dangerous',
+    scopes: ['network', 'browser', 'web_extract', 'crawl'],
+    description:
+      'Framework Python/CLI para scraping HTTP, páginas JS e crawling. Uso condicionado à política de scraping.',
   },
 ];
 

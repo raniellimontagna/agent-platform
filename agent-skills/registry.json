@@ -10,7 +10,8 @@
       "seo-page",
       "biome-formatting",
       "gsap-motion"
-    ]
+    ],
+    "data-collector-agent": ["research-data-collection"]
   },
   "skills": [
     {
@@ -52,6 +53,11 @@
       "name": "gsap-motion",
       "path": "agent-skills/gsap-motion/SKILL.md",
       "description": "Use GSAP for polished motion when the repository already supports frontend animation or can add GSAP safely."
+    },
+    {
+      "name": "research-data-collection",
+      "path": "agent-skills/research-data-collection/SKILL.md",
+      "description": "Collect public web data with source evidence, safety policy, rate limits, and structured research outputs for downstream agents."
     }
   ]
 }

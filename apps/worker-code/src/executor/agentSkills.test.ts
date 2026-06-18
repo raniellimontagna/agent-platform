@@ -39,6 +39,15 @@ describe('agentSkills', () => {
     expect(instructions).toContain('Treat SEO as part of the landing page implementation');
   });
 
+  it('injeta skill de coleta para data-collector-agent', () => {
+    const instructions = buildSkillInstructions('data-collector-agent', ['research']);
+
+    expect(instructions).toContain('Agente selecionado: data-collector-agent');
+    expect(instructions).toContain('## Skill: research-data-collection');
+    expect(instructions).toContain('Collect useful evidence, not raw dumps');
+    expect(instructions).toContain('Do not bypass paywalls');
+  });
+
   it('usa fallback especializado quando o registry não existe', async () => {
     const root = join(tmpdir(), `agent-platform-no-skills-${Date.now()}`);
     await mkdir(root, { recursive: true });

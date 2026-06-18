@@ -117,4 +117,37 @@ describe('POST /webhooks/linear', () => {
       }),
     );
   });
+
+  it('seleciona data-collector-agent quando a issue tem label agent:data-collector', async () => {
+    vi.mocked(resolveAgentByKey).mockResolvedValue({ id: 'collector-id' } as never);
+    vi.mocked(createRun).mockResolvedValue('run-collector');
+    const body = JSON.stringify({
+      action: 'update',
+      type: 'Issue',
+      data: {
+        id: 'issue-collector',
+        identifier: 'MAC-93',
+        title: 'Coletar dados de concorrentes',
+        labels: [{ name: 'approved' }, { name: 'ai-ready' }, { name: 'agent:data-collector' }],
+      },
+      updatedFrom: { labels: [{ name: 'approved' }] },
+    });
+
+    const res = await app.request('/webhooks/linear', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'linear-signature': signed(body) },
+      body,
+    });
+
+    expect(res.status).toBe(200);
+    expect(resolveAgentByKey).toHaveBeenCalledWith('data-collector-agent');
+    expect(createRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        linearIssueId: 'issue-collector',
+        linearIssueIdentifier: 'MAC-93',
+        title: 'Coletar dados de concorrentes',
+        agentId: 'collector-id',
+      }),
+    );
+  });
 });

@@ -9,6 +9,7 @@ export type AgentStatus = (typeof schema.agentStatus.enumValues)[number];
 export const DEFAULT_AGENT_KEY = env.AGENT_KEY;
 export const REVIEWER_AGENT_KEY = 'reviewer-agent';
 export const LANDING_PAGE_AGENT_KEY = 'landing-page-agent';
+export const DATA_COLLECTOR_AGENT_KEY = 'data-collector-agent';
 
 /** Schema de criação de agente via REST. */
 export const createAgentSchema = z.object({
@@ -40,6 +41,7 @@ export class AgentExistsError extends Error {
 
 export function agentKeyFromLabels(labelNames: string[]): string {
   if (labelNames.includes('agent:landing-page')) return LANDING_PAGE_AGENT_KEY;
+  if (labelNames.includes('agent:data-collector')) return DATA_COLLECTOR_AGENT_KEY;
   return labelNames.includes('agent:reviewer') ? REVIEWER_AGENT_KEY : DEFAULT_AGENT_KEY;
 }
 
@@ -119,6 +121,20 @@ const DEFAULT_AGENTS: NewAgent[] = [
       'conversion-copy',
       'visual-polish',
       'single-repo',
+    ],
+  },
+  {
+    key: DATA_COLLECTOR_AGENT_KEY,
+    version: 'v1',
+    description:
+      'Agente especializado em coletar, normalizar e resumir dados externos com fontes e evidências.',
+    capabilities: [
+      'research',
+      'web-scraping',
+      'source-evidence',
+      'competitive-analysis',
+      'market-research',
+      'artifact-output',
     ],
   },
 ];
