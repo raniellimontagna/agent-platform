@@ -96,7 +96,8 @@ export function buildAgentGraph(deps: GraphDeps, checkpointer: PostgresSaver) {
       .addEdge('planning', 'coding')
       .addConditionalEdges(
         'coding',
-        (state) => (state.status === 'failed' ? 'report' : 'reviewing'),
+        (state) =>
+          state.status === 'failed' || state.status === 'completed' ? 'report' : 'reviewing',
         { reviewing: 'reviewing', report: 'report' },
       )
       // MAC-59: o critic decide revisar (volta pro coder em modo revisão) ou seguir.

@@ -64,4 +64,46 @@ describe('makeCoderNode', () => {
     );
     expect(comments[0]).toContain('**Validação:** ❌ falhou');
   });
+
+  it('encerra data collector como completed sem seguir para PR', async () => {
+    const comments: string[] = [];
+    const coder = makeCoderNode({
+      linear: { comment: async (_issueId: string, body: string) => comments.push(body) } as never,
+      repoUrl: 'git@example.com:repo.git',
+      baseBranch: 'main',
+      testCommands: [],
+      dispatch: async () => ({
+        status: 'succeeded',
+        branch: 'agent/mac-94-research',
+        pushed: false,
+        testsPassed: true,
+        commands: [
+          {
+            command: 'firecrawl scrape https://example.com',
+            exitCode: 0,
+            stdout: 'ok',
+            stderr: '',
+          },
+        ],
+        summary: 'Research pack gerado.',
+        research: '# Research Pack',
+      }),
+    });
+
+    const result = await coder({
+      runId: '12345678-1234-1234-1234-123456789abc',
+      issueId: 'issue-1',
+      issueIdentifier: 'MAC-94',
+      title: 'Coleta',
+      description: 'https://example.com',
+      plan: 'Plano',
+      agentKey: 'data-collector-agent',
+      agentCapabilities: ['research'],
+    } as never);
+
+    expect(result.status).toBe('completed');
+    expect(result.pushed).toBe(false);
+    expect(result.research).toBe('# Research Pack');
+    expect(comments[0]).toContain('## 🔎 Coleta de dados');
+  });
 });

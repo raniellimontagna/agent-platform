@@ -21,6 +21,8 @@ export const AgentState = Annotation.Root({
   commitSha: Annotation<string>(),
   /** Resumo das alterações de código produzido pelo modelo. */
   summary: Annotation<string>(),
+  /** Research pack produzido por agentes de coleta. */
+  research: Annotation<string>(),
   /** Branch foi enviada (push) ao remoto — habilita abrir o PR (MAC-26). */
   pushed: Annotation<boolean>(),
   /** Diff das alterações vs. base, devolvido pelo runner (MAC-18). */

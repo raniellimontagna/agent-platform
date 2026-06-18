@@ -68,6 +68,7 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
         plan?: string;
         diff?: string;
         summary?: string;
+        research?: string;
         planCostUsd?: number;
         codeCostUsd?: number;
         reviewCostUsd?: number;
@@ -219,6 +220,7 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
             review: result.review,
             validation: result.testSummary,
             summary: result.summary,
+            research: result.research,
           });
         }
       } catch (err) {

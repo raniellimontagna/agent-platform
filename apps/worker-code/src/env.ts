@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+const optionalNonEmpty = z.preprocess(
+  (value) => (value === '' ? undefined : value),
+  z.string().min(1).optional(),
+);
+
 export const envSchema = z.object({
   PORT: z.coerce.number().default(8080),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
@@ -29,6 +34,11 @@ export const envSchema = z.object({
   AGENT_COMMAND_ALLOWLIST: z.string().default('pnpm,node,npm,npx,git'),
   // Self-correction: máximo de tentativas de fix após falha de validação.
   AGENT_MAX_FIX_ATTEMPTS: z.coerce.number().default(3),
+
+  // Firecrawl (MAC-94): usado pelo data-collector-agent para research packs.
+  FIRECRAWL_API_KEY: optionalNonEmpty,
+  FIRECRAWL_BASE_URL: z.string().url().default('https://api.firecrawl.dev'),
+  FIRECRAWL_TIMEOUT_MS: z.coerce.number().int().positive().default(60_000),
 
   // Sandbox executor (MAC-28). `process` mantém dev/test simples; produção usa
   // containers efêmeros via Docker socket montado na VM de runners.

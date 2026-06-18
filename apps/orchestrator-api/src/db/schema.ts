@@ -176,6 +176,7 @@ export const artifactKind = pgEnum('artifact_kind', [
   'review',
   'validation',
   'summary',
+  'research',
 ]);
 
 /** Artefatos produzidos por um run, guardados de forma durável (MAC-44). */
