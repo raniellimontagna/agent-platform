@@ -30,9 +30,7 @@
     "fixes": [
       {
         "summary": "Reworded fixture notes after critic feedback while preserving the remaining policy caveat.",
-        "changes": [
-          "README.md"
-        ]
+        "changes": ["README.md"]
       }
     ],
     "maxFixAttempts": 3,
@@ -41,9 +39,7 @@
       "name": "Ranielli Montagna",
       "email": "raniellimontagna@hotmail.com"
     },
-    "commitTrailers": [
-      "Co-authored-by: Codex <noreply@openai.com>"
-    ],
+    "commitTrailers": ["Co-authored-by: Codex <noreply@openai.com>"],
     "review": {
       "verdict": "APROVADO COM RESSALVAS",
       "notes": [
@@ -66,9 +62,7 @@
   },
   "commands": [],
   "expected": {
-    "changedFiles": [
-      "README.md"
-    ],
+    "changedFiles": ["README.md"],
     "forbiddenFiles": [],
     "requiredContent": [
       {
@@ -97,12 +91,8 @@
         "name": "Ranielli Montagna",
         "email": "raniellimontagna@hotmail.com"
       },
-      "messageIncludes": [
-        "Ref: MAC-86"
-      ],
-      "trailersInclude": [
-        "Co-authored-by: Codex <noreply@openai.com>"
-      ]
+      "messageIncludes": ["Ref: MAC-86"],
+      "trailersInclude": ["Co-authored-by: Codex <noreply@openai.com>"]
     },
     "isolation": {
       "allowNetwork": false,

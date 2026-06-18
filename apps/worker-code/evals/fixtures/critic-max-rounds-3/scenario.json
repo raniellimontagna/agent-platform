@@ -26,10 +26,7 @@
     "commit": {
       "sha": "3333333333333333333333333333333333333333",
       "message": "test(worker-code): cover critic max rounds 3\n\nRef: MAC-86\n\nCo-authored-by: Codex <noreply@openai.com>",
-      "mustInclude": [
-        "Ref: MAC-86",
-        "Co-authored-by: Codex <noreply@openai.com>"
-      ]
+      "mustInclude": ["Ref: MAC-86", "Co-authored-by: Codex <noreply@openai.com>"]
     }
   },
   "workerDryRun": {
@@ -107,10 +104,7 @@
     "commit": {
       "authorName": "Ranielli Montagna",
       "authorEmail": "raniellimontagna@hotmail.com",
-      "mustInclude": [
-        "Ref: MAC-86",
-        "Co-authored-by: Codex <noreply@openai.com>"
-      ]
+      "mustInclude": ["Ref: MAC-86", "Co-authored-by: Codex <noreply@openai.com>"]
     },
     "isolation": {
       "allowNetwork": false,

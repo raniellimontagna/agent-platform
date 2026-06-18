@@ -78,10 +78,7 @@
       "authorEmail": "raniellimontagna@hotmail.com",
       "containsRef": true,
       "containsCoAuthoredBy": true,
-      "mustInclude": [
-        "Ref:",
-        "Co-authored-by: Codex <noreply@openai.com>"
-      ]
+      "mustInclude": ["Ref:", "Co-authored-by: Codex <noreply@openai.com>"]
     },
     "isolation": {
       "allowNetwork": false,

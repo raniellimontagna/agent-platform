@@ -200,8 +200,7 @@ export function normalizeScenarioFixture(raw: unknown): unknown {
     repo: repo ?? record.repo,
     candidate:
       record.candidate ?? inputs?.candidate ?? fixtures?.candidate ?? normalizeCandidate(fixtures),
-    commands:
-      record.commands ?? inputs?.commands ?? fixtures?.commands ?? record.commands,
+    commands: record.commands ?? inputs?.commands ?? fixtures?.commands ?? record.commands,
     workerDryRun:
       record.workerDryRun ?? inputs?.workerDryRun ?? fixtures?.workerDryRun ?? record.workerDryRun,
     expected: normalizeExpectedFixture(rawExpected, rawReview, record),
@@ -233,7 +232,8 @@ export function renderMarkdown(report: EvalReport): string {
     lines.push(`Result: ${result.passed ? 'PASS' : 'FAIL'} (${result.score})`);
     if (insights.verdict) lines.push(`Verdict: ${insights.verdict}`);
     if (insights.reviewOutcome) lines.push(`Review outcome: ${insights.reviewOutcome}`);
-    if (insights.autoMergeExpected) lines.push(`Expected auto-merge: ${insights.autoMergeExpected}`);
+    if (insights.autoMergeExpected)
+      lines.push(`Expected auto-merge: ${insights.autoMergeExpected}`);
     if (insights.blockReason) lines.push(`Auto-merge block reason: ${insights.blockReason}`);
     if (insights.criticRounds) lines.push(`Critic rounds: ${insights.criticRounds}`);
     if (insights.commitSummary) lines.push(`Commit policy: ${insights.commitSummary}`);
@@ -377,7 +377,10 @@ function createHarnessChecks(
         normalizeText(actual.commitAuthorName) === normalizeText(expectations.commitAuthorName) &&
         normalizeText(actual.commitAuthorEmail) === normalizeText(expectations.commitAuthorEmail),
       name: 'commit author',
-      detail: actualAuthor === expectedAuthor ? actualAuthor : `expected ${expectedAuthor}; actual ${actualAuthor}`,
+      detail:
+        actualAuthor === expectedAuthor
+          ? actualAuthor
+          : `expected ${expectedAuthor}; actual ${actualAuthor}`,
     });
   }
 
@@ -439,32 +442,52 @@ function extractScenarioExpectations(scenario: EvalScenario): {
     allowLinear !== undefined ||
     allowLiteLLM !== undefined ||
     externalCallsEmpty !== undefined;
+  const commitPolicyStrings = [
+    ...readStringList(commit, ['messageIncludes']),
+    ...readStringList(commit, ['trailersInclude']),
+    ...readStringList(commit, ['mustInclude']),
+  ];
 
   return {
     verdict:
-      readString(review, ['verdict', 'status']) ?? readString(expected, ['finalVerdict', 'verdict']),
+      readString(review, ['verdict', 'status']) ??
+      readString(expected, ['finalVerdict', 'verdict']),
     reviewOutcome:
-      readString(review, ['outcome', 'action']) ?? readString(expected, ['reviewOutcome']),
+      readString(review, ['reviewOutcome', 'outcome', 'action']) ??
+      readString(expected, ['reviewOutcome']),
     autoMergeExpected:
+      readBooleanLike(review, ['autoMergeEligible']) ??
       readBooleanLike(autoMerge, ['enabled', 'expected']) ??
       readBooleanLike(expected, ['autoMergeExpected']),
     blockReason:
-      readString(autoMerge, ['blockReason']) ?? readString(expected, ['blockReason']),
+      readString(review, ['blockReason']) ??
+      readString(autoMerge, ['blockReason', 'reason']) ??
+      readString(expected, ['blockReason']),
     criticRounds:
-      readNumberLike(critic, ['rounds']) ?? readNumberLike(expected, ['criticRounds']),
+      readNumberLike(review, ['criticRounds']) ??
+      readNumberLike(critic, ['rounds', 'roundsExecuted']) ??
+      readNumberLike(expected, ['criticRounds']),
     maxCriticRounds:
+      readNumberLike(review, ['maxCriticRounds']) ??
       readNumberLike(critic, ['maxRounds']) ??
       readNumberLike(expected, ['maxCriticRounds']) ??
       readNumberLike(record, ['agentMaxReviewRounds']),
     commitRequiresRef:
-      readBooleanLike(commit, ['requiresRef']) ?? readBooleanLike(expected, ['commitRequiresRef']),
+      readBooleanLike(commit, ['requiresRef', 'containsRef']) ??
+      readBooleanLike(expected, ['commitRequiresRef']) ??
+      commitPolicyStrings.some((value) => value.includes('Ref:')),
     commitRequiresCoAuthoredBy:
-      readBooleanLike(commit, ['requiresCoAuthoredBy']) ??
-      readBooleanLike(expected, ['commitRequiresCoAuthoredBy']),
+      readBooleanLike(commit, ['requiresCoAuthoredBy', 'containsCoAuthoredBy']) ??
+      readBooleanLike(expected, ['commitRequiresCoAuthoredBy']) ??
+      commitPolicyStrings.some((value) => value.includes('Co-authored-by:')),
     commitAuthorName:
-      readString(commit, ['authorName']) ?? readString(expected, ['commitAuthorName']),
+      readString(asRecord(commit?.author), ['name']) ??
+      readString(commit, ['authorName']) ??
+      readString(expected, ['commitAuthorName']),
     commitAuthorEmail:
-      readString(commit, ['authorEmail']) ?? readString(expected, ['commitAuthorEmail']),
+      readString(asRecord(commit?.author), ['email']) ??
+      readString(commit, ['authorEmail']) ??
+      readString(expected, ['commitAuthorEmail']),
     isolation: hasIsolationExpectation
       ? {
           allowNetwork: allowNetwork ?? true,
@@ -508,10 +531,12 @@ function extractActualEvaluation(dryRun?: WorkerDryRunResult): {
     blockReason:
       readString(record, ['autoMergeBlockReason', 'blockReason', 'blockedReason']) ??
       readString(asRecord(record?.autoMerge), ['blockReason']),
-    criticRounds:
-      readNumberLike(record, ['criticRounds', 'reviewRounds', 'criticRoundCount']),
-    maxCriticRounds:
-      readNumberLike(record, ['maxCriticRounds', 'maxReviewRounds', 'agentMaxReviewRounds']),
+    criticRounds: readNumberLike(record, ['criticRounds', 'reviewRounds', 'criticRoundCount']),
+    maxCriticRounds: readNumberLike(record, [
+      'maxCriticRounds',
+      'maxReviewRounds',
+      'agentMaxReviewRounds',
+    ]),
     commitMessage: readString(record, ['commitMessage', 'finalCommitMessage']),
     commitAuthorName: readString(record, ['commitAuthorName', 'authorName']),
     commitAuthorEmail: readString(record, ['commitAuthorEmail', 'authorEmail']),
@@ -525,7 +550,9 @@ function extractActualEvaluation(dryRun?: WorkerDryRunResult): {
 
 function combineScores(baseScore: number, checks: EvalResult['checks']): number {
   if (checks.length === 0) return baseScore;
-  const complianceScore = Math.round((checks.filter((check) => check.passed).length / checks.length) * 100);
+  const complianceScore = Math.round(
+    (checks.filter((check) => check.passed).length / checks.length) * 100,
+  );
   return Math.min(baseScore, complianceScore);
 }
 
@@ -554,8 +581,7 @@ function extractResultInsights(result: EvalResult): {
     readBooleanLike(dryRun, ['expectedAutoMerge', 'autoMergeExpected', 'shouldAutoMerge']) ??
     parseYesNo(findCheckValue(checks, ['auto-merge expectation'])) ??
     inferAutoMergeFromChecks(checks);
-  const autoMergeExpected =
-    autoMerge === undefined ? undefined : autoMerge ? 'yes' : 'no';
+  const autoMergeExpected = autoMerge === undefined ? undefined : autoMerge ? 'yes' : 'no';
 
   const structuredBlockReason = readString(dryRun, [
     'autoMergeBlockReason',
@@ -564,8 +590,8 @@ function extractResultInsights(result: EvalResult): {
   ]);
   const inferredBlockReason =
     autoMerge === false
-      ? findCheckValue(checks, ['auto-merge block reason']) ??
-        findAutoMergeBlockReasonFromChecks(checks)
+      ? (findCheckValue(checks, ['auto-merge block reason']) ??
+        findAutoMergeBlockReasonFromChecks(checks))
       : undefined;
   const blockReason = structuredBlockReason ?? inferredBlockReason;
 
@@ -611,12 +637,20 @@ function summarizeCommitPolicy(
     parseAuthorField(findCheckValue(result.checks, ['commit author']), 'email');
   const explicitRefStatus = findCheckValue(result.checks, ['commit Ref trailer']);
   const explicitCoauthoredStatus = findCheckValue(result.checks, ['commit Co-authored-by trailer']);
-  const hasRef = explicitRefStatus ? explicitRefStatus === 'present' : commitMessage?.includes('Ref:') ?? false;
+  const hasRef = explicitRefStatus
+    ? explicitRefStatus === 'present'
+    : (commitMessage?.includes('Ref:') ?? false);
   const hasCoauthored = explicitCoauthoredStatus
     ? explicitCoauthoredStatus === 'present'
-    : commitMessage?.includes('Co-authored-by: Codex <noreply@openai.com>') ?? false;
+    : (commitMessage?.includes('Co-authored-by: Codex <noreply@openai.com>') ?? false);
 
-  if (!commitMessage && !authorName && !authorEmail && !explicitRefStatus && !explicitCoauthoredStatus) {
+  if (
+    !commitMessage &&
+    !authorName &&
+    !authorEmail &&
+    !explicitRefStatus &&
+    !explicitCoauthoredStatus
+  ) {
     return undefined;
   }
 
@@ -631,10 +665,7 @@ function summarizeCommitPolicy(
   return parts.join('; ');
 }
 
-function findCheckDetail(
-  checks: EvalResult['checks'],
-  keywords: string[],
-): string | undefined {
+function findCheckDetail(checks: EvalResult['checks'], keywords: string[]): string | undefined {
   const loweredKeywords = keywords.map((keyword) => keyword.toLowerCase());
   for (const check of checks) {
     const haystack = `${check.name} ${check.detail}`.toLowerCase();
@@ -756,7 +787,8 @@ function normalizeExpectedFixture(
     },
     critic: {
       ...expectedCritic,
-      rounds: readNumberLike(expectedCritic, ['rounds']) ?? readNumberLike(expected, ['criticRounds']),
+      rounds:
+        readNumberLike(expectedCritic, ['rounds']) ?? readNumberLike(expected, ['criticRounds']),
       maxRounds:
         readNumberLike(expectedCritic, ['maxRounds']) ??
         readNumberLike(expected, ['maxCriticRounds']) ??
@@ -844,6 +876,17 @@ function readString(
     if (typeof value === 'string' && value.length > 0) return value;
   }
   return undefined;
+}
+
+function readStringList(record: Record<string, unknown> | undefined, keys: string[]): string[] {
+  if (!record) return [];
+  for (const key of keys) {
+    const value = record[key];
+    if (Array.isArray(value)) {
+      return value.filter((entry): entry is string => typeof entry === 'string');
+    }
+  }
+  return [];
 }
 
 function readBooleanLike(

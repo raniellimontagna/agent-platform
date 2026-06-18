@@ -6,15 +6,32 @@ import { applyFix, generateAndApplyCode } from '../executor/codegen.js';
 import { summarizeFailureTail } from '../executor/validation.js';
 import type { CommandResult } from '../types.js';
 import { runCommands, runShell, writeFileList } from './runtime.js';
-import type { EvalScenario } from './types.js';
+import type { EvalResult, EvalScenario } from './types.js';
+
+type ReviewVerdict = NonNullable<NonNullable<EvalResult['dryRun']>['reviewVerdict']>;
+type ReviewOutcome = NonNullable<NonNullable<EvalResult['dryRun']>['reviewOutcome']>;
 
 export interface WorkerDryRunResult {
   branch: string;
   commitSha?: string;
+  commitAuthorEmail?: string;
+  commitAuthorName?: string;
+  commitMessage?: string;
   commands: CommandResult[];
   diff: string;
+  expectedAutoMerge?: boolean;
+  autoMergeBlockReason?: string;
   filesChanged: string[];
   fixAttempts: number;
+  reviewOutcome?: ReviewOutcome;
+  reviewVerdict?: ReviewVerdict;
+  criticRounds?: number;
+  maxReviewRounds?: number;
+  allowNetwork?: boolean;
+  allowGitHub?: boolean;
+  allowLinear?: boolean;
+  allowLiteLLM?: boolean;
+  externalCalls?: string[];
   prTitle: string;
   summary: string;
   pushed: false;
@@ -83,13 +100,34 @@ export async function runWorkerDryRun(args: {
   const summary = generated?.summary ?? dryRun.summary;
   const commit = await commitLocal(args.workdir, prTitle, summary);
   const diff = (await runShell('git diff main...HEAD', args.workdir)).stdout;
+  const isolation = dryRun.isolation ?? {
+    allowNetwork: false,
+    allowGitHub: false,
+    allowLinear: false,
+    allowLiteLLM: false,
+    externalCalls: [],
+  };
   const result: WorkerDryRunResult = {
     branch: dryRun.branch,
     commitSha: commit,
+    commitAuthorEmail: dryRun.commitAuthor?.email,
+    commitAuthorName: dryRun.commitAuthor?.name,
+    commitMessage: dryRun.commitMessage,
     commands,
     diff,
+    expectedAutoMerge: dryRun.review?.autoMergeEligible,
+    autoMergeBlockReason: dryRun.review?.blockReason,
     filesChanged,
     fixAttempts,
+    reviewOutcome: dryRun.review?.reviewOutcome,
+    reviewVerdict: dryRun.review?.verdict,
+    criticRounds: dryRun.review?.criticRounds,
+    maxReviewRounds: dryRun.review?.maxCriticRounds,
+    allowNetwork: isolation.allowNetwork,
+    allowGitHub: isolation.allowGitHub,
+    allowLinear: isolation.allowLinear,
+    allowLiteLLM: isolation.allowLiteLLM,
+    externalCalls: isolation.externalCalls,
     prTitle,
     summary,
     pushed: false,
@@ -136,7 +174,7 @@ async function commitLocal(
   }
 
   const message = `${title}\n\n${summary}\n\nEval-Dry-Run: true`;
-  const commit = await runShell(`git commit -F - <<'EOF'\n${message}\nEOF`, workdir);
+  const commit = await runShell(`git commit --allow-empty -F - <<'EOF'\n${message}\nEOF`, workdir);
   if (commit.exitCode !== 0) {
     throw new Error(`git commit failed: ${commit.stderr || commit.stdout}`);
   }

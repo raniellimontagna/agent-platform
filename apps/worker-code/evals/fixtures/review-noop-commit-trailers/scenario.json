@@ -25,10 +25,7 @@
     },
     "commit": {
       "message": "test(eval): preserve approved no-op review\n\nRef: MAC-86\n\nCo-authored-by: Codex <noreply@openai.com>",
-      "mustInclude": [
-        "Ref: MAC-86",
-        "Co-authored-by: Codex <noreply@openai.com>"
-      ]
+      "mustInclude": ["Ref: MAC-86", "Co-authored-by: Codex <noreply@openai.com>"]
     }
   },
   "workerDryRun": {
@@ -76,10 +73,7 @@
     "commit": {
       "authorName": "Ranielli Montagna",
       "authorEmail": "raniellimontagna@hotmail.com",
-      "mustInclude": [
-        "Ref: MAC-86",
-        "Co-authored-by: Codex <noreply@openai.com>"
-      ]
+      "mustInclude": ["Ref: MAC-86", "Co-authored-by: Codex <noreply@openai.com>"]
     },
     "isolation": {
       "allowNetwork": false,
