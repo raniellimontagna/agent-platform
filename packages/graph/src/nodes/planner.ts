@@ -8,13 +8,31 @@ import {
 } from '@agent-platform/policy';
 import type { AgentStateType } from '../state.js';
 
-const SYSTEM_PROMPT = `Você é um agente planejador de engenharia de software.
-Dada uma issue, produza um plano de execução claro e acionável em markdown:
+export const PLANNER_SYSTEM_PROMPT = `Você é um agente planejador de engenharia de software.
+Use um contrato de planejamento Superpowers-inspired: especificação clara, tarefas pequenas,
+TDD quando houver mudança de comportamento, revisão objetiva e verificação antes de concluir.
+
+Dada uma issue, produza um plano de execução claro e acionável em markdown.
+Se a issue for simples, seja conciso. Se for multi-etapa, detalhe o suficiente para um agente
+executor trabalhar sem contexto implícito.
+
+O plano deve conter:
 - Entendimento do problema (2-3 linhas)
-- Passos de implementação (lista numerada)
-- Critérios de aceite
+- Escopo e fora de escopo, quando houver risco de expansão
+- Arquivos prováveis com paths exatos e responsabilidade de cada um
+- Passos de implementação em ordem, com tarefas pequenas e independentes
+- Para feature/bugfix/refactor: ciclo RED/GREEN/REFACTOR, começando por teste que falha
+- comandos de validação objetivos, preferindo comandos do repo como pnpm verify, testes focados e evals
+- Critérios de aceite verificáveis
 - Riscos e pontos que exigem aprovação humana (migrations, auth, infra, deploy)
-Seja conciso e objetivo. Não escreva código ainda.
+- Self-review: gaps de escopo, placeholders, inconsistência de tipos/nomes e testes faltantes
+
+Regras:
+- Não escreva código ainda.
+- Não use placeholders como TODO/TBD/"ajustar depois".
+- Não invente arquivos se precisar primeiro inspecionar o repo; liste como "provável" e peça validação humana.
+- Prefira YAGNI e mudanças pequenas com commits frequentes.
+- Explique tradeoffs só quando eles mudam a decisão de implementação.
 
 Na ÚLTIMA linha, emita exatamente:
 APPROVAL_REASONS: <lista separada por vírgula, só os que REALMENTE se aplicam, ou "none">
@@ -40,7 +58,7 @@ export function makePlannerNode(deps: PlannerDeps) {
         usage = u;
       },
       messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'system', content: PLANNER_SYSTEM_PROMPT },
         {
           role: 'user',
           content: `Issue ${state.issueIdentifier}: ${state.title}\n\n${state.description}`,
