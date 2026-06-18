@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { criticalReasons, parseApprovalReasons, stripApprovalReasonsLine } from './index.js';
+import {
+  criticalReasons,
+  parseApprovalReasons,
+  reasonLabel,
+  stripApprovalReasonsLine,
+} from './index.js';
 
 describe('parseApprovalReasons', () => {
   it('sempre inclui plan', () => {
@@ -36,5 +41,12 @@ describe('parseApprovalReasons', () => {
     const out = stripApprovalReasonsLine('linha 1\nlinha 2\nAPPROVAL_REASONS: deploy');
     expect(out).not.toContain('APPROVAL_REASONS');
     expect(out).toContain('linha 2');
+  });
+});
+
+describe('reasonLabel', () => {
+  it('retorna os labels esperados', () => {
+    expect(reasonLabel('plan')).toBe('Plano');
+    expect(reasonLabel('deploy')).toBe('Deploy');
   });
 });
