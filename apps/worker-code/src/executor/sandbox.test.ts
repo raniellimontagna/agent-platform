@@ -24,6 +24,14 @@ describe('buildDockerRunArgs', () => {
     expect(args[args.indexOf('--name') + 1]).toMatch(/^agent-job-mac-28-run-1-[a-f0-9]{8}$/);
     expect(args).toContain('--network');
     expect(args[args.indexOf('--network') + 1]).toBe('bridge');
+    expect(args).toContain('--label');
+    expect(args).toContain('agent-platform.component=sandbox');
+    expect(args).toContain('agent-platform.run-id=MAC-28/Run 1');
+    expect(args).toContain('agent-platform.workdir=/srv/agent-runners/worktrees/run-1');
+    expect(args).toContain('--security-opt');
+    expect(args[args.indexOf('--security-opt') + 1]).toBe('no-new-privileges');
+    expect(args).toContain('--cap-drop');
+    expect(args[args.indexOf('--cap-drop') + 1]).toBe('ALL');
     expect(args).toContain('--cpus');
     expect(args[args.indexOf('--cpus') + 1]).toBe('1.5');
     expect(args).toContain('--memory');
