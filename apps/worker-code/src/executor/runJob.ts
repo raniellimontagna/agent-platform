@@ -8,7 +8,7 @@ import { checkCommand } from './commandPolicy.js';
 import { commitAll, diffAgainst, pushBranch } from './git.js';
 import { runSandboxedCommand } from './sandbox.js';
 import { summarizeFailureTail } from './validation.js';
-import { prepareWorktree } from './worktree.js';
+import { cleanupWorktree, prepareWorktree } from './worktree.js';
 
 const llm = createLlmClient({
   baseUrl: env.LITELLM_BASE_URL,
@@ -190,6 +190,12 @@ export async function runJob(job: Job): Promise<JobResult> {
     const message = err instanceof Error ? err.message : String(err);
     log.error({ err }, 'job failed');
     return { ...base, status: 'failed', error: message };
+  } finally {
+    try {
+      await cleanupWorktree(job.runId);
+    } catch (err) {
+      log.warn({ err }, 'failed to cleanup worktree');
+    }
   }
 }
 
