@@ -8,6 +8,7 @@ import { env } from './env.js';
 export type AgentStatus = (typeof schema.agentStatus.enumValues)[number];
 export const DEFAULT_AGENT_KEY = env.AGENT_KEY;
 export const REVIEWER_AGENT_KEY = 'reviewer-agent';
+export const LANDING_PAGE_AGENT_KEY = 'landing-page-agent';
 
 /** Schema de criação de agente via REST. */
 export const createAgentSchema = z.object({
@@ -38,6 +39,7 @@ export class AgentExistsError extends Error {
 }
 
 export function agentKeyFromLabels(labelNames: string[]): string {
+  if (labelNames.includes('agent:landing-page')) return LANDING_PAGE_AGENT_KEY;
   return labelNames.includes('agent:reviewer') ? REVIEWER_AGENT_KEY : DEFAULT_AGENT_KEY;
 }
 
@@ -104,6 +106,20 @@ const DEFAULT_AGENTS: NewAgent[] = [
     version: 'v1',
     description: 'Agente focado em revisão/critic para triagem e validação de mudanças.',
     capabilities: ['review', 'critic', 'quality-gate', 'test-analysis', 'single-repo'],
+  },
+  {
+    key: LANDING_PAGE_AGENT_KEY,
+    version: 'v1',
+    description:
+      'Agente especializado em criar landing pages prontas, responsivas e visualmente completas em pouco tempo.',
+    capabilities: [
+      'landing-page',
+      'frontend',
+      'responsive-design',
+      'conversion-copy',
+      'visual-polish',
+      'single-repo',
+    ],
   },
 ];
 

@@ -22,19 +22,25 @@ describe('slugify', () => {
 describe('makeCoderNode', () => {
   it('marca o estado como failed quando a validação do runner falha', async () => {
     const comments: string[] = [];
+    let dispatched: unknown;
     const coder = makeCoderNode({
       linear: { comment: async (_issueId: string, body: string) => comments.push(body) } as never,
       repoUrl: 'git@example.com:repo.git',
       baseBranch: 'main',
       testCommands: ['pnpm test'],
-      dispatch: async () => ({
-        status: 'succeeded',
-        branch: 'agent/mac-86-test-12345678',
-        pushed: true,
-        testsPassed: false,
-        commands: [{ command: 'pnpm test', exitCode: 1, stdout: 'FAIL workerDryRun', stderr: '' }],
-        fixAttempts: 3,
-      }),
+      dispatch: async (body) => {
+        dispatched = body;
+        return {
+          status: 'succeeded',
+          branch: 'agent/mac-86-test-12345678',
+          pushed: true,
+          testsPassed: false,
+          commands: [
+            { command: 'pnpm test', exitCode: 1, stdout: 'FAIL workerDryRun', stderr: '' },
+          ],
+          fixAttempts: 3,
+        };
+      },
     });
 
     const result = await coder({
@@ -44,10 +50,18 @@ describe('makeCoderNode', () => {
       title: 'Eval Harness v2',
       description: '',
       plan: 'Plano',
+      agentKey: 'landing-page-agent',
+      agentCapabilities: ['landing-page', 'frontend'],
     } as never);
 
     expect(result.status).toBe('failed');
     expect(result.testsPassed).toBe(false);
+    expect(dispatched).toEqual(
+      expect.objectContaining({
+        agentKey: 'landing-page-agent',
+        agentCapabilities: ['landing-page', 'frontend'],
+      }),
+    );
     expect(comments[0]).toContain('**Validação:** ❌ falhou');
   });
 });

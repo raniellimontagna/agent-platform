@@ -19,6 +19,10 @@ export const jobSchema = z.object({
   lessons: z.string().default(''),
   /** Parecer do critic a endereçar — ativa o modo revisão (MAC-59). */
   reviewFeedback: z.string().default(''),
+  /** Agente selecionado no Agent Registry. */
+  agentKey: z.string().optional(),
+  /** Capacidades declarativas do agente selecionado. */
+  agentCapabilities: z.array(z.string()).default([]),
 });
 
 export type Job = z.infer<typeof jobSchema>;

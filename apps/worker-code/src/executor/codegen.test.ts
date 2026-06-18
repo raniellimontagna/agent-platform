@@ -3,6 +3,7 @@ import type { Logger } from 'pino';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import {
+  buildAgentInstructions,
   completeJson,
   extractJson,
   filterDocumentationTargets,
@@ -57,6 +58,22 @@ describe('extractJson', () => {
 
   it('lança quando o JSON é inválido', () => {
     expect(() => extractJson('{ a: }')).toThrow();
+  });
+});
+
+describe('buildAgentInstructions', () => {
+  it('devolve instruções específicas para landing-page-agent', () => {
+    const instructions = buildAgentInstructions('landing-page-agent', ['landing-page']);
+
+    expect(instructions).toContain('landing-page-agent');
+    expect(instructions).toContain('landing pages prontas');
+    expect(instructions).toContain('primeira tela utilizável');
+    expect(instructions).toContain('CTA');
+    expect(instructions).toContain('responsividade mobile/desktop');
+  });
+
+  it('não adiciona bloco especializado para o agente default sem capabilities', () => {
+    expect(buildAgentInstructions('coder-agent')).toBe('');
   });
 });
 

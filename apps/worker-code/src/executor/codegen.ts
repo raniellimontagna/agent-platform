@@ -111,6 +111,10 @@ export interface CodegenArgs {
   lessons?: string;
   /** Parecer do critic a endereçar na revisão incremental (MAC-59). */
   reviewFeedback?: string;
+  /** Agente selecionado no Agent Registry. */
+  agentKey?: string;
+  /** Capacidades declarativas do agente selecionado. */
+  agentCapabilities?: string[];
   log: Logger;
 }
 
@@ -144,6 +148,27 @@ export function extractJson(raw: string): unknown {
 function hasJsonObjectStart(raw: string): boolean {
   const candidate = raw.trim();
   return candidate.includes('{');
+}
+
+export function buildAgentInstructions(agentKey?: string, capabilities: string[] = []): string {
+  if (agentKey !== 'landing-page-agent') {
+    return capabilities.length > 0
+      ? `Agente selecionado: ${agentKey ?? 'default'} (${capabilities.join(', ')}).`
+      : '';
+  }
+
+  return [
+    'Agente selecionado: landing-page-agent.',
+    'Especialidade: criar landing pages prontas em pouco tempo, com qualidade visual e foco em conversão.',
+    'Instruções específicas:',
+    '- Entregue uma experiência de primeira tela utilizável, não uma página explicativa sobre como construir a LP.',
+    '- Priorize hero forte, proposta de valor clara, CTA visível, prova/benefícios e seção final de conversão.',
+    '- Use visual asset real ou gerado quando o stack permitir; se não houver asset, use composição visual rica com CSS/HTML sem depender de SVG decorativo genérico.',
+    '- Garanta responsividade mobile/desktop, espaçamento consistente e contraste legível.',
+    '- Evite paleta de uma única cor, textos genéricos, cards excessivos e elementos que se sobreponham.',
+    '- Prefira componentes existentes e padrões do projeto; não adicione dependências sem necessidade.',
+    '- A entrega deve estar pronta para rodar no app existente e passar validação do repo.',
+  ].join('\n');
 }
 
 /**
@@ -237,6 +262,7 @@ async function selectFiles(
     fileTree: string;
     conventions: string;
     reviewFeedback?: string;
+    agentInstructions?: string;
   },
   log: Logger,
   onUsage?: (usage: TokenUsage) => void,
@@ -257,6 +283,9 @@ async function selectFiles(
             `\n# Plano aprovado\n${ctx.plan}`,
             ctx.reviewFeedback
               ? `\n# Parecer da revisão a endereçar (foque nestes pontos)\n${ctx.reviewFeedback}`
+              : '',
+            ctx.agentInstructions
+              ? `\n# Instruções do agente especializado\n${ctx.agentInstructions}`
               : '',
             ctx.conventions ? `\n# Convenções do projeto\n${ctx.conventions}` : '',
             `\n# Arquivos do repositório\n${ctx.fileTree}`,
@@ -386,7 +415,18 @@ export function filterReviewCreates(
  * altera de forma incremental em vez de reescrever do zero e quebrar o resto.
  */
 export async function generateAndApplyCode(args: CodegenArgs): Promise<CodegenResult> {
-  const { llm, dir, title, description, plan, lessons, reviewFeedback, log } = args;
+  const {
+    llm,
+    dir,
+    title,
+    description,
+    plan,
+    lessons,
+    reviewFeedback,
+    agentKey,
+    agentCapabilities,
+    log,
+  } = args;
 
   const repoFiles = await listRepoFiles(dir);
   const fileTree = repoFiles.slice(0, 800).join('\n');
@@ -394,6 +434,7 @@ export async function generateAndApplyCode(args: CodegenArgs): Promise<CodegenRe
 
   // Context Builder (MAC-24): convenções do projeto guiam ambos os passos.
   const conventions = await readConventions(dir, repoSet);
+  const agentInstructions = buildAgentInstructions(agentKey, agentCapabilities);
 
   // Acumula o uso de tokens das 2 chamadas p/ estimar o custo (MAC-40).
   const usage: TokenUsage = { promptTokens: 0, completionTokens: 0 };
@@ -405,7 +446,7 @@ export async function generateAndApplyCode(args: CodegenArgs): Promise<CodegenRe
   log.info({ fileCount: repoFiles.length }, 'selecting files to change');
   const rawSelection = await selectFiles(
     llm,
-    { title, description, plan, fileTree, conventions, reviewFeedback },
+    { title, description, plan, fileTree, conventions, reviewFeedback, agentInstructions },
     log,
     addUsage,
   );
@@ -474,6 +515,9 @@ export async function generateAndApplyCode(args: CodegenArgs): Promise<CodegenRe
               `# Issue: ${title}`,
               description ? `\n${description}` : '',
               `\n# Plano aprovado\n${plan}`,
+              agentInstructions
+                ? `\n# Instruções do agente especializado\n${agentInstructions}`
+                : '',
               conventions ? `\n# Convenções do projeto\n${conventions}` : '',
               examples ? `\n# Arquivos-exemplo (siga este padrão)${examples}` : '',
               lessons
@@ -516,6 +560,8 @@ export interface FixArgs {
   failureTail: string;
   plan: string;
   title: string;
+  agentKey?: string;
+  agentCapabilities?: string[];
   log: Logger;
 }
 
@@ -531,7 +577,9 @@ export interface FixResult {
  * `strong_coder`. Reaplica no worktree. Não re-seleciona arquivos.
  */
 export async function applyFix(args: FixArgs): Promise<FixResult> {
-  const { llm, dir, filesChanged, failureTail, plan, title, log } = args;
+  const { llm, dir, filesChanged, failureTail, plan, title, agentKey, agentCapabilities, log } =
+    args;
+  const agentInstructions = buildAgentInstructions(agentKey, agentCapabilities);
 
   // Relê on-disk os arquivos tocados (recém-escritos; arquivos novos podem não
   // estar no git ls-files, então lemos direto, sem filtro de tracking).
@@ -572,6 +620,7 @@ export async function applyFix(args: FixArgs): Promise<FixResult> {
           content: [
             `# Issue: ${title}`,
             `\n# Plano aprovado\n${plan}`,
+            agentInstructions ? `\n# Instruções do agente especializado\n${agentInstructions}` : '',
             `\n# Arquivos que você escreveu${currentBlock || '\n(nenhum)'}`,
             `\n# Saída do comando que FALHOU\n\`\`\`\n${failureTail}\n\`\`\``,
           ].join('\n'),
