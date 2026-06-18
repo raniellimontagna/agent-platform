@@ -418,6 +418,124 @@
           "rawSql": "SELECT r.created_at AS time, r.linear_issue_identifier AS metric, coalesce(sum(s.cost_usd), 0) AS value FROM runs r JOIN run_steps s ON s.run_id = r.id WHERE $__timeFilter(r.created_at) AND s.model LIKE '%critic%' GROUP BY r.created_at, r.linear_issue_identifier ORDER BY r.created_at;"
         }
       ]
+    },
+    {
+      "id": 16,
+      "title": "Runs com gate pnpm verify (%)",
+      "type": "stat",
+      "datasource": {
+        "type": "postgres",
+        "uid": "orchestrator_pg"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 50
+              },
+              {
+                "color": "green",
+                "value": 90
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 0,
+        "y": 60
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT round(100.0 * count(*) FILTER (WHERE a.content ILIKE '%pnpm verify%') / NULLIF(count(*) FILTER (WHERE r.sandbox_backend IS NOT NULL), 0), 1) AS pct FROM runs r LEFT JOIN artifacts a ON a.run_id = r.id AND a.kind = 'validation';"
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "title": "REPROVADO com PR pós-hardening",
+      "type": "stat",
+      "datasource": {
+        "type": "postgres",
+        "uid": "orchestrator_pg"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 12,
+        "y": 60
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT count(*) AS value FROM runs WHERE verdict ~* 'REPROVADO' AND pr_url IS NOT NULL AND created_at >= '2026-06-18T13:51:00Z';"
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "title": "Validation gate recentes",
+      "type": "table",
+      "datasource": {
+        "type": "postgres",
+        "uid": "orchestrator_pg"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 64
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT r.created_at, r.linear_issue_identifier AS issue, r.status, r.tests_passed, r.sandbox_command_count, r.sandbox_failed_command, CASE WHEN a.content ILIKE '%pnpm verify%' THEN 'pnpm verify' WHEN a.content ILIKE '%pnpm test%' THEN 'legacy pnpm test' ELSE '(sem evidencia)' END AS validation_gate, left(regexp_replace(coalesce(a.content, ''), '[[:space:]]+', ' ', 'g'), 240) AS validation_excerpt FROM runs r LEFT JOIN artifacts a ON a.run_id = r.id AND a.kind = 'validation' WHERE r.sandbox_backend IS NOT NULL ORDER BY r.created_at DESC LIMIT 50;"
+        }
+      ]
     }
   ]
 }
