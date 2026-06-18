@@ -5,6 +5,7 @@ import { logger } from '../logger.js';
 import type { CommandResult, Job, JobResult } from '../types.js';
 import { applyFix, generateAndApplyCode } from './codegen.js';
 import { checkCommand } from './commandPolicy.js';
+import { DATA_COLLECTOR_AGENT_KEY, runFirecrawlResearchJob } from './firecrawlResearch.js';
 import { commitAll, diffAgainst, pushBranch } from './git.js';
 import { runSandboxedCommand } from './sandbox.js';
 import { summarizeFailureTail } from './validation.js';
@@ -82,6 +83,15 @@ export async function runJob(job: Job): Promise<JobResult> {
   const base: JobResult = { runId: job.runId, status: 'failed', branch: job.branch, commands };
 
   try {
+    if (job.agentKey === DATA_COLLECTOR_AGENT_KEY) {
+      log.info('running data collector research job');
+      return await runFirecrawlResearchJob(job, {
+        apiKey: env.FIRECRAWL_API_KEY,
+        baseUrl: env.FIRECRAWL_BASE_URL,
+        timeoutMs: env.FIRECRAWL_TIMEOUT_MS,
+      });
+    }
+
     const reviseMode = Boolean(job.reviewFeedback?.trim());
     if (reviseMode) log.info('modo revisão (MAC-59): partindo da branch de trabalho');
     log.info('preparing worktree');

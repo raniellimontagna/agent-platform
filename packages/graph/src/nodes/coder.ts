@@ -57,6 +57,7 @@ export interface RunnerResult {
   commitSha?: string;
   filesChanged?: string[];
   summary?: string;
+  research?: string;
   pushed?: boolean;
   diff?: string;
   testsPassed?: boolean;
@@ -133,6 +134,33 @@ export function makeCoderNode(deps: CoderDeps, opts: { revise?: boolean } = {}) 
         agentKey: state.agentKey,
         agentCapabilities: state.agentCapabilities,
       });
+      if (result.research) {
+        const testSummary = summarizeTests(result.commands);
+        const ok = result.status === 'succeeded' && result.testsPassed !== false;
+        const errorBlock = result.error ? `\n\n\`\`\`\n${result.error}\n\`\`\`` : '';
+        const testsBlock =
+          result.testsPassed === undefined
+            ? ''
+            : `\n\n**Coleta:** ${ok ? '✅ concluída' : '❌ falhou'}\n${testSummary}`;
+
+        await deps.linear.comment(
+          state.issueId,
+          `## 🔎 Coleta de dados\nRunner: **${result.status}**.` +
+            `${result.summary ? `\n\n${result.summary}` : ''}${testsBlock}${errorBlock}`,
+        );
+
+        return {
+          branch,
+          summary: result.summary,
+          research: result.research,
+          pushed: false,
+          testsPassed: result.testsPassed,
+          testSummary,
+          status: ok ? 'completed' : 'failed',
+          error: result.error,
+        };
+      }
+
       const ok = result.status === 'succeeded' && result.testsPassed !== false;
       const errorBlock = result.error ? `\n\n\`\`\`\n${result.error}\n\`\`\`` : '';
       const files = result.filesChanged?.length

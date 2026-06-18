@@ -17,12 +17,19 @@ beforeEach(() => {
 
 describe('saveArtifacts', () => {
   it('grava só os kinds não-vazios', async () => {
-    await saveArtifacts('run-1', { plan: 'P', patch: '', review: undefined, summary: 'S' });
+    await saveArtifacts('run-1', {
+      plan: 'P',
+      patch: '',
+      review: undefined,
+      summary: 'S',
+      research: 'R',
+    });
     expect(insert).toHaveBeenCalledTimes(1);
     const rows = insertValues.mock.calls[0][0];
     expect(rows).toEqual([
       { runId: 'run-1', kind: 'plan', content: 'P' },
       { runId: 'run-1', kind: 'summary', content: 'S' },
+      { runId: 'run-1', kind: 'research', content: 'R' },
     ]);
   });
 

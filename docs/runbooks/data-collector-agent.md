@@ -24,6 +24,27 @@ a produzir pacotes de pesquisa com:
 - limitações, fontes inacessíveis e nível de confiança;
 - recomendações para o agente downstream.
 
+## Firecrawl research packs
+
+MAC-94 integra o Firecrawl no runner para o primeiro fluxo real de coleta:
+
+- extrai até 5 URLs explícitas do título, descrição e plano da issue;
+- chama `POST /v2/scrape` com `formats: ["markdown", "summary"]`;
+- gera um `Research Pack` em Markdown com fontes, método, status, resumo,
+  extrato e limitações;
+- salva o resultado como artifact `research`;
+- encerra o run como `completed`, sem revisão de diff e sem Draft PR.
+
+Variáveis do runner:
+
+- `FIRECRAWL_API_KEY`: secret da API. Opcional para boot; obrigatório para jobs
+  reais de coleta.
+- `FIRECRAWL_BASE_URL`: default `https://api.firecrawl.dev`.
+- `FIRECRAWL_TIMEOUT_MS`: default `60000`.
+
+Limites desta fase: apenas scrape de páginas explícitas; sem crawl amplo, sem
+browser, sem screenshot e sem execução de comandos de scraping no allowlist.
+
 ## Tools planejadas
 
 As tools foram adicionadas ao Tool Registry como metadado:
@@ -33,9 +54,9 @@ As tools foram adicionadas ao Tool Registry como metadado:
 - `scrapling`: HTTP scraping, páginas JS e crawling controlado.
 - `python`: scripts de coleta/normalização.
 
-Nesta etapa, essas tools ainda não entram no `AGENT_COMMAND_ALLOWLIST` do runner.
-Isso evita habilitar execução ampla antes de termos política e sandbox específicos
-para coleta.
+Nesta etapa, Firecrawl roda via integração controlada no worker. As demais tools
+ainda não entram no `AGENT_COMMAND_ALLOWLIST` do runner. Isso evita habilitar
+execução ampla antes de termos política e sandbox específicos para coleta.
 
 ## Política
 
@@ -57,7 +78,6 @@ compliance com termos do site.
 
 ## Próximas etapas
 
-- Criar integração real com Firecrawl.
 - Adicionar modo Playwright controlado para screenshots e páginas dinâmicas.
 - Definir artifacts de saída para research packs.
 - Criar policy/allowlist específica para comandos de scraping.

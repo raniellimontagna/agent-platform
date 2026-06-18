@@ -57,6 +57,8 @@ export interface JobResult {
   filesChanged?: string[];
   /** Resumo das alterações produzido pelo modelo. */
   summary?: string;
+  /** Research pack produzido por agentes de coleta. */
+  research?: string;
   /** Se a branch foi efetivamente enviada (push) ao remoto. */
   pushed?: boolean;
   /** Diff das alterações vs. base branch (para o Reviewer, MAC-18). */
