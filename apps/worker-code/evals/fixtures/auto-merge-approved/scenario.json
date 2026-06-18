@@ -29,7 +29,7 @@
     "llmResponses": [],
     "fixes": [],
     "maxFixAttempts": 2,
-    "commitMessage": "docs(eval): document approved auto-merge scenario\n\nRef: MAC-84\n\nCo-authored-by: Codex <noreply@openai.com>",
+    "commitMessage": "docs(eval): document approved auto-merge scenario\n\nRef: MAC-86\n\nCo-authored-by: Codex <noreply@openai.com>",
     "commitAuthor": {
       "name": "Ranielli Montagna",
       "email": "raniellimontagna@hotmail.com"
@@ -41,6 +41,7 @@
       "verdict": "APROVADO",
       "notes": [],
       "autoMergeEligible": true,
+      "expectedAutoMerge": true,
       "blockReason": "",
       "reviewOutcome": "noop",
       "criticRounds": 0
@@ -69,9 +70,14 @@
       "verdict": "APROVADO",
       "notes": [],
       "autoMergeEligible": true,
+      "expectedAutoMerge": true,
       "blockReason": "",
       "reviewOutcome": "noop",
       "criticRounds": 0
+    },
+    "autoMerge": {
+      "expected": true,
+      "blockReason": ""
     },
     "commit": {
       "author": {
@@ -79,7 +85,7 @@
         "email": "raniellimontagna@hotmail.com"
       },
       "messageIncludes": [
-        "Ref: MAC-84"
+        "Ref: MAC-86"
       ],
       "trailersInclude": [
         "Co-authored-by: Codex <noreply@openai.com>"

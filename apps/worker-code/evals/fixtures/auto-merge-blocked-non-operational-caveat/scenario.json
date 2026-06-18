@@ -1,79 +1,115 @@
 {
-  "schemaVersion": 2,
+  "version": 2,
   "id": "auto-merge-blocked-non-operational-caveat",
   "title": "Auto-merge blocked for non-operational caveat",
-  "description": "Deterministic local fixture that validates the harness blocks auto-merge when APROVADO COM RESSALVAS includes a non-operational caveat.",
-  "mode": "local",
-  "deterministic": true,
-  "fixtures": {
-    "allowNetwork": false,
-    "allowGitHub": false,
-    "allowLinear": false,
-    "allowLiteLLM": false,
-    "allowProduction": false,
-    "externalCalls": []
+  "description": "Deterministic local eval fixture covering APROVADO COM RESSALVAS with a non-operational caveat that must block auto-merge and still proceed to PR.",
+  "repo": {
+    "files": {
+      "src/policy.js": "export function retentionMessage() {\n  return 'Retention policy pending explicit human confirmation.';\n}\n",
+      "README.md": "# Eval Harness Fixture\n\nInitial fixture content.\n"
+    }
   },
-  "issue": {
-    "key": "MAC-85",
-    "title": "Exercise auto-merge with critic loop and agent commit identity",
-    "body": "Ensure the worker blocks auto-merge whenever the review includes a caveat that requires human follow-up beyond deploy operations."
+  "candidate": {
+    "files": {
+      "README.md": "# Eval Harness Fixture\n\nInitial fixture content.\n\nNon-operational caveat scenario requires human follow-up.\n"
+    },
+    "delete": []
   },
-  "pullRequest": {
-    "number": 186,
-    "title": "test(worker-code): block auto-merge on non-operational caveat",
-    "body": "This PR is evaluated entirely through local fixtures."
-  },
-  "agent": {
-    "name": "Ranielli Montagna",
-    "email": "raniellimontagna@hotmail.com"
-  },
-  "commit": {
-    "sha": "2222222222222222222222222222222222222222",
-    "message": "test(worker-code): block auto-merge on policy caveat\n\nRef: MAC-85\n\nCo-authored-by: Codex <noreply@openai.com>",
-    "mustInclude": [
-      "Ref: MAC-85",
+  "workerDryRun": {
+    "plan": "1. Update README to describe the non-operational caveat scenario.\n2. Keep all inputs local and deterministic.\n3. Open a PR without enabling auto-merge because the caveat requires human review.",
+    "branch": "agent/eval-auto-merge-blocked-non-operational-caveat",
+    "prTitle": "test(eval): block auto-merge on non-operational caveat",
+    "summary": "Adds a deterministic local fixture where APROVADO COM RESSALVAS still blocks auto-merge.",
+    "files": [
+      {
+        "path": "README.md",
+        "content": "# Eval Harness Fixture\n\nInitial fixture content.\n\nNon-operational caveat scenario requires human follow-up.\n"
+      }
+    ],
+    "llmResponses": [],
+    "fixes": [
+      {
+        "summary": "Reworded fixture notes after critic feedback while preserving the remaining policy caveat.",
+        "changes": [
+          "README.md"
+        ]
+      }
+    ],
+    "maxFixAttempts": 3,
+    "commitMessage": "test(eval): block auto-merge on policy caveat\n\nRef: MAC-86\n\nCo-authored-by: Codex <noreply@openai.com>",
+    "commitAuthor": {
+      "name": "Ranielli Montagna",
+      "email": "raniellimontagna@hotmail.com"
+    },
+    "commitTrailers": [
       "Co-authored-by: Codex <noreply@openai.com>"
-    ]
+    ],
+    "review": {
+      "verdict": "APROVADO COM RESSALVAS",
+      "notes": [
+        "Non-operational caveat: POLICY_REVIEW_REQUIRED",
+        "A human reviewer must confirm the retention-policy wording before merge."
+      ],
+      "autoMergeEligible": false,
+      "expectedAutoMerge": false,
+      "blockReason": "Non-operational caveat: POLICY_REVIEW_REQUIRED",
+      "reviewOutcome": "recode",
+      "criticRounds": 1
+    },
+    "isolation": {
+      "allowNetwork": false,
+      "allowGitHub": false,
+      "allowLinear": false,
+      "allowLiteLLM": false,
+      "externalCalls": []
+    }
   },
-  "review": {
-    "status": "APROVADO COM RESSALVAS",
-    "summary": "Approved with a non-operational caveat that requires human action.",
-    "caveats": [
-      {
-        "type": "non-operational",
-        "code": "POLICY_REVIEW_REQUIRED",
-        "message": "A human reviewer must confirm the retention-policy wording before merge.",
-        "blocksAutoMerge": true
-      }
-    ]
-  },
-  "critic": {
-    "maxRounds": 3,
-    "rounds": [
-      {
-        "round": 1,
-        "action": "recode",
-        "outcome": "ready-for-pr",
-        "summary": "Recode applied, but the remaining policy caveat still requires manual approval."
-      }
-    ]
-  },
+  "commands": [],
   "expected": {
-    "finalVerdict": "APROVADO COM RESSALVAS",
-    "reviewOutcome": "recode",
-    "criticRoundsExecuted": 1,
-    "opensPullRequest": true,
+    "changedFiles": [
+      "README.md"
+    ],
+    "forbiddenFiles": [],
+    "requiredContent": [
+      {
+        "path": "README.md",
+        "includes": "Non-operational caveat scenario requires human follow-up."
+      }
+    ],
+    "review": {
+      "verdict": "APROVADO COM RESSALVAS",
+      "notes": [
+        "Non-operational caveat: POLICY_REVIEW_REQUIRED",
+        "A human reviewer must confirm the retention-policy wording before merge."
+      ],
+      "autoMergeEligible": false,
+      "expectedAutoMerge": false,
+      "blockReason": "Non-operational caveat: POLICY_REVIEW_REQUIRED",
+      "reviewOutcome": "recode",
+      "criticRounds": 1
+    },
     "autoMerge": {
-      "enabled": false,
       "expected": false,
-      "blocked": true,
       "blockReason": "Non-operational caveat: POLICY_REVIEW_REQUIRED"
     },
-    "commitValidation": {
-      "authorName": "Ranielli Montagna",
-      "authorEmail": "raniellimontagna@hotmail.com",
-      "hasRef": true,
-      "hasCoAuthoredByCodex": true
+    "commit": {
+      "author": {
+        "name": "Ranielli Montagna",
+        "email": "raniellimontagna@hotmail.com"
+      },
+      "messageIncludes": [
+        "Ref: MAC-86"
+      ],
+      "trailersInclude": [
+        "Co-authored-by: Codex <noreply@openai.com>"
+      ]
+    },
+    "isolation": {
+      "allowNetwork": false,
+      "allowGitHub": false,
+      "allowLinear": false,
+      "allowLiteLLM": false,
+      "externalCalls": []
     }
   }
 }

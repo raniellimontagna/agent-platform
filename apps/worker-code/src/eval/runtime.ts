@@ -5,6 +5,8 @@ import { checkCommand } from '../executor/commandPolicy.js';
 import type { CommandResult } from '../types.js';
 
 const DEFAULT_ALLOWLIST = ['node', 'npm', 'pnpm', 'corepack', 'git'];
+const EVAL_GIT_USER_NAME = 'Ranielli Montagna';
+const EVAL_GIT_USER_EMAIL = 'raniellimontagna@hotmail.com';
 
 export function runShell(command: string, cwd: string): Promise<CommandResult> {
   const start = Date.now();
@@ -59,8 +61,9 @@ export async function initRepo(workdir: string, branch = 'main'): Promise<void> 
   for (const command of [
     'git init',
     `git checkout -b ${branch}`,
-    'git config user.name "Eval Harness"',
-    'git config user.email "eval@example.invalid"',
+    `git config user.name "${EVAL_GIT_USER_NAME}"`,
+    `git config user.email "${EVAL_GIT_USER_EMAIL}"`,
+    'git config commit.gpgsign false',
     'git add -A',
     'git commit -m "base fixture"',
   ]) {

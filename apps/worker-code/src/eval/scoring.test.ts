@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { CommandResult } from '../types.js';
 import { scoreScenario } from './scoring.js';
-import type { EvalScenario } from './types.js';
+import { evalScenarioSchema, type EvalScenario } from './types.js';
 
 const command = (exitCode: number): CommandResult => ({
   command: 'node test.js',
@@ -358,6 +358,37 @@ describe('scoreScenario', () => {
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
+  });
+
+  it('normaliza aliases do schema v2 para fixtures locais determinísticas', () => {
+    const parsed = evalScenarioSchema.parse({
+      schemaVersion: 2,
+      scenarioId: 'critic-rounds-2-local',
+      title: 'Critic rounds local fixture',
+      description: 'Exercises exactly two critic rounds before PR flow.',
+      expected: {
+        changedFiles: ['README.md'],
+        verdict: 'APROVADO COM RESSALVAS',
+        autoMerge: true,
+        caveatCategory: 'operational',
+        reviewAction: 'recode',
+        criticRounds: 2,
+        maxCriticRounds: 3,
+      },
+    });
+
+    expect(parsed.version).toBe(2);
+    expect(parsed.id).toBe('critic-rounds-2-local');
+    expect(parsed.repo).toEqual({ files: {} });
+    expect(parsed.expected.review).toMatchObject({
+      autoMergeEligible: true,
+      reviewOutcome: 'recode',
+      criticRounds: 2,
+      maxCriticRounds: 3,
+    });
+    expect(parsed.expected.review?.notes).toEqual([
+      { kind: 'operational', summary: 'operational caveat' },
+    ]);
   });
 });
 

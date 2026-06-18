@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { compareReports, renderMarkdown } from './runEval.js';
+import { compareReports, normalizeScenarioFixture, renderMarkdown } from './runEval.js';
 import type { EvalReport, EvalResult } from './types.js';
 
 describe('compareReports', () => {
@@ -29,6 +29,33 @@ describe('compareReports', () => {
 
   it('não marca regressão quando não há baseline anterior', () => {
     expect(compareReports([result('a', 100)], 100).regressed).toBe(false);
+  });
+});
+
+describe('normalizeScenarioFixture', () => {
+  it('migra scenarioId para id sem remover os demais campos', () => {
+    expect(
+      normalizeScenarioFixture({
+        scenarioId: 'review-noop-commit-trailers',
+        title: 'Review noop',
+      }),
+    ).toEqual({
+      scenarioId: 'review-noop-commit-trailers',
+      id: 'review-noop-commit-trailers',
+      title: 'Review noop',
+    });
+  });
+
+  it('preserva id quando já existe', () => {
+    expect(
+      normalizeScenarioFixture({
+        id: 'canonical-id',
+        scenarioId: 'legacy-id',
+      }),
+    ).toEqual({
+      id: 'canonical-id',
+      scenarioId: 'legacy-id',
+    });
   });
 });
 
@@ -110,6 +137,44 @@ describe('renderMarkdown', () => {
     expect(markdown).toContain('Expected auto-merge: yes');
     expect(markdown).toContain('Review outcome: recode');
     expect(markdown).toContain('Commit policy: Ref: present; Co-authored-by: present');
+  });
+
+  it('não infere bloqueio a partir de textos como not blocked ou no-op', () => {
+    const markdown = renderMarkdown(
+      report([
+        result('not-blocked-noop', 100, {
+          checks: [
+            check(true, 'auto-merge status', 'auto-merge not blocked; no block reason'),
+            check(true, 'review outcome', 'no-op'),
+          ],
+        }),
+      ]),
+    );
+
+    expect(markdown).toContain('Expected auto-merge: yes');
+    expect(markdown).toContain('Review outcome: no-op');
+    expect(markdown).not.toContain('Auto-merge block reason:');
+  });
+
+  it('só exibe block reason inferido quando auto-merge está realmente bloqueado', () => {
+    const markdown = renderMarkdown(
+      report([
+        result('blocked-by-check', 80, {
+          checks: [
+            check(
+              true,
+              'auto-merge gate',
+              'auto-merge blocked: ressalva não-operacional requer revisão humana',
+            ),
+          ],
+        }),
+      ]),
+    );
+
+    expect(markdown).toContain('Expected auto-merge: no');
+    expect(markdown).toContain(
+      'Auto-merge block reason: auto-merge blocked: ressalva não-operacional requer revisão humana',
+    );
   });
 });
 

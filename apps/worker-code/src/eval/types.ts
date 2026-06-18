@@ -16,14 +16,43 @@ const evalReviewNoteSchema = z.object({
   summary: z.string().min(1),
 });
 
-const evalReviewSchema = z.object({
+const evalReviewSchema = z.preprocess((input) => {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    return input;
+  }
+
+  const review = { ...(input as Record<string, unknown>) };
+
+  if (review.autoMergeEligible === undefined && typeof review.autoMerge === 'boolean') {
+    review.autoMergeEligible = review.autoMerge;
+  }
+
+  if (review.reviewOutcome === undefined && typeof review.reviewAction === 'string') {
+    review.reviewOutcome = review.reviewAction;
+  }
+
+  if (!Array.isArray(review.notes)) {
+    const kind = review.caveatCategory;
+    if (kind === 'operational' || kind === 'non-operational') {
+      const summary =
+        typeof review.blockReason === 'string' && review.blockReason.trim().length > 0
+          ? review.blockReason
+          : `${kind} caveat`;
+      review.notes = [{ kind, summary }];
+    }
+  }
+
+  return review;
+},
+z.object({
   verdict: z.enum(['APROVADO', 'APROVADO COM RESSALVAS', 'SOLICITAR MUDANCAS']),
   notes: z.array(evalReviewNoteSchema).default([]),
   autoMergeEligible: z.boolean().default(false),
   blockReason: z.string().default(''),
   reviewOutcome: z.enum(['noop', 'recode']).default('noop'),
   criticRounds: z.number().int().min(0).max(3).default(0),
-});
+  maxCriticRounds: z.number().int().min(1).max(3).default(3),
+}));
 
 const evalIsolationSchema = z.object({
   allowNetwork: z.boolean().default(false),
@@ -33,14 +62,111 @@ const evalIsolationSchema = z.object({
   externalCalls: z.array(z.string()).default([]),
 });
 
-export const evalScenarioSchema = z.object({
+const evalExpectedSchema = z.preprocess((input) => {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    return input;
+  }
+
+  const expected = { ...(input as Record<string, unknown>) };
+  const reviewSourceKeys = [
+    'verdict',
+    'notes',
+    'autoMerge',
+    'autoMergeEligible',
+    'blockReason',
+    'reviewAction',
+    'reviewOutcome',
+    'criticRounds',
+    'maxCriticRounds',
+    'caveatCategory',
+  ] as const;
+
+  if (expected.review === undefined) {
+    const review = reviewSourceKeys.reduce<Record<string, unknown>>((acc, key) => {
+      if (expected[key] !== undefined) {
+        acc[key] = expected[key];
+      }
+      return acc;
+    }, {});
+
+    if (Object.keys(review).length > 0) {
+      expected.review = review;
+    }
+  }
+
+  return expected;
+},
+z.object({
+  changedFiles: z.array(z.string()),
+  forbiddenFiles: z.array(z.string()).default([]),
+  requiredContent: z
+    .array(
+      z.object({
+        path: z.string().min(1),
+        includes: z.string().min(1),
+      }),
+    )
+    .default([]),
+  review: evalReviewSchema.optional(),
+  commit: z
+    .object({
+      author: evalCommitAuthorSchema.optional(),
+      messageIncludes: z.array(z.string().min(1)).default([]),
+      trailersInclude: z.array(z.string().min(1)).default([]),
+    })
+    .optional(),
+  isolation: evalIsolationSchema.default({
+    allowNetwork: false,
+    allowGitHub: false,
+    allowLinear: false,
+    allowLiteLLM: false,
+    externalCalls: [],
+  }),
+}));
+
+export const evalScenarioSchema = z.preprocess((input) => {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    return input;
+  }
+
+  const scenario = { ...(input as Record<string, unknown>) };
+
+  if (scenario.id === undefined && typeof scenario.scenarioId === 'string') {
+    scenario.id = scenario.scenarioId;
+  }
+
+  if (scenario.version === undefined && scenario.schemaVersion === 2) {
+    scenario.version = 2;
+  }
+
+  if (scenario.repo === undefined) {
+    scenario.repo = { files: {} };
+  }
+
+  if (
+    scenario.workerDryRun === undefined &&
+    scenario.inputs &&
+    typeof scenario.inputs === 'object' &&
+    !Array.isArray(scenario.inputs)
+  ) {
+    const inputs = scenario.inputs as Record<string, unknown>;
+    if (inputs.workerDryRun && typeof inputs.workerDryRun === 'object') {
+      scenario.workerDryRun = inputs.workerDryRun;
+    }
+  }
+
+  return scenario;
+},
+z.object({
   version: z.literal(2).default(2),
   id: z.string().min(1),
   title: z.string().min(1),
   description: z.string().min(1),
-  repo: z.object({
-    files: z.record(z.string()),
-  }),
+  repo: z
+    .object({
+      files: z.record(z.string()),
+    })
+    .default({ files: {} }),
   candidate: z
     .object({
       files: z.record(z.string()).default({}),
@@ -78,34 +204,8 @@ export const evalScenarioSchema = z.object({
     })
     .optional(),
   commands: z.array(z.string()).default([]),
-  expected: z.object({
-    changedFiles: z.array(z.string()),
-    forbiddenFiles: z.array(z.string()).default([]),
-    requiredContent: z
-      .array(
-        z.object({
-          path: z.string().min(1),
-          includes: z.string().min(1),
-        }),
-      )
-      .default([]),
-    review: evalReviewSchema.optional(),
-    commit: z
-      .object({
-        author: evalCommitAuthorSchema.optional(),
-        messageIncludes: z.array(z.string().min(1)).default([]),
-        trailersInclude: z.array(z.string().min(1)).default([]),
-      })
-      .optional(),
-    isolation: evalIsolationSchema.default({
-      allowNetwork: false,
-      allowGitHub: false,
-      allowLinear: false,
-      allowLiteLLM: false,
-      externalCalls: [],
-    }),
-  }),
-});
+  expected: evalExpectedSchema,
+}));
 
 export type EvalScenario = z.infer<typeof evalScenarioSchema>;
 
@@ -142,6 +242,7 @@ export interface EvalResult {
     reviewVerdict?: 'APROVADO' | 'APROVADO COM RESSALVAS' | 'SOLICITAR MUDANCAS';
     reviewOutcome?: 'noop' | 'recode';
     criticRounds?: number;
+    maxCriticRounds?: number;
     autoMergeExpected?: boolean;
     autoMergeBlockedBy?: string;
     externalCalls?: string[];

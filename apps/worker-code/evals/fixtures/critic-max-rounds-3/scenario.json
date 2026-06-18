@@ -1,36 +1,51 @@
 {
   "schemaVersion": 2,
   "id": "critic-max-rounds-3",
-  "name": "critic-max-rounds-3",
-  "description": "Local deterministic fixture that exercises the critic loop until AGENT_MAX_REVIEW_ROUNDS=3 and then proceeds to PR without auto-merge.",
-  "allowNetwork": false,
-  "allowGitHub": false,
-  "allowLinear": false,
-  "allowLiteLLM": false,
-  "externalCalls": [],
+  "title": "Critic stops after 3 rounds and proceeds to PR",
+  "description": "Deterministic local fixture that exercises the critic loop until AGENT_MAX_REVIEW_ROUNDS=3, then proceeds to PR with auto-merge blocked by a non-operational caveat.",
+  "mode": "local",
+  "deterministic": true,
+  "fixtures": {
+    "allowNetwork": false,
+    "allowGitHub": false,
+    "allowLinear": false,
+    "allowLiteLLM": false,
+    "allowProduction": false,
+    "externalCalls": []
+  },
+  "issue": {
+    "key": "MAC-86",
+    "title": "Expand eval harness coverage for auto-merge and critic loop",
+    "body": "Ensure the worker respects the maximum critic review rounds, preserves local-only execution, and blocks auto-merge when the final caveat is non-operational."
+  },
+  "pullRequest": {
+    "number": 303,
+    "title": "test(worker-code): cover critic max rounds 3",
+    "body": "Implements deterministic local eval fixture for critic loop coverage."
+  },
   "agent": {
     "name": "Ranielli Montagna",
     "email": "raniellimontagna@hotmail.com"
   },
-  "pullRequest": {
-    "number": 303,
-    "title": "test(worker): cover critic max rounds 3",
-    "body": "Implements deterministic local eval fixture for critic loop coverage."
-  },
   "commit": {
-    "authorName": "Ranielli Montagna",
-    "authorEmail": "raniellimontagna@hotmail.com",
-    "message": "test(worker): cover critic max rounds 3\n\nRef: MAC-85\nCo-authored-by: Codex <noreply@openai.com>"
+    "sha": "3333333333333333333333333333333333333333",
+    "message": "test(worker-code): cover critic max rounds 3\n\nRef: MAC-86\n\nCo-authored-by: Codex <noreply@openai.com>",
+    "mustInclude": [
+      "Ref: MAC-86",
+      "Co-authored-by: Codex <noreply@openai.com>"
+    ]
   },
   "review": {
-    "verdict": "APROVADO COM RESSALVAS",
-    "classification": "non_operational",
-    "summary": "Reviewer keeps requesting recode changes until the critic round limit is reached.",
-    "autoMerge": {
-      "expected": false,
-      "blocked": true,
-      "reason": "non_operational_reservation"
-    }
+    "status": "APROVADO COM RESSALVAS",
+    "summary": "Approved with a non-operational caveat after the critic reaches the configured round limit.",
+    "caveats": [
+      {
+        "type": "non-operational",
+        "code": "PRODUCT_SIGNOFF_PENDING",
+        "message": "Product sign-off is still pending for the rollout behavior, so auto-merge must stay blocked even though the PR can be opened.",
+        "blocksAutoMerge": true
+      }
+    ]
   },
   "critic": {
     "maxRounds": 3,
@@ -38,39 +53,40 @@
       {
         "round": 1,
         "action": "recode",
-        "status": "changes_requested",
-        "feedback": "Tighten assertions and keep the fixture fully local."
+        "outcome": "changes-requested",
+        "summary": "Tighten assertions and keep the fixture fully local."
       },
       {
         "round": 2,
         "action": "recode",
-        "status": "changes_requested",
-        "feedback": "Clarify expected auto-merge blocking reason in the report."
+        "outcome": "changes-requested",
+        "summary": "Clarify the expected auto-merge blocking reason in the report."
       },
       {
         "round": 3,
         "action": "recode",
-        "status": "changes_requested",
-        "feedback": "Stop after the configured maximum number of review rounds."
+        "outcome": "max-rounds-reached",
+        "summary": "Stop after the configured maximum number of review rounds and proceed to PR."
       }
-    ],
-    "expected": {
-      "roundsExecuted": 3,
-      "stopReason": "max_rounds_reached",
-      "proceedToPr": true
-    }
+    ]
   },
   "expected": {
     "finalVerdict": "APROVADO COM RESSALVAS",
     "reviewOutcome": "recode_required",
-    "autoMerge": false,
-    "autoMergeBlockReason": "non_operational_reservation",
-    "criticRounds": 3,
+    "criticRoundsExecuted": 3,
     "criticStopReason": "max_rounds_reached",
-    "proceedToPr": true,
-    "commitMustContain": [
-      "Ref:",
-      "Co-authored-by: Codex <noreply@openai.com>"
-    ]
+    "opensPullRequest": true,
+    "autoMerge": {
+      "enabled": false,
+      "expected": false,
+      "blocked": true,
+      "blockReason": "PRODUCT_SIGNOFF_PENDING"
+    },
+    "commitValidation": {
+      "authorName": "Ranielli Montagna",
+      "authorEmail": "raniellimontagna@hotmail.com",
+      "hasRef": true,
+      "hasCoAuthoredByCodex": true
+    }
   }
 }
