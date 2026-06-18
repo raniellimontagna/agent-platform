@@ -36,11 +36,8 @@ const envSchema = z.object({
   REPO_URL: z.string().min(1).default('https://github.com/raniellimontagna/agent-platform.git'),
 
   // Comandos de validação rodados no sandbox após o push (MAC-29), um por linha.
-  // install → build (ordem topológica, resolve .d.ts de deps) → test (vitest).
-  // `passWithNoTests` no vitest.config evita falha quando não há testes.
-  AGENT_TEST_COMMANDS: z
-    .string()
-    .default('pnpm install --frozen-lockfile\npnpm -r build\npnpm test'),
+  // install → verify. O verify cobre lint, build, testes, eval e regressão do eval.
+  AGENT_TEST_COMMANDS: z.string().default('pnpm install --frozen-lockfile\npnpm verify'),
 
   // Cost Guard (MAC-40), em USD estimado. Limite por run (alerta) e por sessão
   // (24h — bloqueia novos runs).

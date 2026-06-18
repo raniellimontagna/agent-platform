@@ -7,6 +7,7 @@ describe('checkCommand', () => {
   it('permite binário da allowlist', () => {
     expect(checkCommand('pnpm install --frozen-lockfile', allow).allowed).toBe(true);
     expect(checkCommand('pnpm -r build', allow).allowed).toBe(true);
+    expect(checkCommand('pnpm verify', allow).allowed).toBe(true);
   });
 
   it('bloqueia binário fora da allowlist', () => {

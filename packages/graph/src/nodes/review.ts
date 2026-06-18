@@ -25,22 +25,25 @@ export interface ReviewDecisionArgs {
 
 /**
  * Decide o próximo passo após a revisão do critic (MAC-59). Volta pro coder
- * (`coding`) quando o veredito é acionável (REPROVADO ou COM RESSALVAS) e ainda
- * há orçamento de voltas/custo e houve progresso; senão segue pro PR.
+ * (`coding`) quando o veredito é acionável e ainda há orçamento de voltas/custo
+ * e houve progresso. REPROVADO terminal encerra o run sem abrir PR.
  * Pura e testável — sem I/O.
  */
 export function decideAfterReview(
   args: ReviewDecisionArgs,
   opts: ReviewDecisionOpts,
-): 'coding' | 'pr' {
+): 'coding' | 'pr' | 'failed' {
   const verdict = verdictOf(args.review);
-  const actionable = /REPROVAD/i.test(verdict) || /RESSALVA/i.test(verdict);
+  const reproved = /REPROVAD/i.test(verdict);
+  const actionable = reproved || /RESSALVA/i.test(verdict);
   if (!actionable) return 'pr';
   if (hasOnlyOperationalCaveats(args.review)) return 'pr';
-  if (args.reviewRounds >= opts.maxReviewRounds) return 'pr';
-  if (args.totalCostUsd >= opts.maxCostPerRunUsd) return 'pr';
+  if (args.reviewRounds >= opts.maxReviewRounds) return reproved ? 'failed' : 'pr';
+  if (args.totalCostUsd >= opts.maxCostPerRunUsd) return reproved ? 'failed' : 'pr';
   // Guarda de no-progress: parecer da volta atual igual ao anterior → para.
-  if (args.reviewRounds > 0 && args.review.trim() === args.lastReview.trim()) return 'pr';
+  if (args.reviewRounds > 0 && args.review.trim() === args.lastReview.trim()) {
+    return reproved ? 'failed' : 'pr';
+  }
   return 'coding';
 }
 
@@ -117,7 +120,8 @@ export function makeReviewNode(deps: ReviewDeps) {
 
       return {
         review,
-        status: 'coding',
+        status: next === 'failed' ? 'failed' : 'coding',
+        error: next === 'failed' ? 'critic reprovou após esgotar o loop de revisão' : undefined,
         reviewCostUsd,
         lastReview: review,
         nextAfterReview: next,

@@ -32,23 +32,31 @@ describe('decideAfterReview', () => {
     expect(r).toBe('pr');
   });
 
-  it('REPROVADO com rounds == teto → pr', () => {
+  it('REPROVADO com rounds == teto → failed', () => {
     const r = decideAfterReview({ ...base, reviewRounds: 1, review: 'Veredito: REPROVADO' }, opts);
+    expect(r).toBe('failed');
+  });
+
+  it('APROVADO COM RESSALVAS com rounds == teto → pr manual', () => {
+    const r = decideAfterReview(
+      { ...base, reviewRounds: 1, review: 'Veredito: APROVADO COM RESSALVAS' },
+      opts,
+    );
     expect(r).toBe('pr');
   });
 
-  it('no-progress (parecer idêntico ao anterior) → pr', () => {
+  it('no-progress REPROVADO (parecer idêntico ao anterior) → failed', () => {
     const review = 'Veredito: REPROVADO\nmesmo problema';
     const r = decideAfterReview(
       { ...base, reviewRounds: 1, lastReview: review, review },
       { maxReviewRounds: 3, maxCostPerRunUsd: 2 },
     );
-    expect(r).toBe('pr');
+    expect(r).toBe('failed');
   });
 
-  it('custo acumulado >= teto → pr', () => {
+  it('custo acumulado >= teto com REPROVADO → failed', () => {
     const r = decideAfterReview({ ...base, review: 'Veredito: REPROVADO', totalCostUsd: 2 }, opts);
-    expect(r).toBe('pr');
+    expect(r).toBe('failed');
   });
 
   it('sem veredito parseável (—) → pr', () => {
