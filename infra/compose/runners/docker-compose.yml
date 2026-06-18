@@ -29,3 +29,13 @@ services:
       - /srv/agent-runners/worktrees:/srv/agent-runners/worktrees
       - /srv/agent-runners/artifacts:/srv/agent-runners/artifacts
       - /var/run/docker.sock:/var/run/docker.sock
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
+    command:
+      - "--path.rootfs=/host"
+    volumes:
+      - /:/host:ro,rslave

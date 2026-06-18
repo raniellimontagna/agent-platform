@@ -1,0 +1,52 @@
+groups:
+  - name: agent-platform-operational
+    rules:
+      - alert: AgentPlatformServiceDown
+        expr: probe_success{job="blackbox-http"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.service }} health check is failing"
+          description: "Blackbox probe for {{ $labels.instance }} has failed for more than 2 minutes."
+
+      - alert: AgentPlatformDiskUsageHigh
+        expr: |
+          100 * (
+            1 - (
+              node_filesystem_avail_bytes{job="node",fstype!~"tmpfs|overlay|squashfs|proc|sysfs|devtmpfs|cgroup2"}
+              /
+              node_filesystem_size_bytes{job="node",fstype!~"tmpfs|overlay|squashfs|proc|sysfs|devtmpfs|cgroup2"}
+            )
+          ) > 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.service }} disk usage is above 85%"
+          description: "{{ $labels.mountpoint }} on {{ $labels.instance }} is above the disk usage threshold."
+
+      - alert: AgentPlatformDiskUsageCritical
+        expr: |
+          100 * (
+            1 - (
+              node_filesystem_avail_bytes{job="node",fstype!~"tmpfs|overlay|squashfs|proc|sysfs|devtmpfs|cgroup2"}
+              /
+              node_filesystem_size_bytes{job="node",fstype!~"tmpfs|overlay|squashfs|proc|sysfs|devtmpfs|cgroup2"}
+            )
+          ) > 92
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.service }} disk usage is above 92%"
+          description: "{{ $labels.mountpoint }} on {{ $labels.instance }} is critically full."
+
+      - alert: AgentPlatformCriticReprovedPrRegression
+        expr: agent_platform_critic_reproved_pr_post_hardening_count > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critic REPROVADO regression detected"
+          description: "At least one run with terminal REPROVADO produced a PR after critic hardening."
