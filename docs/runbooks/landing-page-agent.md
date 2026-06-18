@@ -21,6 +21,9 @@ O agente carrega o pacote definido em `agent-skills/registry.json`:
 
 - `landing-page-production`;
 - `frontend-design`;
+- `astro-react-landing`;
+- `seo-page`;
+- `biome-formatting`;
 - `gsap-motion`.
 
 Essas skills orientam o runner/codegen a:
@@ -29,6 +32,9 @@ Essas skills orientam o runner/codegen a:
 - priorizar hero, proposta de valor, CTA, prova/benefícios e conversão final;
 - usar asset visual quando o stack permitir;
 - garantir responsividade mobile/desktop;
+- usar Astro + React como stack preferencial para LPs do zero;
+- incluir SEO técnico/on-page/schema quando o stack permitir;
+- validar formatação/lint pelo Biome do repo;
 - evitar página genérica, paleta de uma única cor, excesso de cards e sobreposição
   de texto;
 - seguir componentes e padrões existentes do app;
@@ -43,6 +49,8 @@ Veja também `docs/runbooks/agent-skills.md`.
 - Não faz deploy automático da LP.
 - `gsap-motion` só deve ser aplicado quando a dependência existir ou puder ser
   adicionada com segurança.
+- Astro + React é o padrão para LPs novas, mas o agente ainda deve respeitar o
+  stack real do repositório quando estiver editando um app existente.
 
 ## Próximas evoluções
 

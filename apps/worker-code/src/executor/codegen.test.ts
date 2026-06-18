@@ -68,6 +68,8 @@ describe('buildAgentInstructions', () => {
     expect(instructions).toContain('landing-page-agent');
     expect(instructions).toContain('landing-page-production');
     expect(instructions).toContain('Deliver a real first-screen experience');
+    expect(instructions).toContain('astro-react-landing');
+    expect(instructions).toContain('seo-page');
     expect(instructions).toContain('CTA');
     expect(instructions).toContain('responsive');
   });

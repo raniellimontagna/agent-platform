@@ -43,4 +43,7 @@ Exemplo:
 
 - `landing-page-production`: contrato base para landing pages completas.
 - `frontend-design`: qualidade visual, layout, responsividade e estados de UI.
+- `astro-react-landing`: padrão Astro + React para LPs do zero.
+- `seo-page`: SEO técnico, on-page, schema, conteúdo e GEO para páginas.
+- `biome-formatting`: formatação/lint com Biome e comandos do monorepo.
 - `gsap-motion`: motion com GSAP quando o stack permitir.

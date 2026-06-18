@@ -1,7 +1,14 @@
 {
   "version": 1,
   "agentSkills": {
-    "landing-page-agent": ["landing-page-production", "frontend-design", "gsap-motion"]
+    "landing-page-agent": [
+      "landing-page-production",
+      "frontend-design",
+      "astro-react-landing",
+      "seo-page",
+      "biome-formatting",
+      "gsap-motion"
+    ]
   },
   "skills": [
     {
@@ -13,6 +20,21 @@
       "name": "frontend-design",
       "path": "agent-skills/frontend-design/SKILL.md",
       "description": "Improve frontend visual quality, layout, typography, responsive behavior, and interaction states."
+    },
+    {
+      "name": "astro-react-landing",
+      "path": "agent-skills/astro-react-landing/SKILL.md",
+      "description": "Build landing pages with Astro as the page framework and React islands/components for interactive UI."
+    },
+    {
+      "name": "seo-page",
+      "path": "agent-skills/seo-page/SKILL.md",
+      "description": "Optimize landing pages for technical SEO, on-page metadata, schema, sitemap readiness, content quality, and AI search/GEO."
+    },
+    {
+      "name": "biome-formatting",
+      "path": "agent-skills/biome-formatting/SKILL.md",
+      "description": "Use Biome for formatting and lint validation in projects that use biome.json or Biome commands."
     },
     {
       "name": "gsap-motion",
