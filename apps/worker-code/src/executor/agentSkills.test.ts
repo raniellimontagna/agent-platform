@@ -11,6 +11,9 @@ describe('agentSkills', () => {
     expect(registry?.agentSkills['landing-page-agent']).toEqual([
       'landing-page-production',
       'frontend-design',
+      'astro-react-landing',
+      'seo-page',
+      'biome-formatting',
       'gsap-motion',
     ]);
   });
@@ -21,8 +24,13 @@ describe('agentSkills', () => {
     expect(instructions).toContain('Agente selecionado: landing-page-agent');
     expect(instructions).toContain('## Skill: landing-page-production');
     expect(instructions).toContain('## Skill: frontend-design');
+    expect(instructions).toContain('## Skill: astro-react-landing');
+    expect(instructions).toContain('## Skill: seo-page');
+    expect(instructions).toContain('## Skill: biome-formatting');
     expect(instructions).toContain('## Skill: gsap-motion');
     expect(instructions).toContain('Deliver a real first-screen experience');
+    expect(instructions).toContain('Use Astro as the page and content framework');
+    expect(instructions).toContain('Treat SEO as part of the landing page implementation');
   });
 
   it('usa fallback especializado quando o registry não existe', async () => {
