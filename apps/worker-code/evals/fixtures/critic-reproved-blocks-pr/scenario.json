@@ -1,0 +1,103 @@
+{
+  "version": 2,
+  "id": "critic-reproved-blocks-pr",
+  "title": "Critic REPROVADO blocks PR and auto-merge",
+  "description": "Deterministic local fixture covering a terminal REPROVADO verdict after the critic reaches the configured review limit. This path must stay blocked from auto-merge and PR creation.",
+  "repo": {
+    "files": {
+      "README.md": "# Eval Harness Fixture\n\nInitial fixture content.\n"
+    }
+  },
+  "candidate": {
+    "files": {
+      "README.md": "# Eval Harness Fixture\n\nInitial fixture content.\n\nRejected critic scenario.\n"
+    },
+    "delete": []
+  },
+  "workerDryRun": {
+    "plan": "1. Update README with a rejected critic scenario.\n2. Keep execution local and deterministic.\n3. Represent the terminal REPROVADO path as blocked for auto-merge and PR creation.",
+    "branch": "agent/eval-critic-reproved-blocks-pr",
+    "prTitle": "test(eval): cover critic rejection gate",
+    "summary": "Adds a deterministic fixture for terminal critic rejection.",
+    "files": [
+      {
+        "path": "README.md",
+        "content": "# Eval Harness Fixture\n\nInitial fixture content.\n\nRejected critic scenario.\n"
+      }
+    ],
+    "llmResponses": [],
+    "fixes": [],
+    "maxFixAttempts": 3,
+    "commitMessage": "test(eval): cover critic rejection gate\n\nRef: MAC-86\n\nCo-authored-by: Codex <noreply@openai.com>",
+    "commitAuthor": {
+      "name": "Ranielli Montagna",
+      "email": "raniellimontagna@hotmail.com"
+    },
+    "commitTrailers": ["Co-authored-by: Codex <noreply@openai.com>"],
+    "review": {
+      "verdict": "REPROVADO",
+      "notes": [
+        {
+          "kind": "non-operational",
+          "summary": "Terminal critic rejection after max rounds must fail the run instead of opening a PR."
+        }
+      ],
+      "autoMergeEligible": false,
+      "blockReason": "REPROVADO terminal blocks PR creation",
+      "reviewOutcome": "recode",
+      "criticRounds": 3,
+      "maxCriticRounds": 3
+    },
+    "isolation": {
+      "allowNetwork": false,
+      "allowGitHub": false,
+      "allowLinear": false,
+      "allowLiteLLM": false,
+      "externalCalls": []
+    }
+  },
+  "commands": [],
+  "expected": {
+    "changedFiles": ["README.md"],
+    "forbiddenFiles": [],
+    "requiredContent": [
+      {
+        "path": "README.md",
+        "includes": "Rejected critic scenario."
+      }
+    ],
+    "review": {
+      "verdict": "REPROVADO",
+      "notes": [
+        {
+          "kind": "non-operational",
+          "summary": "Terminal critic rejection after max rounds must fail the run instead of opening a PR."
+        }
+      ],
+      "autoMergeEligible": false,
+      "blockReason": "REPROVADO terminal blocks PR creation",
+      "reviewOutcome": "recode",
+      "criticRounds": 3,
+      "maxCriticRounds": 3
+    },
+    "autoMerge": {
+      "expected": false,
+      "blockReason": "REPROVADO terminal blocks PR creation"
+    },
+    "commit": {
+      "author": {
+        "name": "Ranielli Montagna",
+        "email": "raniellimontagna@hotmail.com"
+      },
+      "messageIncludes": ["Ref: MAC-86"],
+      "trailersInclude": ["Co-authored-by: Codex <noreply@openai.com>"]
+    },
+    "isolation": {
+      "allowNetwork": false,
+      "allowGitHub": false,
+      "allowLinear": false,
+      "allowLiteLLM": false,
+      "externalCalls": []
+    }
+  }
+}
