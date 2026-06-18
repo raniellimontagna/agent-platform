@@ -57,6 +57,15 @@ remote_file_exists() { # $1 = caminho remoto
   remote_exec "test -f '$1'" 2>/dev/null
 }
 
+prune_docker_build_cache() {
+  echo "==> Docker disk usage antes do prune"
+  remote_exec "docker system df || true"
+  echo "==> Limpando Docker build cache"
+  remote_exec "docker builder prune -af || true"
+  echo "==> Docker disk usage depois do prune"
+  remote_exec "docker system df || true"
+}
+
 # ---- .env: garante presença e bloqueia se ainda tiver placeholders -------
 ensure_env() { # $1 = dir remoto do compose
   local dir="$1"
@@ -165,6 +174,8 @@ else
 
   echo "==> docker compose up -d"
   remote_exec "cd '$COMPOSE_DIR' && docker compose up -d"
+
+  prune_docker_build_cache
 fi
 
 echo ""

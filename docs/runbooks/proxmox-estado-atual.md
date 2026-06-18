@@ -164,6 +164,17 @@ qm destroy <ID>        # VM
 > **Observabilidade:** dashboards Grafana provisionados com painéis de
 > auto-merge, vereditos do critic, ressalvas, sandbox e custo code+critic. API do
 > Grafana confirmou os painéis carregados após deploy de `observability`.
+> Alertas Prometheus ativos para health de orchestrator/runners/gateway/Grafana/Loki,
+> disco (`warning >85%`, `critical >92%`) e regressão `REPROVADO` com PR
+> pós-hardening. O LXC 201 chegou a ~80% por build cache Docker; `docker builder
+> prune -af` reduziu o uso para ~24%. O `infra/deploy/deploy.sh` agora imprime
+> `docker system df` e roda `docker builder prune -af` ao final de deploys de build
+> (`orchestrator` e `runners`).
+>
+> Resposta manual se alerta de disco disparar:
+> `pct exec 201 -- docker system df` / `ssh runner@10.10.0.12 docker system df`;
+> se o consumo for `Build Cache`, rodar `docker builder prune -af`. Não apagar
+> `/opt/agent-platform/postgres`, `/opt/agent-platform/redis` nem volumes de dados.
 
 > **Atualização 2026-06-16:** runner MAC-28 usa Docker como sandbox executor em
 > produção: cada comando de validação roda em container efêmero com o worktree
