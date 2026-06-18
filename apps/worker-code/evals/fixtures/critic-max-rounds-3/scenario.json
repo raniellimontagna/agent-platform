@@ -1,92 +1,125 @@
 {
-  "schemaVersion": 2,
+  "version": 2,
   "id": "critic-max-rounds-3",
   "title": "Critic stops after 3 rounds and proceeds to PR",
   "description": "Deterministic local fixture that exercises the critic loop until AGENT_MAX_REVIEW_ROUNDS=3, then proceeds to PR with auto-merge blocked by a non-operational caveat.",
-  "mode": "local",
-  "deterministic": true,
-  "fixtures": {
-    "allowNetwork": false,
-    "allowGitHub": false,
-    "allowLinear": false,
-    "allowLiteLLM": false,
-    "allowProduction": false,
-    "externalCalls": []
+  "repo": {
+    "owner": "local",
+    "name": "worker-code",
+    "defaultBranch": "main"
   },
-  "issue": {
-    "key": "MAC-86",
-    "title": "Expand eval harness coverage for auto-merge and critic loop",
-    "body": "Ensure the worker respects the maximum critic review rounds, preserves local-only execution, and blocks auto-merge when the final caveat is non-operational."
+  "candidate": {
+    "issue": {
+      "key": "MAC-86",
+      "title": "Expand eval harness coverage for auto-merge and critic loop",
+      "body": "Ensure the worker respects the maximum critic review rounds, preserves local-only execution, and blocks auto-merge when the final caveat is non-operational."
+    },
+    "pullRequest": {
+      "number": 303,
+      "title": "test(worker-code): cover critic max rounds 3",
+      "body": "Implements deterministic local eval fixture for critic loop coverage."
+    },
+    "agent": {
+      "name": "Ranielli Montagna",
+      "email": "raniellimontagna@hotmail.com"
+    },
+    "commit": {
+      "sha": "3333333333333333333333333333333333333333",
+      "message": "test(worker-code): cover critic max rounds 3\n\nRef: MAC-86\n\nCo-authored-by: Codex <noreply@openai.com>",
+      "mustInclude": [
+        "Ref: MAC-86",
+        "Co-authored-by: Codex <noreply@openai.com>"
+      ]
+    }
   },
-  "pullRequest": {
-    "number": 303,
-    "title": "test(worker-code): cover critic max rounds 3",
-    "body": "Implements deterministic local eval fixture for critic loop coverage."
-  },
-  "agent": {
-    "name": "Ranielli Montagna",
-    "email": "raniellimontagna@hotmail.com"
-  },
-  "commit": {
-    "sha": "3333333333333333333333333333333333333333",
-    "message": "test(worker-code): cover critic max rounds 3\n\nRef: MAC-86\n\nCo-authored-by: Codex <noreply@openai.com>",
-    "mustInclude": [
-      "Ref: MAC-86",
-      "Co-authored-by: Codex <noreply@openai.com>"
-    ]
-  },
-  "review": {
-    "status": "APROVADO COM RESSALVAS",
-    "summary": "Approved with a non-operational caveat after the critic reaches the configured round limit.",
-    "caveats": [
-      {
-        "type": "non-operational",
-        "code": "PRODUCT_SIGNOFF_PENDING",
-        "message": "Product sign-off is still pending for the rollout behavior, so auto-merge must stay blocked even though the PR can be opened.",
-        "blocksAutoMerge": true
-      }
-    ]
-  },
-  "critic": {
-    "maxRounds": 3,
-    "rounds": [
-      {
-        "round": 1,
-        "action": "recode",
-        "outcome": "changes-requested",
-        "summary": "Tighten assertions and keep the fixture fully local."
-      },
-      {
-        "round": 2,
-        "action": "recode",
-        "outcome": "changes-requested",
-        "summary": "Clarify the expected auto-merge blocking reason in the report."
-      },
-      {
-        "round": 3,
-        "action": "recode",
-        "outcome": "max-rounds-reached",
-        "summary": "Stop after the configured maximum number of review rounds and proceed to PR."
-      }
-    ]
+  "workerDryRun": {
+    "mode": "local",
+    "deterministic": true,
+    "integrations": {
+      "allowNetwork": false,
+      "allowGitHub": false,
+      "allowLinear": false,
+      "allowLiteLLM": false,
+      "allowProduction": false,
+      "externalCalls": []
+    },
+    "review": {
+      "verdict": "APROVADO COM RESSALVAS",
+      "summary": "Approved with a non-operational caveat after the critic reaches the configured round limit.",
+      "caveats": [
+        {
+          "type": "non-operational",
+          "code": "PRODUCT_SIGNOFF_PENDING",
+          "message": "Product sign-off is still pending for the rollout behavior, so auto-merge must stay blocked even though the PR can be opened.",
+          "blocksAutoMerge": true
+        }
+      ],
+      "requestedChanges": [
+        "Tighten assertions and keep the fixture fully local.",
+        "Clarify the expected auto-merge blocking reason in the report.",
+        "Stop after the configured maximum number of review rounds and proceed to PR."
+      ],
+      "requiresRecode": true,
+      "noop": false
+    },
+    "critic": {
+      "maxRounds": 3,
+      "rounds": [
+        {
+          "round": 1,
+          "action": "recode",
+          "outcome": "changes-requested",
+          "summary": "Tighten assertions and keep the fixture fully local."
+        },
+        {
+          "round": 2,
+          "action": "recode",
+          "outcome": "changes-requested",
+          "summary": "Clarify the expected auto-merge blocking reason in the report."
+        },
+        {
+          "round": 3,
+          "action": "recode",
+          "outcome": "max-rounds-reached",
+          "summary": "Stop after the configured maximum number of review rounds and proceed to PR."
+        }
+      ]
+    }
   },
   "expected": {
-    "finalVerdict": "APROVADO COM RESSALVAS",
-    "reviewOutcome": "recode_required",
-    "criticRoundsExecuted": 3,
-    "criticStopReason": "max_rounds_reached",
-    "opensPullRequest": true,
+    "review": {
+      "verdict": "APROVADO COM RESSALVAS",
+      "outcome": "recode_required",
+      "opensPullRequest": true,
+      "noop": false,
+      "requiresRecode": true
+    },
     "autoMerge": {
       "enabled": false,
-      "expected": false,
       "blocked": true,
       "blockReason": "PRODUCT_SIGNOFF_PENDING"
     },
-    "commitValidation": {
+    "critic": {
+      "roundsExecuted": 3,
+      "stopReason": "max_rounds_reached",
+      "maxRounds": 3
+    },
+    "commit": {
       "authorName": "Ranielli Montagna",
       "authorEmail": "raniellimontagna@hotmail.com",
-      "hasRef": true,
-      "hasCoAuthoredByCodex": true
+      "mustInclude": [
+        "Ref: MAC-86",
+        "Co-authored-by: Codex <noreply@openai.com>"
+      ]
+    },
+    "isolation": {
+      "allowNetwork": false,
+      "allowGitHub": false,
+      "allowLinear": false,
+      "allowLiteLLM": false,
+      "allowProduction": false,
+      "externalCalls": []
     }
-  }
+  },
+  "commands": []
 }

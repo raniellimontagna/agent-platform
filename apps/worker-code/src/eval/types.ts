@@ -16,6 +16,14 @@ const evalReviewNoteSchema = z.object({
   summary: z.string().min(1),
 });
 
+const normalizeReviewOutcome = (value: unknown): unknown => {
+  if (value === 'no-op') {
+    return 'noop';
+  }
+
+  return value;
+};
+
 const evalReviewSchema = z.preprocess((input) => {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
     return input;
@@ -23,12 +31,53 @@ const evalReviewSchema = z.preprocess((input) => {
 
   const review = { ...(input as Record<string, unknown>) };
 
+  if (review.verdict === undefined && typeof review.status === 'string') {
+    review.verdict = review.status;
+  }
+
   if (review.autoMergeEligible === undefined && typeof review.autoMerge === 'boolean') {
     review.autoMergeEligible = review.autoMerge;
   }
 
+  if (
+    review.autoMergeEligible === undefined &&
+    review.autoMerge &&
+    typeof review.autoMerge === 'object' &&
+    !Array.isArray(review.autoMerge)
+  ) {
+    const autoMerge = review.autoMerge as Record<string, unknown>;
+    if (typeof autoMerge.expected === 'boolean') {
+      review.autoMergeEligible = autoMerge.expected;
+    } else if (typeof autoMerge.enabled === 'boolean') {
+      review.autoMergeEligible = autoMerge.enabled;
+    }
+  }
+
   if (review.reviewOutcome === undefined && typeof review.reviewAction === 'string') {
     review.reviewOutcome = review.reviewAction;
+  }
+
+  if (review.reviewOutcome === undefined && typeof review.action === 'string') {
+    review.reviewOutcome = review.action;
+  }
+
+  review.reviewOutcome = normalizeReviewOutcome(review.reviewOutcome);
+
+  if (!Array.isArray(review.notes) && Array.isArray(review.caveats)) {
+    review.notes = review.caveats
+      .filter((caveat) => caveat && typeof caveat === 'object' && !Array.isArray(caveat))
+      .map((caveat) => {
+        const record = caveat as Record<string, unknown>;
+        return {
+          kind: record.type === 'operational' ? 'operational' : 'non-operational',
+          summary:
+            typeof record.message === 'string' && record.message.trim().length > 0
+              ? record.message
+              : typeof record.summary === 'string' && record.summary.trim().length > 0
+                ? record.summary
+                : `${record.type === 'operational' ? 'operational' : 'non-operational'} caveat`,
+        };
+      });
   }
 
   if (!Array.isArray(review.notes)) {
@@ -88,6 +137,37 @@ const evalExpectedSchema = z.preprocess((input) => {
       }
       return acc;
     }, {});
+
+    if (expected.finalVerdict !== undefined) {
+      review.verdict = expected.finalVerdict;
+    }
+
+    if (expected.reviewOutcome !== undefined) {
+      review.reviewOutcome = normalizeReviewOutcome(expected.reviewOutcome);
+    }
+
+    if (expected.criticRoundsExecuted !== undefined) {
+      review.criticRounds = expected.criticRoundsExecuted;
+    }
+
+    if (
+      expected.autoMerge &&
+      typeof expected.autoMerge === 'object' &&
+      !Array.isArray(expected.autoMerge)
+    ) {
+      const autoMerge = expected.autoMerge as Record<string, unknown>;
+      if (review.autoMergeEligible === undefined) {
+        if (typeof autoMerge.expected === 'boolean') {
+          review.autoMergeEligible = autoMerge.expected;
+        } else if (typeof autoMerge.enabled === 'boolean') {
+          review.autoMergeEligible = autoMerge.enabled;
+        }
+      }
+
+      if (review.blockReason === undefined && typeof autoMerge.blockReason === 'string') {
+        review.blockReason = autoMerge.blockReason;
+      }
+    }
 
     if (Object.keys(review).length > 0) {
       expected.review = review;
@@ -153,6 +233,206 @@ export const evalScenarioSchema = z.preprocess((input) => {
     if (inputs.workerDryRun && typeof inputs.workerDryRun === 'object') {
       scenario.workerDryRun = inputs.workerDryRun;
     }
+  }
+
+  if (
+    scenario.workerDryRun === undefined &&
+    ((scenario.review && typeof scenario.review === 'object' && !Array.isArray(scenario.review)) ||
+      (scenario.commit && typeof scenario.commit === 'object' && !Array.isArray(scenario.commit)) ||
+      (scenario.agent && typeof scenario.agent === 'object' && !Array.isArray(scenario.agent)))
+  ) {
+    const reviewRecord =
+      scenario.review && typeof scenario.review === 'object' && !Array.isArray(scenario.review)
+        ? { ...(scenario.review as Record<string, unknown>) }
+        : undefined;
+    const expectedRecord =
+      scenario.expected && typeof scenario.expected === 'object' && !Array.isArray(scenario.expected)
+        ? { ...(scenario.expected as Record<string, unknown>) }
+        : undefined;
+    const criticRecord =
+      scenario.critic && typeof scenario.critic === 'object' && !Array.isArray(scenario.critic)
+        ? { ...(scenario.critic as Record<string, unknown>) }
+        : undefined;
+    const fixturesRecord =
+      scenario.fixtures && typeof scenario.fixtures === 'object' && !Array.isArray(scenario.fixtures)
+        ? { ...(scenario.fixtures as Record<string, unknown>) }
+        : undefined;
+    const commitRecord =
+      scenario.commit && typeof scenario.commit === 'object' && !Array.isArray(scenario.commit)
+        ? { ...(scenario.commit as Record<string, unknown>) }
+        : undefined;
+    const agentRecord =
+      scenario.agent && typeof scenario.agent === 'object' && !Array.isArray(scenario.agent)
+        ? { ...(scenario.agent as Record<string, unknown>) }
+        : undefined;
+    const pullRequestRecord =
+      scenario.pullRequest && typeof scenario.pullRequest === 'object' && !Array.isArray(scenario.pullRequest)
+        ? { ...(scenario.pullRequest as Record<string, unknown>) }
+        : undefined;
+
+    if (reviewRecord) {
+      if (reviewRecord.reviewOutcome === undefined && expectedRecord?.reviewOutcome !== undefined) {
+        reviewRecord.reviewOutcome = expectedRecord.reviewOutcome;
+      }
+
+      if (reviewRecord.criticRounds === undefined) {
+        if (expectedRecord?.criticRoundsExecuted !== undefined) {
+          reviewRecord.criticRounds = expectedRecord.criticRoundsExecuted;
+        } else if (Array.isArray(criticRecord?.rounds)) {
+          reviewRecord.criticRounds = criticRecord?.rounds.length;
+        }
+      }
+
+      if (reviewRecord.maxCriticRounds === undefined && typeof criticRecord?.maxRounds === 'number') {
+        reviewRecord.maxCriticRounds = criticRecord.maxRounds;
+      }
+
+      if (
+        reviewRecord.autoMergeEligible === undefined &&
+        expectedRecord?.autoMerge &&
+        typeof expectedRecord.autoMerge === 'object' &&
+        !Array.isArray(expectedRecord.autoMerge)
+      ) {
+        const autoMerge = expectedRecord.autoMerge as Record<string, unknown>;
+        if (typeof autoMerge.expected === 'boolean') {
+          reviewRecord.autoMergeEligible = autoMerge.expected;
+        } else if (typeof autoMerge.enabled === 'boolean') {
+          reviewRecord.autoMergeEligible = autoMerge.enabled;
+        }
+
+        if (
+          reviewRecord.blockReason === undefined &&
+          typeof autoMerge.blockReason === 'string' &&
+          autoMerge.blockReason.trim().length > 0
+        ) {
+          reviewRecord.blockReason = autoMerge.blockReason;
+        }
+      }
+    }
+
+    const isolation = fixturesRecord
+      ? {
+          allowNetwork: fixturesRecord.allowNetwork === true,
+          allowGitHub: fixturesRecord.allowGitHub === true,
+          allowLinear: fixturesRecord.allowLinear === true,
+          allowLiteLLM: fixturesRecord.allowLiteLLM === true,
+          externalCalls: Array.isArray(fixturesRecord.externalCalls)
+            ? fixturesRecord.externalCalls.filter((call): call is string => typeof call === 'string')
+            : [],
+        }
+      : undefined;
+
+    const commitTrailers =
+      typeof commitRecord?.message === 'string'
+        ? commitRecord.message
+            .split('\n')
+            .map((line) => line.trim())
+            .filter((line) => line.length > 0 && line.includes(':') && !line.startsWith('Ref:'))
+        : [];
+
+    scenario.workerDryRun = {
+      plan:
+        typeof scenario.description === 'string' && scenario.description.trim().length > 0
+          ? scenario.description
+          : typeof scenario.title === 'string'
+            ? scenario.title
+            : 'Local eval fixture',
+      branch: 'agent/eval-dry-run',
+      prTitle:
+        typeof pullRequestRecord?.title === 'string' && pullRequestRecord.title.trim().length > 0
+          ? pullRequestRecord.title
+          : typeof scenario.title === 'string'
+            ? scenario.title
+            : 'Eval dry run',
+      summary:
+        typeof pullRequestRecord?.body === 'string'
+          ? pullRequestRecord.body
+          : typeof reviewRecord?.summary === 'string'
+            ? reviewRecord.summary
+            : '',
+      files: [],
+      llmResponses: [],
+      fixes: [],
+      maxFixAttempts: 2,
+      commitMessage: typeof commitRecord?.message === 'string' ? commitRecord.message : '',
+      commitAuthor:
+        typeof agentRecord?.name === 'string' && typeof agentRecord?.email === 'string'
+          ? {
+              name: agentRecord.name,
+              email: agentRecord.email,
+            }
+          : undefined,
+      commitTrailers,
+      review: reviewRecord,
+      isolation,
+    };
+  }
+
+  if (scenario.expected && typeof scenario.expected === 'object' && !Array.isArray(scenario.expected)) {
+    const expected = { ...(scenario.expected as Record<string, unknown>) };
+
+    if (
+      expected.changedFiles === undefined &&
+      scenario.workerDryRun &&
+      typeof scenario.workerDryRun === 'object' &&
+      !Array.isArray(scenario.workerDryRun)
+    ) {
+      const workerDryRun = scenario.workerDryRun as Record<string, unknown>;
+      if (Array.isArray(workerDryRun.files)) {
+        expected.changedFiles = workerDryRun.files
+          .filter((file) => file && typeof file === 'object' && !Array.isArray(file))
+          .map((file) => (file as Record<string, unknown>).path)
+          .filter((path): path is string => typeof path === 'string');
+      }
+    }
+
+    if (
+      expected.commit === undefined &&
+      ((scenario.agent && typeof scenario.agent === 'object' && !Array.isArray(scenario.agent)) ||
+        (scenario.commit && typeof scenario.commit === 'object' && !Array.isArray(scenario.commit)))
+    ) {
+      const agent = scenario.agent as Record<string, unknown> | undefined;
+      const commit = scenario.commit as Record<string, unknown> | undefined;
+      expected.commit = {
+        author:
+          typeof agent?.name === 'string' && typeof agent?.email === 'string'
+            ? {
+                name: agent.name,
+                email: agent.email,
+              }
+            : undefined,
+        messageIncludes: Array.isArray(commit?.mustInclude)
+          ? commit.mustInclude.filter((entry): entry is string => typeof entry === 'string')
+          : [],
+        trailersInclude:
+          typeof commit?.message === 'string'
+            ? commit.message
+                .split('\n')
+                .map((line) => line.trim())
+                .filter((line) => line.startsWith('Co-authored-by:'))
+            : [],
+      };
+    }
+
+    if (
+      expected.isolation === undefined &&
+      scenario.fixtures &&
+      typeof scenario.fixtures === 'object' &&
+      !Array.isArray(scenario.fixtures)
+    ) {
+      const fixtures = scenario.fixtures as Record<string, unknown>;
+      expected.isolation = {
+        allowNetwork: fixtures.allowNetwork === true,
+        allowGitHub: fixtures.allowGitHub === true,
+        allowLinear: fixtures.allowLinear === true,
+        allowLiteLLM: fixtures.allowLiteLLM === true,
+        externalCalls: Array.isArray(fixtures.externalCalls)
+          ? fixtures.externalCalls.filter((call): call is string => typeof call === 'string')
+          : [],
+      };
+    }
+
+    scenario.expected = expected;
   }
 
   return scenario;

@@ -1,31 +1,30 @@
 {
-  "schemaVersion": 2,
+  "version": 2,
   "id": "review-recode-required",
-  "title": "Review requires recode, exercises critic loop ceiling, and proceeds to PR",
-  "mode": "local-deterministic",
+  "title": "Review requires recode, reaches critic ceiling, and proceeds to PR",
+  "description": "Local deterministic fixture that exercises a recode review, enforces the 3-round critic ceiling, validates commit trailers, and allows auto-merge for an operational caveat.",
   "issue": {
-    "key": "MAC-84",
-    "title": "Exercise critic recode loop before PR with local-only fixture"
+    "key": "MAC-86",
+    "title": "Eval Harness v2 para auto-merge e loop critic"
   },
-  "inputs": {
-    "integrations": {
-      "allowNetwork": false,
-      "allowGitHub": false,
-      "allowLinear": false,
-      "allowLiteLLM": false,
-      "externalCalls": []
-    },
-    "agent": {
-      "name": "Ranielli Montagna",
-      "email": "raniellimontagna@hotmail.com"
-    },
-    "commit": {
-      "message": "test(eval): apply critic recode changes before pr\n\nRef: MAC-84\nCo-authored-by: Codex <noreply@openai.com>",
-      "mustInclude": [
-        "Ref:",
-        "Co-authored-by: Codex <noreply@openai.com>"
-      ]
-    },
+  "repo": {
+    "provider": "local",
+    "owner": "local",
+    "name": "worker-code-eval",
+    "defaultBranch": "main"
+  },
+  "candidate": {
+    "branch": "test/mac-86-review-recode-required",
+    "authorName": "Ranielli Montagna",
+    "authorEmail": "raniellimontagna@hotmail.com",
+    "commitMessage": "test(eval): apply critic recode changes before pr\n\nRef: MAC-86\nCo-authored-by: Codex <noreply@openai.com>"
+  },
+  "workerDryRun": {
+    "allowNetwork": false,
+    "allowGitHub": false,
+    "allowLinear": false,
+    "allowLiteLLM": false,
+    "externalCalls": [],
     "review": {
       "verdict": "APROVADO COM RESSALVAS",
       "summary": "A solução pode seguir após os ajustes solicitados pelo critic.",
@@ -59,11 +58,16 @@
       ]
     }
   },
+  "commands": [],
   "expected": {
-    "verdict": "APROVADO COM RESSALVAS",
-    "reviewAction": "recode",
-    "criticRoundsExecuted": 3,
-    "continueToPr": true,
+    "review": {
+      "verdict": "APROVADO COM RESSALVAS",
+      "action": "recode",
+      "noop": false,
+      "requiresRecode": true,
+      "criticRoundsExecuted": 3,
+      "continueToPr": true
+    },
     "autoMerge": {
       "expected": true,
       "blocked": false,
@@ -73,7 +77,18 @@
       "authorName": "Ranielli Montagna",
       "authorEmail": "raniellimontagna@hotmail.com",
       "containsRef": true,
-      "containsCoAuthoredBy": true
+      "containsCoAuthoredBy": true,
+      "mustInclude": [
+        "Ref:",
+        "Co-authored-by: Codex <noreply@openai.com>"
+      ]
+    },
+    "isolation": {
+      "allowNetwork": false,
+      "allowGitHub": false,
+      "allowLinear": false,
+      "allowLiteLLM": false,
+      "externalCalls": []
     }
   }
 }

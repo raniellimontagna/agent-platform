@@ -1,79 +1,109 @@
 {
-  "schemaVersion": 2,
+  "version": 2,
   "id": "auto-merge-operational-caveat",
   "title": "Auto-merge allowed for APROVADO COM RESSALVAS with operational caveat",
   "description": "Deterministic local fixture that validates the harness keeps auto-merge enabled when the final verdict is APROVADO COM RESSALVAS and the caveat is strictly operational.",
-  "mode": "local",
-  "deterministic": true,
-  "fixtures": {
-    "allowNetwork": false,
-    "allowGitHub": false,
-    "allowLinear": false,
-    "allowLiteLLM": false,
-    "allowProduction": false,
-    "externalCalls": []
+  "repo": {
+    "files": {
+      "docs/runbooks/eval-harness.md": "# Eval Harness\n\nExisting catalog entry.\n"
+    }
   },
-  "issue": {
-    "key": "MAC-86",
-    "title": "Expand eval harness coverage for auto-merge and critic loop",
-    "body": "Ensure the worker can produce a compliant agent commit, accept operational caveats, and proceed to auto-merge when the review verdict allows it."
+  "candidate": {
+    "files": {},
+    "delete": []
   },
-  "pullRequest": {
-    "number": 186,
-    "title": "test(worker-code): validate operational caveat still auto-merges",
-    "body": "This PR is evaluated entirely through local fixtures."
-  },
-  "agent": {
-    "name": "Ranielli Montagna",
-    "email": "raniellimontagna@hotmail.com"
-  },
-  "commit": {
-    "sha": "1111111111111111111111111111111111111111",
-    "message": "test(worker-code): validate operational caveat auto-merge\n\nRef: MAC-86\n\nCo-authored-by: Codex <noreply@openai.com>",
-    "mustInclude": [
-      "Ref: MAC-86",
-      "Co-authored-by: Codex <noreply@openai.com>"
-    ]
-  },
-  "review": {
-    "status": "APROVADO COM RESSALVAS",
-    "summary": "Approved with operational caveat only.",
-    "caveats": [
+  "workerDryRun": {
+    "plan": "Validate the eval harness can keep auto-merge enabled for an operational caveat while producing a compliant agent commit without external calls.",
+    "branch": "agent/eval-dry-run",
+    "prTitle": "test(worker-code): validate operational caveat still auto-merges",
+    "summary": "This PR is evaluated entirely through local fixtures.",
+    "files": [
       {
-        "type": "operational",
-        "code": "DEPLOY_MONITORING",
-        "message": "Monitor logs for the first 15 minutes after deploy because the new path increases worker throughput.",
-        "blocksAutoMerge": false
+        "path": "docs/runbooks/eval-harness.md",
+        "content": "# Eval Harness\n\nExisting catalog entry.\n\n## auto-merge-operational-caveat\n- Verdict: APROVADO COM RESSALVAS\n- Auto-merge: enabled\n- Caveat: monitor logs for the first 15 minutes after deploy.\n"
       }
-    ]
-  },
-  "critic": {
-    "maxRounds": 3,
-    "rounds": [
-      {
-        "round": 1,
-        "action": "no-op",
-        "outcome": "ready-for-pr",
-        "summary": "No recode required; proceed with the current diff."
-      }
-    ]
-  },
-  "expected": {
-    "finalVerdict": "APROVADO COM RESSALVAS",
-    "reviewOutcome": "no-op",
-    "criticRoundsExecuted": 1,
-    "opensPullRequest": true,
-    "autoMerge": {
-      "enabled": true,
-      "expected": true,
-      "blocked": false,
-      "blockReason": null
+    ],
+    "llmResponses": [],
+    "fixes": [],
+    "maxFixAttempts": 2,
+    "commitMessage": "test(worker-code): validate operational caveat auto-merge\n\nRef: MAC-86\n\nCo-authored-by: Codex <noreply@openai.com>",
+    "commitAuthor": {
+      "name": "Ranielli Montagna",
+      "email": "raniellimontagna@hotmail.com"
     },
-    "commitValidation": {
-      "authorName": "Ranielli Montagna",
-      "authorEmail": "raniellimontagna@hotmail.com",
-      "hasRef": true,
-      "hasCoAuthoredByCodex": true
+    "commitTrailers": [
+      "Co-authored-by: Codex <noreply@openai.com>"
+    ],
+    "review": {
+      "verdict": "APROVADO COM RESSALVAS",
+      "notes": [
+        {
+          "kind": "operational",
+          "summary": "Monitor logs for the first 15 minutes after deploy because the new path increases worker throughput."
+        }
+      ],
+      "autoMergeEligible": true,
+      "blockReason": "",
+      "reviewOutcome": "noop",
+      "criticRounds": 1,
+      "maxCriticRounds": 3
+    },
+    "isolation": {
+      "allowNetwork": false,
+      "allowGitHub": false,
+      "allowLinear": false,
+      "allowLiteLLM": false,
+      "externalCalls": []
+    }
+  },
+  "commands": [],
+  "expected": {
+    "changedFiles": [
+      "docs/runbooks/eval-harness.md"
+    ],
+    "forbiddenFiles": [],
+    "requiredContent": [
+      {
+        "path": "docs/runbooks/eval-harness.md",
+        "includes": "## auto-merge-operational-caveat"
+      },
+      {
+        "path": "docs/runbooks/eval-harness.md",
+        "includes": "Auto-merge: enabled"
+      }
+    ],
+    "review": {
+      "verdict": "APROVADO COM RESSALVAS",
+      "notes": [
+        {
+          "kind": "operational",
+          "summary": "Monitor logs for the first 15 minutes after deploy because the new path increases worker throughput."
+        }
+      ],
+      "autoMergeEligible": true,
+      "blockReason": "",
+      "reviewOutcome": "noop",
+      "criticRounds": 1,
+      "maxCriticRounds": 3
+    },
+    "commit": {
+      "author": {
+        "name": "Ranielli Montagna",
+        "email": "raniellimontagna@hotmail.com"
+      },
+      "messageIncludes": [
+        "Ref: MAC-86"
+      ],
+      "trailersInclude": [
+        "Co-authored-by: Codex <noreply@openai.com>"
+      ]
+    },
+    "isolation": {
+      "allowNetwork": false,
+      "allowGitHub": false,
+      "allowLinear": false,
+      "allowLiteLLM": false,
+      "externalCalls": []
     }
   }
 }

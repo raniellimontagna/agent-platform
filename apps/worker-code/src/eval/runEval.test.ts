@@ -43,6 +43,12 @@ describe('normalizeScenarioFixture', () => {
       scenarioId: 'review-noop-commit-trailers',
       id: 'review-noop-commit-trailers',
       title: 'Review noop',
+      version: undefined,
+      repo: undefined,
+      candidate: undefined,
+      commands: undefined,
+      workerDryRun: undefined,
+      expected: undefined,
     });
   });
 
@@ -55,6 +61,114 @@ describe('normalizeScenarioFixture', () => {
     ).toEqual({
       id: 'canonical-id',
       scenarioId: 'legacy-id',
+      version: undefined,
+      title: undefined,
+      repo: undefined,
+      candidate: undefined,
+      commands: undefined,
+      workerDryRun: undefined,
+      expected: undefined,
+    });
+  });
+
+  it('normaliza fixture v2 ad hoc para o shape canônico do harness', () => {
+    expect(
+      normalizeScenarioFixture({
+        schemaVersion: '2',
+        scenarioId: 'critic-max-rounds-3',
+        title: 'Critic max rounds',
+        inputs: {
+          repo: {
+            files: [{ path: 'README.md', content: 'hello' }],
+          },
+          candidate: [{ path: 'README.md', content: 'updated' }],
+          workerDryRun: true,
+          commands: ['pnpm test'],
+        },
+        review: {
+          status: 'APROVADO COM RESSALVAS',
+          action: 'recode',
+        },
+        expected: {
+          finalVerdict: 'APROVADO COM RESSALVAS',
+          autoMerge: {
+            enabled: false,
+            blockReason: 'Ressalva não-operacional requer revisão humana',
+          },
+          criticRounds: 3,
+          maxCriticRounds: 3,
+          commitRequiresRef: true,
+          commitRequiresCoAuthoredBy: true,
+          commitAuthorName: 'Ranielli Montagna',
+          commitAuthorEmail: 'raniellimontagna@hotmail.com',
+          isolation: {
+            allowNetwork: false,
+            allowGitHub: false,
+            allowLinear: false,
+            allowLiteLLM: false,
+            externalCalls: [],
+          },
+        },
+      }),
+    ).toEqual({
+      schemaVersion: '2',
+      scenarioId: 'critic-max-rounds-3',
+      title: 'Critic max rounds',
+      inputs: {
+        repo: {
+          files: [{ path: 'README.md', content: 'hello' }],
+        },
+        candidate: [{ path: 'README.md', content: 'updated' }],
+        workerDryRun: true,
+        commands: ['pnpm test'],
+      },
+      review: {
+        status: 'APROVADO COM RESSALVAS',
+        action: 'recode',
+      },
+      expected: {
+        finalVerdict: 'APROVADO COM RESSALVAS',
+        autoMerge: {
+          enabled: false,
+          blockReason: 'Ressalva não-operacional requer revisão humana',
+        },
+        criticRounds: 3,
+        maxCriticRounds: 3,
+        commitRequiresRef: true,
+        commitRequiresCoAuthoredBy: true,
+        commitAuthorName: 'Ranielli Montagna',
+        commitAuthorEmail: 'raniellimontagna@hotmail.com',
+        isolation: {
+          allowNetwork: false,
+          allowGitHub: false,
+          allowLinear: false,
+          allowLiteLLM: false,
+          externalCalls: [],
+          externalCallsEmpty: true,
+        },
+        review: {
+          verdict: 'APROVADO COM RESSALVAS',
+          outcome: 'recode',
+        },
+        critic: {
+          rounds: 3,
+          maxRounds: 3,
+        },
+        commit: {
+          requiresRef: true,
+          requiresCoAuthoredBy: true,
+          authorName: 'Ranielli Montagna',
+          authorEmail: 'raniellimontagna@hotmail.com',
+        },
+      },
+      id: 'critic-max-rounds-3',
+      version: '2',
+      repo: {
+        files: [{ path: 'README.md', content: 'hello' }],
+      },
+      candidate: [{ path: 'README.md', content: 'updated' }],
+      commands: ['pnpm test'],
+      workerDryRun: true,
     });
   });
 });
@@ -123,11 +237,12 @@ describe('renderMarkdown', () => {
       report([
         result('fallback-checks', 80, {
           checks: [
-            check(true, 'review verdict', 'APROVADO COM RESSALVAS operacional'),
-            check(true, 'auto-merge', 'allowed for operational ressalva'),
-            check(true, 'critic loop', 'recode completed after critic round 2'),
+            check(true, 'eval verdict', 'APROVADO COM RESSALVAS operacional'),
+            check(true, 'auto-merge expectation', 'yes'),
+            check(true, 'critic rounds limit', '2/3'),
             check(true, 'review outcome', 'recode'),
-            check(true, 'commit message', 'Ref: MAC-84\nCo-authored-by: Codex <noreply@openai.com>'),
+            check(true, 'commit Ref trailer', 'present'),
+            check(true, 'commit Co-authored-by trailer', 'present'),
           ],
         }),
       ]),
@@ -136,6 +251,7 @@ describe('renderMarkdown', () => {
     expect(markdown).toContain('Verdict: APROVADO COM RESSALVAS operacional');
     expect(markdown).toContain('Expected auto-merge: yes');
     expect(markdown).toContain('Review outcome: recode');
+    expect(markdown).toContain('Critic rounds: 2/3');
     expect(markdown).toContain('Commit policy: Ref: present; Co-authored-by: present');
   });
 
@@ -174,6 +290,38 @@ describe('renderMarkdown', () => {
     expect(markdown).toContain('Expected auto-merge: no');
     expect(markdown).toContain(
       'Auto-merge block reason: auto-merge blocked: ressalva não-operacional requer revisão humana',
+    );
+  });
+
+  it('mostra checks estruturados do harness para commit, isolation e critic rounds', () => {
+    const markdown = renderMarkdown(
+      report([
+        result('harness-structured', 70, {
+          checks: [
+            check(true, 'eval verdict', 'APROVADO'),
+            check(true, 'auto-merge expectation', 'yes'),
+            check(true, 'critic rounds limit', '3/3'),
+            check(true, 'commit author', 'Ranielli Montagna <raniellimontagna@hotmail.com>'),
+            check(true, 'commit Ref trailer', 'present'),
+            check(true, 'commit Co-authored-by trailer', 'present'),
+            check(
+              false,
+              'isolation policy',
+              'allowNetwork=no; allowGitHub=no; allowLinear=no; allowLiteLLM=no; externalCalls=1',
+            ),
+          ],
+        }),
+      ]),
+    );
+
+    expect(markdown).toContain('Verdict: APROVADO');
+    expect(markdown).toContain('Expected auto-merge: yes');
+    expect(markdown).toContain('Critic rounds: 3/3');
+    expect(markdown).toContain(
+      'Commit policy: author Ranielli Montagna <raniellimontagna@hotmail.com>; Ref: present; Co-authored-by: present',
+    );
+    expect(markdown).toContain(
+      '- FAIL isolation policy: allowNetwork=no; allowGitHub=no; allowLinear=no; allowLiteLLM=no; externalCalls=1',
     );
   });
 });

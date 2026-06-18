@@ -1,36 +1,51 @@
 {
-  "schemaVersion": 2,
+  "version": 2,
   "id": "review-noop-commit-trailers",
   "title": "No-op review keeps approved auto-merge and validates commit trailers",
-  "mode": "local-deterministic",
-  "issue": {
-    "key": "MAC-85",
-    "title": "Validate agent commit identity and trailers on no-op review"
+  "description": "Deterministic local fixture for an approved no-op review that validates Ref: and Co-authored-by trailers without any external integrations.",
+  "repo": {
+    "owner": "local",
+    "name": "worker-code",
+    "defaultBranch": "main"
   },
-  "inputs": {
-    "integrations": {
-      "allowNetwork": false,
-      "allowGitHub": false,
-      "allowLinear": false,
-      "allowLiteLLM": false,
-      "externalCalls": []
+  "candidate": {
+    "issue": {
+      "key": "MAC-86",
+      "title": "Expand eval harness coverage for auto-merge and critic loop",
+      "body": "Validate local-only approved no-op review behavior, commit identity, Ref trailer, and Codex co-author trailer."
+    },
+    "pullRequest": {
+      "number": 304,
+      "title": "test(eval): preserve approved no-op review",
+      "body": "Deterministic local eval fixture for approved no-op review and commit trailer validation."
     },
     "agent": {
       "name": "Ranielli Montagna",
       "email": "raniellimontagna@hotmail.com"
     },
     "commit": {
-      "message": "test(eval): preserve approved no-op review\n\nRef: MAC-85\nCo-authored-by: Codex <noreply@openai.com>",
+      "message": "test(eval): preserve approved no-op review\n\nRef: MAC-86\n\nCo-authored-by: Codex <noreply@openai.com>",
       "mustInclude": [
-        "Ref:",
+        "Ref: MAC-86",
         "Co-authored-by: Codex <noreply@openai.com>"
       ]
+    }
+  },
+  "workerDryRun": {
+    "mode": "local",
+    "deterministic": true,
+    "integrations": {
+      "allowNetwork": false,
+      "allowGitHub": false,
+      "allowLinear": false,
+      "allowLiteLLM": false,
+      "allowProduction": false,
+      "externalCalls": []
     },
     "review": {
       "verdict": "APROVADO",
       "summary": "Mudanças aprovadas sem pedidos de alteração.",
-      "operationalCaveat": false,
-      "nonOperationalCaveat": false,
+      "caveats": [],
       "requestedChanges": [],
       "requiresRecode": false,
       "noop": true
@@ -41,20 +56,39 @@
     }
   },
   "expected": {
-    "verdict": "APROVADO",
-    "reviewAction": "noop",
-    "criticRoundsExecuted": 0,
-    "continueToPr": true,
+    "review": {
+      "verdict": "APROVADO",
+      "outcome": "noop",
+      "opensPullRequest": true,
+      "noop": true,
+      "requiresRecode": false
+    },
     "autoMerge": {
-      "expected": true,
+      "enabled": true,
       "blocked": false,
-      "reason": null
+      "blockReason": null
+    },
+    "critic": {
+      "roundsExecuted": 0,
+      "stopReason": "not_needed",
+      "maxRounds": 3
     },
     "commit": {
       "authorName": "Ranielli Montagna",
       "authorEmail": "raniellimontagna@hotmail.com",
-      "containsRef": true,
-      "containsCoAuthoredBy": true
+      "mustInclude": [
+        "Ref: MAC-86",
+        "Co-authored-by: Codex <noreply@openai.com>"
+      ]
+    },
+    "isolation": {
+      "allowNetwork": false,
+      "allowGitHub": false,
+      "allowLinear": false,
+      "allowLiteLLM": false,
+      "allowProduction": false,
+      "externalCalls": []
     }
-  }
+  },
+  "commands": []
 }
