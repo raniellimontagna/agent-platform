@@ -146,7 +146,7 @@ const evalReviewSchema = z.preprocess(
     return review;
   },
   z.object({
-    verdict: z.enum(['APROVADO', 'APROVADO COM RESSALVAS', 'SOLICITAR MUDANCAS']),
+    verdict: z.enum(['APROVADO', 'APROVADO COM RESSALVAS', 'SOLICITAR MUDANCAS', 'REPROVADO']),
     notes: z.array(evalReviewNoteSchema).default([]),
     autoMergeEligible: z.boolean().optional(),
     blockReason: z.string().optional(),
@@ -880,7 +880,7 @@ export interface EvalResult {
       email: string;
     };
     commitTrailers?: string[];
-    reviewVerdict?: 'APROVADO' | 'APROVADO COM RESSALVAS' | 'SOLICITAR MUDANCAS';
+    reviewVerdict?: 'APROVADO' | 'APROVADO COM RESSALVAS' | 'SOLICITAR MUDANCAS' | 'REPROVADO';
     reviewOutcome?: 'noop' | 'recode';
     criticRounds?: number;
     maxCriticRounds?: number;
