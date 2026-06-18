@@ -102,8 +102,13 @@ export function buildAgentGraph(deps: GraphDeps, checkpointer: PostgresSaver) {
       // MAC-59: o critic decide revisar (volta pro coder em modo revisão) ou seguir.
       .addConditionalEdges(
         'reviewing',
-        (state) => (state.nextAfterReview === 'coding' ? 'revising' : 'pr'),
-        { revising: 'revising', pr: 'pr' },
+        (state) =>
+          state.nextAfterReview === 'coding'
+            ? 'revising'
+            : state.nextAfterReview === 'failed'
+              ? 'report'
+              : 'pr',
+        { revising: 'revising', pr: 'pr', report: 'report' },
       )
       // O nó de revisão (fora do interruptBefore) re-revisa; falha vai pro report.
       .addConditionalEdges(
