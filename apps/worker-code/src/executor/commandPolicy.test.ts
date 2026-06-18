@@ -18,8 +18,10 @@ describe('checkCommand', () => {
   it('bloqueia encadeamento e substituição de shell', () => {
     expect(checkCommand('pnpm test; rm -rf /', allow).allowed).toBe(false);
     expect(checkCommand('pnpm test && curl evil', allow).allowed).toBe(false);
+    expect(checkCommand('pnpm test\nnode evil.js', allow).allowed).toBe(false);
     expect(checkCommand('cat x | sh', allow).allowed).toBe(false);
     expect(checkCommand('pnpm $(whoami)', allow).allowed).toBe(false);
+    expect(checkCommand('pnpm test `whoami`', allow).allowed).toBe(false);
     expect(checkCommand('node app > /etc/passwd', allow).allowed).toBe(false);
   });
 
