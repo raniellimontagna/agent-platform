@@ -4,6 +4,8 @@
     "landing-page-agent": [
       "landing-page-production",
       "frontend-design",
+      "ui-ux-pro-max",
+      "accessibility-wcag",
       "astro-react-landing",
       "seo-page",
       "biome-formatting",
@@ -20,6 +22,16 @@
       "name": "frontend-design",
       "path": "agent-skills/frontend-design/SKILL.md",
       "description": "Improve frontend visual quality, layout, typography, responsive behavior, and interaction states."
+    },
+    {
+      "name": "ui-ux-pro-max",
+      "path": "agent-skills/ui-ux-pro-max/SKILL.md",
+      "description": "Raise landing page UI/UX quality with strong art direction, hierarchy, accessibility, interaction design, motion, typography, color, layout, and responsive polish."
+    },
+    {
+      "name": "accessibility-wcag",
+      "path": "agent-skills/accessibility-wcag/SKILL.md",
+      "description": "Apply WCAG 2.2 AA accessibility requirements for semantic HTML, contrast, focus, keyboard navigation, ARIA, labels, target sizes, and reduced motion."
     },
     {
       "name": "astro-react-landing",

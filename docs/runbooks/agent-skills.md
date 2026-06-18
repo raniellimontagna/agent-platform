@@ -43,6 +43,8 @@ Exemplo:
 
 - `landing-page-production`: contrato base para landing pages completas.
 - `frontend-design`: qualidade visual, layout, responsividade e estados de UI.
+- `ui-ux-pro-max`: direção visual, hierarquia, interação, motion e polish.
+- `accessibility-wcag`: WCAG 2.2 AA, semântica, foco, contraste e teclado.
 - `astro-react-landing`: padrão Astro + React para LPs do zero.
 - `seo-page`: SEO técnico, on-page, schema, conteúdo e GEO para páginas.
 - `biome-formatting`: formatação/lint com Biome e comandos do monorepo.
