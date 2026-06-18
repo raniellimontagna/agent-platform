@@ -61,7 +61,7 @@ export function extractResearchUrls(text: string, limit = MAX_SOURCES): string[]
   const urls = new Set<string>();
   const pattern = /https?:\/\/[^\s<>"')\]]+/gi;
   for (const match of text.matchAll(pattern)) {
-    const normalized = match[0].replace(/[.,;:!?]+$/g, '');
+    const normalized = match[0].replace(/[`*_~]+$/g, '').replace(/[.,;:!?]+$/g, '');
     urls.add(normalized);
     if (urls.size >= limit) break;
   }
