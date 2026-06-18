@@ -16,7 +16,7 @@ scrape_configs:
         labels:
           service: orchestrator-api
       - targets:
-          - http://10.10.0.10:4000/health
+          - http://10.10.0.10:4000/health/liveliness
         labels:
           service: litellm-gateway
       - targets:
