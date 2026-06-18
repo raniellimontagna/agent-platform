@@ -66,3 +66,13 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
+    command:
+      - "--path.rootfs=/host"
+    volumes:
+      - /:/host:ro,rslave

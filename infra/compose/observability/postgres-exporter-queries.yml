@@ -1,0 +1,11 @@
+agent_platform_critic_reproved_pr_post_hardening:
+  query: |
+    SELECT count(*)::float AS count
+    FROM runs
+    WHERE verdict ~* 'REPROVADO'
+      AND pr_url IS NOT NULL
+      AND created_at >= '2026-06-18T13:51:00Z';
+  metrics:
+    - count:
+        usage: GAUGE
+        description: Runs with a terminal REPROVADO verdict that still produced a PR after critic hardening.
