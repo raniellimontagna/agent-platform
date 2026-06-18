@@ -6,6 +6,8 @@ import type { Agent, NewAgent } from './db/schema.js';
 import { env } from './env.js';
 
 export type AgentStatus = (typeof schema.agentStatus.enumValues)[number];
+export const DEFAULT_AGENT_KEY = env.AGENT_KEY;
+export const REVIEWER_AGENT_KEY = 'reviewer-agent';
 
 /** Schema de criação de agente via REST. */
 export const createAgentSchema = z.object({
@@ -33,6 +35,10 @@ export class AgentExistsError extends Error {
     super('agent already exists');
     this.name = 'AgentExistsError';
   }
+}
+
+export function agentKeyFromLabels(labelNames: string[]): string {
+  return labelNames.includes('agent:reviewer') ? REVIEWER_AGENT_KEY : DEFAULT_AGENT_KEY;
 }
 
 /** Lista agentes (catálogo / descoberta), mais recentes primeiro. */
@@ -86,21 +92,41 @@ export async function updateAgentStatus(id: string, status: AgentStatus): Promis
   return row ?? null;
 }
 
-/** Insere o agente default `coder-agent v1` se não existir. Idempotente. */
-export async function ensureDefaultAgent(): Promise<void> {
+const DEFAULT_AGENTS: NewAgent[] = [
+  {
+    key: DEFAULT_AGENT_KEY,
+    version: 'v1',
+    description: 'Pipeline LangGraph atual (planner→coder→reviewing→revising→pr→report)',
+    capabilities: ['typescript', 'node', 'hono', 'feature', 'bugfix', 'refactor', 'single-repo'],
+  },
+  {
+    key: REVIEWER_AGENT_KEY,
+    version: 'v1',
+    description: 'Agente focado em revisão/critic para triagem e validação de mudanças.',
+    capabilities: ['review', 'critic', 'quality-gate', 'test-analysis', 'single-repo'],
+  },
+];
+
+/** Insere os agentes built-in se não existirem. Idempotente. */
+export async function ensureDefaultAgents(): Promise<void> {
   await db
     .insert(schema.agents)
-    .values({
-      key: env.AGENT_KEY,
-      version: 'v1',
-      description: 'Pipeline LangGraph atual (planner→coder→reviewing→revising→pr→report)',
-      capabilities: ['typescript', 'node', 'hono', 'feature', 'bugfix', 'refactor', 'single-repo'],
-    })
+    .values(DEFAULT_AGENTS)
     .onConflictDoNothing({ target: [schema.agents.key, schema.agents.version] });
+}
+
+/** Compat: mantém o nome antigo usado pelo worker/tests. */
+export async function ensureDefaultAgent(): Promise<void> {
+  await ensureDefaultAgents();
 }
 
 /** Agente vigente da key default (env.AGENT_KEY): active mais recente, ou null. */
 export async function resolveDefaultAgent(): Promise<Agent | null> {
-  const rows = await listAgents({ key: env.AGENT_KEY });
+  const rows = await listAgents({ key: DEFAULT_AGENT_KEY });
+  return pickActiveAgent(rows);
+}
+
+export async function resolveAgentByKey(key: string): Promise<Agent | null> {
+  const rows = await listAgents({ key });
   return pickActiveAgent(rows);
 }

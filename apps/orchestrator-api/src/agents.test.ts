@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { createAgentSchema, pickActiveAgent } from './agents.js';
+import {
+  DEFAULT_AGENT_KEY,
+  REVIEWER_AGENT_KEY,
+  agentKeyFromLabels,
+  createAgentSchema,
+  pickActiveAgent,
+} from './agents.js';
 import type { Agent } from './db/schema.js';
 
 function agent(over: Partial<Agent>): Agent {
@@ -53,5 +59,15 @@ describe('createAgentSchema', () => {
     expect(
       createAgentSchema.safeParse({ key: 'k', version: 'v1', capabilities: [1] }).success,
     ).toBe(false);
+  });
+});
+
+describe('agentKeyFromLabels', () => {
+  it('usa coder-agent por padrão', () => {
+    expect(agentKeyFromLabels(['ai-ready'])).toBe(DEFAULT_AGENT_KEY);
+  });
+
+  it('usa reviewer-agent quando a issue tem label agent:reviewer', () => {
+    expect(agentKeyFromLabels(['ai-ready', 'agent:reviewer'])).toBe(REVIEWER_AGENT_KEY);
   });
 });

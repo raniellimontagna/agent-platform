@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { Hono } from 'hono';
+import { agentKeyFromLabels, resolveAgentByKey } from '../agents.js';
 import { isUniqueViolation } from '../db/pgError.js';
 import { env } from '../env.js';
 import { isPaused } from '../killswitch.js';
@@ -37,6 +38,10 @@ interface IssuePayload {
 function hasLabel(d: IssueData | undefined, name: string, id: string): boolean {
   const names = d?.labels?.map((l) => l.name) ?? [];
   return names.includes(name) || (d?.labelIds ?? []).includes(id);
+}
+
+export function labelNames(d: IssueData | undefined): string[] {
+  return d?.labels?.map((l) => l.name) ?? [];
 }
 
 /** A label foi ADICIONADA neste evento? (create com a label, ou update que a acrescentou) */
@@ -128,11 +133,13 @@ webhooks.post('/webhooks/linear', async (c) => {
   // Cria o run e enfileira; a execução longa roda no worker (MAC-20).
   let runId: string;
   try {
+    const agent = await resolveAgentByKey(agentKeyFromLabels(labelNames(payload.data)));
     runId = await createRun({
       linearIssueId: issueId,
       linearIssueIdentifier: payload.data?.identifier ?? issueId,
       title: payload.data?.title ?? '(sem título)',
       autoMerge: hasLabel(payload.data, 'auto-merge', env.LINEAR_AUTO_MERGE_LABEL_ID ?? ''),
+      agentId: agent?.id,
     });
   } catch (err) {
     // MAC-47: índice único de issue ativa — webhook concorrente da mesma issue.

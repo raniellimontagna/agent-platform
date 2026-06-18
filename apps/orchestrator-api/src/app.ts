@@ -4,6 +4,7 @@ import { adminRoute } from './routes/admin.js';
 import { agentsRoute } from './routes/agents.js';
 import { artifactsRoute } from './routes/artifacts.js';
 import { health } from './routes/health.js';
+import { registryRoute } from './routes/registry.js';
 import { runsRoute } from './routes/runs.js';
 import { schedulesRoute } from './routes/schedules.js';
 import { statsRoute } from './routes/stats.js';
@@ -44,6 +45,7 @@ export function buildApp(): Hono {
   }
 
   app.route('/', health);
+  app.route('/', registryRoute);
   app.route('/', webhooks);
   app.route('/', runsRoute);
   app.route('/', statsRoute);

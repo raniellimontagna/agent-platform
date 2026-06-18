@@ -3,7 +3,7 @@ import { verdictOf } from '@agent-platform/graph';
 import { distillLesson } from '@agent-platform/memory';
 import { Worker } from 'bullmq';
 import { getAgent } from './agent.js';
-import { ensureDefaultAgent } from './agents.js';
+import { ensureDefaultAgents } from './agents.js';
 import { hasCriticalReason, isCriticalReason } from './approvalPolicy.js';
 import { saveArtifacts } from './artifacts.js';
 import { env } from './env.js';
@@ -33,11 +33,11 @@ import { ensureDefaultTools } from './tools.js';
 export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, string>> {
   const { graph, linear, llm } = await getAgent();
 
-  // MAC-42: garante o agente default no catálogo (idempotente). Não-fatal.
+  // MAC-42/MAC-90: garante os agentes built-in no catálogo (idempotente). Não-fatal.
   try {
-    await ensureDefaultAgent();
+    await ensureDefaultAgents();
   } catch (err) {
-    logger.warn({ err }, 'ensureDefaultAgent falhou (seguindo sem seed)');
+    logger.warn({ err }, 'ensureDefaultAgents falhou (seguindo sem seed)');
   }
 
   // MAC-43: garante as tools default no catálogo (idempotente). Não-fatal.
