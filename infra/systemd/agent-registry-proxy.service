@@ -1,0 +1,9 @@
+[Unit]
+Description=Agent Platform registry LAN proxy
+Requires=agent-registry-proxy.socket
+After=network-online.target
+
+[Service]
+ExecStart=/lib/systemd/systemd-socket-proxyd <agent-gateway-ip>:80
+NoNewPrivileges=true
+PrivateTmp=true

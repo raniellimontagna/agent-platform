@@ -1,3 +1,11 @@
 llm.agent.local {
     reverse_proxy litellm:4000
 }
+
+:80 {
+    handle /registry* {
+        reverse_proxy <agent-orchestrator-ip>:3000
+    }
+
+    respond "agent-platform gateway" 404
+}
