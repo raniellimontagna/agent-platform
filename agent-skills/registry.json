@@ -11,7 +11,7 @@
       "biome-formatting",
       "gsap-motion"
     ],
-    "data-collector-agent": ["research-data-collection"]
+    "data-collector-agent": ["research-data-collection", "instagram-public-research"]
   },
   "skills": [
     {
@@ -58,6 +58,11 @@
       "name": "research-data-collection",
       "path": "agent-skills/research-data-collection/SKILL.md",
       "description": "Collect public web data with source evidence, safety policy, rate limits, and structured research outputs for downstream agents."
+    },
+    {
+      "name": "instagram-public-research",
+      "path": "agent-skills/instagram-public-research/SKILL.md",
+      "description": "Collect Instagram-related public and first-party data safely for research packs without posting, messaging, deleting, or bypassing access controls."
     }
   ]
 }

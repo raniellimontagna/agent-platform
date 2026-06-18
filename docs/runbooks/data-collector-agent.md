@@ -24,6 +24,12 @@ a produzir pacotes de pesquisa com:
 - limitações, fontes inacessíveis e nível de confiança;
 - recomendações para o agente downstream.
 
+Ele também carrega `instagram-public-research` para tarefas que envolvem
+Instagram. Essa skill é deliberadamente restrita a pesquisa pública, dados
+first-party autorizados e exports fornecidos pelo usuário. Ela não permite
+publicar, responder DMs, deletar comentários, automatizar engajamento ou contornar
+login, captcha, rate limits, permissões da Graph API ou termos da plataforma.
+
 ## Firecrawl research packs
 
 MAC-94 integra o Firecrawl no runner para o primeiro fluxo real de coleta:
@@ -53,6 +59,8 @@ As tools foram adicionadas ao Tool Registry como metadado:
 - `playwright`: páginas dinâmicas, screenshots e inspeção visual.
 - `scrapling`: HTTP scraping, páginas JS e crawling controlado.
 - `python`: scripts de coleta/normalização.
+- `instagram-public-research`: skill de coleta segura para fontes públicas,
+  Graph API autorizada e exports first-party de Instagram.
 
 Nesta etapa, Firecrawl roda via integração controlada no worker. As demais tools
 ainda não entram no `AGENT_COMMAND_ALLOWLIST` do runner. Isso evita habilitar
