@@ -75,6 +75,14 @@ export interface RunnerResult {
 export type DispatchFn = (body: RunnerJobBody) => Promise<RunnerResult>;
 
 /** Resumo curto dos comandos de validação: status + tail do que falhou. */
+function summarizeCommandOutput(output: string): string {
+  const trimmed = output.trim();
+  if (trimmed.length <= 3000) return trimmed;
+  const head = trimmed.slice(0, 1200).trimEnd();
+  const tail = trimmed.slice(-1800).trimStart();
+  return `${head}\n\n...[output truncated; keeping first and last diagnostics]...\n\n${tail}`;
+}
+
 function summarizeTests(commands: CommandResult[] = []): string {
   if (commands.length === 0) return '';
   return commands
@@ -82,8 +90,8 @@ function summarizeTests(commands: CommandResult[] = []): string {
       const ok = c.exitCode === 0;
       const head = `- \`${c.command}\` → ${ok ? '✅' : `❌ exit ${c.exitCode}`}`;
       if (ok) return head;
-      const tail = (c.stderr || c.stdout || '').trim().slice(-600);
-      return `${head}\n\`\`\`\n${tail}\n\`\`\``;
+      const output = [c.stderr, c.stdout].filter((part) => part.trim()).join('\n');
+      return `${head}\n\`\`\`\n${summarizeCommandOutput(output)}\n\`\`\``;
     })
     .join('\n');
 }

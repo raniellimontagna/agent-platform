@@ -188,6 +188,7 @@ export function parseJsonOutput(stdout: string): unknown {
 function extractString(value: unknown, keys: string[]): string | undefined {
   if (Array.isArray(value)) {
     for (const item of value) {
+      if (typeof item === 'string' && item.trim()) return item.trim();
       const found = extractString(item, keys);
       if (found) return found;
     }
