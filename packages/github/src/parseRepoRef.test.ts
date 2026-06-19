@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseRepoRef } from './index.js';
+import { parseRepoFullName, parseRepoRef } from './index.js';
 
 describe('parseRepoRef', () => {
   it('extrai owner/repo de URL https com .git', () => {
@@ -22,5 +22,18 @@ describe('parseRepoRef', () => {
 
   it('lança em URL que não é do github', () => {
     expect(() => parseRepoRef('https://gitlab.com/owner/repo.git')).toThrow();
+  });
+});
+
+describe('parseRepoFullName', () => {
+  it('extrai owner/repo', () => {
+    expect(parseRepoFullName('attodevlabs/lp-acme')).toEqual({
+      owner: 'attodevlabs',
+      repo: 'lp-acme',
+    });
+  });
+
+  it('lança em formato inválido', () => {
+    expect(() => parseRepoFullName('attodevlabs')).toThrow(/owner\/repo/);
   });
 });

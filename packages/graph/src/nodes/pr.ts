@@ -1,4 +1,4 @@
-import type { GithubGateway } from '@agent-platform/github';
+import { type GithubGateway, parseRepoFullName } from '@agent-platform/github';
 import type { LinearGateway } from '@agent-platform/linear';
 import type { AgentStateType } from '../state.js';
 import { shouldAutoMerge } from './report.js';
@@ -49,6 +49,7 @@ export function makePrNode(deps: PrDeps) {
         title,
         body,
         draft: !autoMerge, // gate ok → PR pronto p/ merge; senão Draft (manual)
+        ...(state.targetRepo ? { repo: parseRepoFullName(state.targetRepo) } : {}),
       });
 
       await deps.linear.comment(

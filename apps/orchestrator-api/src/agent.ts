@@ -1,4 +1,4 @@
-import { createGithubGateway, parseRepoRef } from '@agent-platform/github';
+import { createGithubGateway, parseRepoFullName, parseRepoRef } from '@agent-platform/github';
 import { type AgentGraph, buildAgentGraph, createCheckpointer } from '@agent-platform/graph';
 import { type LinearGateway, createLinearGateway } from '@agent-platform/linear';
 import { type LlmClient, createLlmClient } from '@agent-platform/llm';
@@ -10,6 +10,7 @@ export interface Agent {
   graph: AgentGraph;
   linear: LinearGateway;
   llm: LlmClient;
+  github: ReturnType<typeof createGithubGateway>;
   workerManager: WorkerManager;
 }
 
@@ -38,6 +39,15 @@ async function init(): Promise<Agent> {
 
   // Injeta a credencial do GitHub na URL de clone (repo pode ser privado).
   const repoUrl = env.REPO_URL.replace('https://', `https://x-access-token:${env.GITHUB_TOKEN}@`);
+  const resolveRepoUrl = (targetRepo: string | undefined) => {
+    if (!targetRepo) return repoUrl;
+    const ref = parseRepoFullName(targetRepo);
+    const token =
+      ref.owner === env.GENERATED_REPOS_OWNER && env.GENERATED_REPOS_TOKEN
+        ? env.GENERATED_REPOS_TOKEN
+        : env.GITHUB_TOKEN;
+    return `https://x-access-token:${token}@github.com/${ref.owner}/${ref.repo}.git`;
+  };
 
   // Gateway do GitHub (MAC-26) — owner/repo derivados da URL do repo alvo.
   const github = createGithubGateway(env.GITHUB_TOKEN, parseRepoRef(env.REPO_URL));
@@ -71,10 +81,11 @@ async function init(): Promise<Agent> {
       maxCostPerRunUsd: env.AGENT_MAX_COST_PER_RUN_USD,
       doneStateId: env.LINEAR_DONE_STATE_ID,
       runnerRepoUrl: repoUrl,
+      resolveRunnerRepoUrl: resolveRepoUrl,
       dispatch: workerManager.dispatch,
     },
     checkpointer,
   );
 
-  return { graph, linear, llm, workerManager };
+  return { graph, linear, llm, github, workerManager };
 }

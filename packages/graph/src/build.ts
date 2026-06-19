@@ -16,6 +16,8 @@ export interface GraphDeps {
   linear: LinearGateway;
   /** URL de clone do repo alvo (vai no body do job — MAC-39). */
   runnerRepoUrl: string;
+  /** Resolve clone URL com credencial para repo alvo opcional. */
+  resolveRunnerRepoUrl?: (targetRepo: string | undefined) => string;
   /** Despacha o job pro runner com health/failover (MAC-39). */
   dispatch: DispatchFn;
   github: GithubGateway;
@@ -58,6 +60,7 @@ export function buildAgentGraph(deps: GraphDeps, checkpointer: PostgresSaver) {
   const coderDeps = {
     linear: deps.linear,
     repoUrl: deps.runnerRepoUrl,
+    resolveRepoUrl: deps.resolveRunnerRepoUrl,
     baseBranch: deps.baseBranch ?? 'main',
     dispatch: deps.dispatch,
     testCommands: deps.testCommands ?? [],

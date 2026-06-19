@@ -14,8 +14,11 @@ Na issue Linear:
 
 - inclua `ai-ready`;
 - inclua `workflow:landing-page`;
+- para criar um repo final novo, inclua também `repo:create`;
 - coloque URLs públicas da empresa, produto, Instagram público, LinkedIn público,
   página de preços, docs ou referências relevantes;
+- opcionalmente informe `TARGET_REPO_NAME: nome-do-repo` na descrição;
+- para usar um repo já existente, informe `TARGET_REPO: attodevlabs/nome-do-repo`;
 - aprove o plano inicial com `approved`.
 
 Não adicione `agent:landing-page` nem `agent:data-collector`; a label de workflow
@@ -25,6 +28,10 @@ já seleciona o coletor na primeira etapa e o landing-page-agent na continuaçã
 
 - O primeiro run termina como `completed`, sem PR, com artifact `research`.
 - O orchestrator comenta que iniciou a etapa de landing page.
+- Com `repo:create`, o orchestrator cria o repo final em `attodevlabs` a partir
+  de `GENERATED_REPOS_TEMPLATE` e abre o PR nesse repo.
+- Sem `repo:create` e sem `TARGET_REPO`, o comportamento permanece no repo
+  default do deploy.
 - O segundo run é `autoApprove=true`; se o planner detectar motivo crítico, ele
   ainda ficará aguardando aprovação humana.
 - A etapa de landing page usa o research pack como fonte principal de copy,

@@ -13,6 +13,7 @@ import {
 import { hasCriticalReason, isCriticalReason } from './approvalPolicy.js';
 import { saveArtifacts } from './artifacts.js';
 import { env } from './env.js';
+import { ensureGeneratedRepository, resolveGeneratedRepoTarget } from './generatedRepos.js';
 import { isPaused } from './killswitch.js';
 import { saveLesson } from './lessons.js';
 import { logger } from './logger.js';
@@ -42,7 +43,7 @@ import {
  * - kind `resume`: retoma após aprovação → roda coding (MAC-17) → fim.
  */
 export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, string>> {
-  const { graph, linear, llm } = await getRuntimeAgent();
+  const { graph, linear, llm, github } = await getRuntimeAgent();
 
   // MAC-42/MAC-90: garante os agentes built-in no catálogo (idempotente). Não-fatal.
   try {
@@ -118,6 +119,7 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
             description,
             status: 'planning',
             autoMerge: run?.autoMerge ?? false,
+            targetRepo: run?.targetRepo ?? undefined,
             agentKey: selectedAgent?.key,
             agentCapabilities: selectedAgent?.capabilities,
           },
@@ -247,6 +249,7 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
           status,
           result,
           linear,
+          github,
           log,
         });
       }
@@ -284,6 +287,7 @@ async function maybeStartResearchToLandingWorkflow(args: {
   status: RunStatus;
   result: { research?: string };
   linear: Awaited<ReturnType<typeof getRuntimeAgent>>['linear'];
+  github: Awaited<ReturnType<typeof getRuntimeAgent>>['github'];
   log: Logger;
 }) {
   const sourceRun = await getRun(args.runId);
@@ -299,6 +303,29 @@ async function maybeStartResearchToLandingWorkflow(args: {
   }
 
   const landingAgent = await resolveAgentByKey(LANDING_PAGE_AGENT_KEY);
+  const issue = await args.linear.getIssue(sourceRun.linearIssueId);
+  const target = resolveGeneratedRepoTarget({
+    title: sourceRun.title,
+    description: issue.description,
+    createRequested: sourceRun.targetRepoCreate,
+    config: {
+      owner: env.GENERATED_REPOS_OWNER,
+      allowCreate: env.GENERATED_REPOS_ALLOW_CREATE,
+      template: env.GENERATED_REPOS_TEMPLATE,
+    },
+  });
+  const createdRepo = target
+    ? await ensureGeneratedRepository({
+        github: args.github,
+        target,
+        description: `Landing page gerada pelo agent-platform para ${sourceRun.linearIssueIdentifier}`,
+        config: {
+          owner: env.GENERATED_REPOS_OWNER,
+          allowCreate: env.GENERATED_REPOS_ALLOW_CREATE,
+          template: env.GENERATED_REPOS_TEMPLATE,
+        },
+      })
+    : undefined;
   const landingRunId = await createRun({
     linearIssueId: sourceRun.linearIssueId,
     linearIssueIdentifier: sourceRun.linearIssueIdentifier,
@@ -306,6 +333,7 @@ async function maybeStartResearchToLandingWorkflow(args: {
     agentId: landingAgent?.id,
     autoApprove: true,
     autoMerge: sourceRun.autoMerge,
+    targetRepo: target?.fullName,
   });
 
   await agentQueue.add(
@@ -319,9 +347,19 @@ async function maybeStartResearchToLandingWorkflow(args: {
     { priority: JOB_PRIORITY.plan },
   );
 
+  const targetLine = target
+    ? `Repo alvo: \`${target.fullName}\`${createdRepo ? ` (${createdRepo.created ? 'criado' : 'já existia'})` : ''}.`
+    : undefined;
   await args.linear.comment(
     sourceRun.linearIssueId,
-    `## 🔁 Workflow composto\nColeta concluída. Iniciando etapa de landing page com o \`landing-page-agent\`.\n\nRun de landing page: \`${landingRunId}\`.`,
+    [
+      '## 🔁 Workflow composto',
+      'Coleta concluída. Iniciando etapa de landing page com o `landing-page-agent`.',
+      targetLine,
+      `Run de landing page: \`${landingRunId}\`.`,
+    ]
+      .filter(Boolean)
+      .join('\n\n'),
   );
   args.log.info({ sourceRunId: args.runId, landingRunId }, 'research→landing workflow enqueued');
 }

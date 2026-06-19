@@ -36,6 +36,20 @@ describe('makeMergingNode', () => {
     expect(d.linear.comment).toHaveBeenCalled();
   });
 
+  it('passa repo alvo para merge e delete quando targetRepo está no estado', async () => {
+    const d = deps();
+    await makeMergingNode(d as never)({ ...okState, targetRepo: 'attodevlabs/lp-acme' } as never);
+    expect(d.github.mergePullRequest).toHaveBeenCalledWith({
+      number: 7,
+      method: 'squash',
+      repo: { owner: 'attodevlabs', repo: 'lp-acme' },
+    });
+    expect(d.github.deleteBranch).toHaveBeenCalledWith('agent/x', {
+      owner: 'attodevlabs',
+      repo: 'lp-acme',
+    });
+  });
+
   it('merge falha → comenta e segue (non-fatal, não lança)', async () => {
     const d = deps();
     d.github.mergePullRequest = vi.fn(async () => {

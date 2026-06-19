@@ -77,6 +77,8 @@ export const AgentState = Annotation.Root({
   nextAfterReview: Annotation<string>(),
   /** Issue marcada com auto-merge (opt-in). Vem do run (MAC-67). */
   autoMerge: Annotation<boolean>(),
+  /** Repo alvo opcional no formato owner/repo. Ausente = repo default do deploy. */
+  targetRepo: Annotation<string>(),
   /** Agente selecionado para este run (Agent Registry). */
   agentKey: Annotation<string>(),
   /** Capacidades declarativas do agente selecionado. */

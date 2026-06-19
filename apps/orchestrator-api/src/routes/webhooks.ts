@@ -3,6 +3,7 @@ import { Hono } from 'hono';
 import { DATA_COLLECTOR_AGENT_KEY, agentKeyFromLabels, resolveAgentByKey } from '../agents.js';
 import { isUniqueViolation } from '../db/pgError.js';
 import { env } from '../env.js';
+import { hasRepoCreateLabel } from '../generatedRepos.js';
 import { isPaused } from '../killswitch.js';
 import { logger } from '../logger.js';
 import { JOB_PRIORITY, agentQueue } from '../queue.js';
@@ -145,6 +146,7 @@ webhooks.post('/webhooks/linear', async (c) => {
       autoMerge: hasLabel(payload.data, 'auto-merge', env.LINEAR_AUTO_MERGE_LABEL_ID ?? ''),
       agentId: agent?.id,
       workflow,
+      targetRepoCreate: hasRepoCreateLabel(labels),
     });
   } catch (err) {
     // MAC-47: índice único de issue ativa — webhook concorrente da mesma issue.

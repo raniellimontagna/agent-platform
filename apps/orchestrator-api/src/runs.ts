@@ -51,6 +51,10 @@ export interface NewRunInput {
   agentId?: string;
   /** Workflow composto que originou/guia o run. */
   workflow?: string;
+  /** Repo alvo opcional no formato owner/repo. */
+  targetRepo?: string;
+  /** Workflow pode criar repo gerado quando chegar na etapa final. */
+  targetRepoCreate?: boolean;
 }
 
 /** Cria o registro do run (MAC-36) e devolve o id. */
@@ -71,6 +75,8 @@ export async function createRun(input: NewRunInput): Promise<string> {
       ...(input.autoMerge !== undefined ? { autoMerge: input.autoMerge } : {}),
       ...(agentId ? { agentId } : {}),
       ...(input.workflow ? { workflow: input.workflow } : {}),
+      ...(input.targetRepo ? { targetRepo: input.targetRepo } : {}),
+      ...(input.targetRepoCreate !== undefined ? { targetRepoCreate: input.targetRepoCreate } : {}),
     })
     .returning({ id: schema.runs.id });
   // biome-ignore lint/style/noNonNullAssertion: insert ... returning sempre retorna a linha
