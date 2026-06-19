@@ -393,6 +393,7 @@ export function filterDocumentationTargets(
 export function selectFixCandidateFiles(filesChanged: string[], failureTail: string): string[] {
   const candidates = [...new Set(filesChanged)].slice(0, MAX_EDIT_FILES);
   const normalizedTail = failureTail.replaceAll('\\', '/');
+  const changedTests = candidates.filter(isTestPath);
   const mentioned = candidates.filter((path) => {
     const normalized = path.replace(/^\/+/, '').replaceAll('\\', '/');
     const suffixes = normalized
@@ -408,7 +409,17 @@ export function selectFixCandidateFiles(filesChanged: string[], failureTail: str
     );
   });
 
-  return mentioned.length > 0 ? mentioned : candidates.slice(0, 6);
+  return mentioned.length > 0
+    ? [...new Set([...mentioned, ...changedTests])].slice(0, MAX_EDIT_FILES)
+    : candidates.slice(0, 6);
+}
+
+function isTestPath(path: string): boolean {
+  const normalized = path.replace(/^\/+/, '').replaceAll('\\', '/');
+  return (
+    /(^|\/)(__tests__|test|tests)\//.test(normalized) ||
+    /\.(test|spec)\.[cm]?[jt]sx?$/.test(normalized)
+  );
 }
 
 export function filterReviewCreates(

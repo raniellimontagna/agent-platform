@@ -285,6 +285,14 @@ export async function runJob(job: Job): Promise<JobResult> {
       await fixValidationFailures();
       base.fixAttempts = fixAttempts;
       base.filesChanged = touched;
+      if (!validation.passed) {
+        commands.push(...validation.results);
+        base.sandbox = summarizeSandbox(commands);
+        base.testsPassed = false;
+        base.error = validation.failureTail || 'validation failed';
+        log.warn({ fixAttempts }, 'validation still failed after self-correction');
+        return { ...base, status: 'failed' };
+      }
 
       // Commit do estado final + push único. Se hooks de commit falharem, tenta
       // corrigir usando a saída do próprio git commit como diagnóstico e revalida.
