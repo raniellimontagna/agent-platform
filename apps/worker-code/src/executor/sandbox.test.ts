@@ -8,6 +8,7 @@ const env = {
   AGENT_SANDBOX_CPUS: 1.5,
   AGENT_SANDBOX_MEMORY: '1536m',
   AGENT_SANDBOX_PIDS_LIMIT: 256,
+  HIGGSFIELD_HOME: '/srv/agent-runners/higgsfield',
 };
 
 describe('buildDockerRunArgs', () => {
@@ -44,7 +45,11 @@ describe('buildDockerRunArgs', () => {
     expect(args[args.indexOf('--volume') + 1]).toBe(
       '/srv/agent-runners/worktrees/run-1:/srv/agent-runners/worktrees/run-1',
     );
+    expect(args).toContain('/srv/agent-runners/higgsfield:/srv/agent-runners/higgsfield');
     expect(args).toContain('CI=true');
+    expect(args).toContain('HOME=/srv/agent-runners/higgsfield');
+    expect(args).toContain('XDG_CONFIG_HOME=/srv/agent-runners/higgsfield/.config');
+    expect(args).toContain('HIGGSFIELD_HOME=/srv/agent-runners/higgsfield');
     expect(args.slice(-4)).toEqual([
       'agent-platform/worker-code:latest',
       'bash',

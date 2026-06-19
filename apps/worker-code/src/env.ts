@@ -12,6 +12,7 @@ export const envSchema = z.object({
 
   RUNNER_WORKDIR: z.string().min(1),
   RUNNER_ARTIFACTS_DIR: z.string().min(1),
+  HIGGSFIELD_HOME: z.string().min(1).default('/srv/agent-runners/higgsfield'),
 
   LITELLM_BASE_URL: z.string().url(),
   LITELLM_API_KEY: z.string().min(1),
@@ -31,7 +32,7 @@ export const envSchema = z.object({
 
   // Allowlist de binários que o runner pode executar (MAC-31), separados por
   // vírgula. Comandos do job fora disto são bloqueados e auditados.
-  AGENT_COMMAND_ALLOWLIST: z.string().default('pnpm,node,npm,npx,git'),
+  AGENT_COMMAND_ALLOWLIST: z.string().default('pnpm,node,npm,npx,git,higgsfield,higgs'),
   // Self-correction: máximo de tentativas de fix após falha de validação.
   AGENT_MAX_FIX_ATTEMPTS: z.coerce.number().default(3),
 

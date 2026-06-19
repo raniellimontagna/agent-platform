@@ -11,6 +11,7 @@ services:
       NODE_ENV: production
       RUNNER_WORKDIR: /srv/agent-runners/worktrees
       RUNNER_ARTIFACTS_DIR: /srv/agent-runners/artifacts
+      HIGGSFIELD_HOME: ${HIGGSFIELD_HOME:-/srv/agent-runners/higgsfield}
       LITELLM_BASE_URL: ${LITELLM_BASE_URL}
       LITELLM_API_KEY: ${LITELLM_API_KEY}
       ORCHESTRATOR_BASE_URL: ${ORCHESTRATOR_BASE_URL}
@@ -30,9 +31,11 @@ services:
       AGENT_SANDBOX_CPUS: ${AGENT_SANDBOX_CPUS:-2}
       AGENT_SANDBOX_MEMORY: ${AGENT_SANDBOX_MEMORY:-2g}
       AGENT_SANDBOX_PIDS_LIMIT: ${AGENT_SANDBOX_PIDS_LIMIT:-512}
+      AGENT_COMMAND_ALLOWLIST: ${AGENT_COMMAND_ALLOWLIST:-pnpm,node,npm,npx,git,higgsfield,higgs}
     volumes:
       - /srv/agent-runners/worktrees:/srv/agent-runners/worktrees
       - /srv/agent-runners/artifacts:/srv/agent-runners/artifacts
+      - /srv/agent-runners/higgsfield:/srv/agent-runners/higgsfield
       - /var/run/docker.sock:/var/run/docker.sock
 
   node-exporter:
