@@ -3,12 +3,14 @@ import { Hono } from 'hono';
 import { env } from './env.js';
 import { logger } from './logger.js';
 import { health } from './routes/health.js';
+import { higgsfieldTools } from './routes/higgsfieldTools.js';
 import { jobs } from './routes/jobs.js';
 
 const app = new Hono();
 
 app.route('/', health);
 app.route('/', jobs);
+app.route('/', higgsfieldTools);
 
 app.notFound((c) => c.json({ error: 'not found' }, 404));
 
