@@ -619,9 +619,18 @@ export async function applyFix(args: FixArgs): Promise<FixResult> {
   // Relê on-disk os arquivos tocados (recém-escritos; arquivos novos podem não
   // estar no git ls-files, então lemos direto, sem filtro de tracking).
   const current: { path: string; content: string }[] = [];
-  const fixCandidates = selectFixCandidateFiles(filesChanged, failureTail);
+  const prioritizedCandidates = selectFixCandidateFiles(filesChanged, failureTail);
+  const fixCandidates = [...new Set([...prioritizedCandidates, ...filesChanged])].slice(
+    0,
+    MAX_EDIT_FILES,
+  );
   log.info(
-    { files: fixCandidates.length, originalFiles: filesChanged.length, fixCandidates },
+    {
+      files: fixCandidates.length,
+      originalFiles: filesChanged.length,
+      prioritizedCandidates,
+      fixCandidates,
+    },
     'selected files for fix',
   );
 
