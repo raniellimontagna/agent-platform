@@ -80,6 +80,43 @@ describe('generateHiggsfieldImage', () => {
     expect(fetchImpl).toHaveBeenCalledWith('https://cdn.example.com/asset.jpg');
   });
 
+  it('aceita job id retornado como array de string pela CLI', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'higgsfield-tool-'));
+    const execHiggsfield = vi.fn(async (args: string[]) => {
+      if (args[1] === 'cost') return command(args, { credits: 1 });
+      if (args[1] === 'create') return command(args, ['job-array-123']);
+      return command(args, { result_url: 'https://cdn.example.com/asset.jpg' });
+    });
+    const fetchImpl = vi.fn(
+      async () => new Response(new Uint8Array([1, 2, 3]), { status: 200 }),
+    ) as typeof fetch;
+
+    const result = await generateHiggsfieldImage(
+      { prompt: 'premium landing page hero', runId: 'RUN 1' },
+      {
+        artifactsDir: dir,
+        preferredImageModels: ['seedream_v5_lite'],
+        timeout: '10m',
+        interval: '5s',
+        execHiggsfield,
+        fetchImpl,
+      },
+    );
+
+    expect(result.jobId).toBe('job-array-123');
+    expect(execHiggsfield).toHaveBeenNthCalledWith(3, [
+      'generate',
+      'wait',
+      'job-array-123',
+      '--timeout',
+      '10m',
+      '--interval',
+      '5s',
+      '--json',
+      '--no-color',
+    ]);
+  });
+
   it('falha antes de criar quando cost falha', async () => {
     const execHiggsfield = vi.fn(async (args: string[]) => ({
       command: `higgsfield ${args.join(' ')}`,
