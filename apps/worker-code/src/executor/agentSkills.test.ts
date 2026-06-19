@@ -40,6 +40,8 @@ describe('agentSkills', () => {
     expect(instructions).toContain('Use Astro as the page and content framework');
     expect(instructions).toContain('Treat SEO as part of the landing page implementation');
     expect(instructions).toContain('Higgsfield MCP/CLI');
+    expect(instructions).toContain('seedream_v5_lite');
+    expect(instructions).toContain('Prefer Higgsfield models covered');
   });
 
   it('injeta skill de coleta para data-collector-agent', () => {
