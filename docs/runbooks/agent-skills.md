@@ -7,6 +7,8 @@ codegen conforme o agente selecionado.
 ## Estrutura
 
 - `agent-skills/registry.json`: mapeia agentes para skills.
+- UI LAN do registry: `http://<proxmox-lan-ip>:8088/registry` proxy para o
+  orchestrator via `infra/systemd/agent-registry-proxy.*`.
 - `agent-skills/<skill>/SKILL.md`: instruções da skill, com frontmatter `name`
   e `description`.
 

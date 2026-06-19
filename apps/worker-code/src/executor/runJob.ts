@@ -1,3 +1,5 @@
+import { copyFile, mkdir } from 'node:fs/promises';
+import { join } from 'node:path';
 import { createLlmClient } from '@agent-platform/llm';
 import type { Logger } from 'pino';
 import { env } from '../env.js';
@@ -7,6 +9,7 @@ import { applyFix, generateAndApplyCode } from './codegen.js';
 import { checkCommand } from './commandPolicy.js';
 import { DATA_COLLECTOR_AGENT_KEY, runFirecrawlResearchJob } from './firecrawlResearch.js';
 import { commitAll, diffAgainst, pushBranch } from './git.js';
+import { generateHiggsfieldImage, parsePreferredModels } from './higgsfieldTool.js';
 import { runSandboxedCommand } from './sandbox.js';
 import { summarizeFailureTail } from './validation.js';
 import { cleanupWorktree, prepareWorktree } from './worktree.js';
@@ -21,6 +24,9 @@ const llm = createLlmClient({
 const COMMAND_ALLOWLIST = env.AGENT_COMMAND_ALLOWLIST.split(',')
   .map((b) => b.trim())
   .filter(Boolean);
+
+const LANDING_PAGE_AGENT_KEY = 'landing-page-agent';
+const LANDING_HERO_ASSET_PATH = 'public/generated/higgsfield-hero.jpg';
 
 /**
  * Roda um comando do job aplicando a allowlist (MAC-31). Comando bloqueado não
@@ -47,6 +53,40 @@ async function runGuarded(
 }
 
 export { summarizeFailureTail };
+
+export function shouldAutoGenerateLandingMedia(job: Job): boolean {
+  if (!env.HIGGSFIELD_AUTO_GENERATE_LANDING_MEDIA) return false;
+  if (job.reviewFeedback?.trim()) return false;
+  if (job.agentKey !== LANDING_PAGE_AGENT_KEY) return false;
+  return (
+    job.agentCapabilities.includes('generative-media') ||
+    job.agentCapabilities.includes('higgsfield')
+  );
+}
+
+export function buildLandingMediaPrompt(job: Job): string {
+  return [
+    'Create one high-conversion landing page hero image.',
+    `Business/request: ${job.title}`,
+    job.description ? `Context: ${job.description}` : '',
+    job.plan ? `Approved plan: ${job.plan}` : '',
+    'Composition: premium editorial web hero, clear subject, useful negative space for HTML headline overlay, realistic product/service context, polished lighting, no text in image, no logos unless explicitly provided.',
+    'Output: wide 16:9 image suitable for a modern Astro + React landing page.',
+  ]
+    .filter(Boolean)
+    .join('\n');
+}
+
+export function landingMediaContext(assetPath = LANDING_HERO_ASSET_PATH): string {
+  const publicPath = assetPath.replace(/^public\//, '/');
+  return [
+    '## Generated Higgsfield Media',
+    '',
+    `A Higgsfield hero image has already been generated and copied to \`${assetPath}\`.`,
+    `Use it in the landing page as \`${publicPath}\` for the primary hero/visual section.`,
+    'Do not hotlink the external Higgsfield result URL. Keep meaningful alt text and explicit image dimensions/aspect ratio.',
+  ].join('\n');
+}
 
 /**
  * Roda os comandos de validação no worktree. Para no primeiro que falhar (build
@@ -131,12 +171,47 @@ export async function runJob(job: Job): Promise<JobResult> {
 
     // Fluxo de code-gen (MAC-17): há plano aprovado.
     if (job.plan.trim()) {
+      let plan = job.plan;
+      if (shouldAutoGenerateLandingMedia(job)) {
+        try {
+          log.info('generating landing hero media with Higgsfield');
+          const media = await generateHiggsfieldImage(
+            {
+              prompt: buildLandingMediaPrompt(job),
+              aspectRatio: '16:9',
+              outputFilename: 'higgsfield-hero.jpg',
+              runId: job.runId,
+            },
+            {
+              artifactsDir: env.RUNNER_ARTIFACTS_DIR,
+              preferredImageModels: parsePreferredModels(env.HIGGSFIELD_PREFERRED_IMAGE_MODELS),
+              timeout: env.HIGGSFIELD_GENERATE_TIMEOUT,
+              interval: env.HIGGSFIELD_POLL_INTERVAL,
+            },
+          );
+          commands.push(...media.commands);
+          const destination = join(dir, LANDING_HERO_ASSET_PATH);
+          await mkdir(join(dir, 'public/generated'), { recursive: true });
+          await copyFile(media.artifactPath, destination);
+          plan = `${job.plan}\n\n${landingMediaContext(LANDING_HERO_ASSET_PATH)}`;
+          log.info(
+            {
+              model: media.model,
+              costCredits: media.costCredits,
+              assetPath: LANDING_HERO_ASSET_PATH,
+            },
+            'landing hero media generated',
+          );
+        } catch (err) {
+          log.warn({ err }, 'Higgsfield landing media generation failed; continuing without asset');
+        }
+      }
       const gen = await generateAndApplyCode({
         llm,
         dir,
         title: job.title,
         description: job.description,
-        plan: job.plan,
+        plan,
         lessons: job.lessons,
         reviewFeedback: job.reviewFeedback,
         agentKey: job.agentKey,
@@ -167,7 +242,7 @@ export async function runJob(job: Job): Promise<JobResult> {
             dir,
             filesChanged: touched,
             failureTail,
-            plan: job.plan,
+            plan,
             title: job.title,
             agentKey: job.agentKey,
             agentCapabilities: job.agentCapabilities,

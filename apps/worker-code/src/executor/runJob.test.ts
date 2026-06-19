@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { CommandResult } from '../types.js';
 import type { Job } from '../types.js';
-import { buildCommitMessage, commitErrorResult, summarizeFailureTail } from './runJob.js';
+import {
+  buildCommitMessage,
+  buildLandingMediaPrompt,
+  commitErrorResult,
+  landingMediaContext,
+  shouldAutoGenerateLandingMedia,
+  summarizeFailureTail,
+} from './runJob.js';
 
 function cmd(command: string, exitCode: number, stderr = '', stdout = ''): CommandResult {
   return { command, exitCode, stdout, stderr, durationMs: 1 };
@@ -86,5 +93,37 @@ describe('commitErrorResult', () => {
     expect(summarizeFailureTail([result])).toBe(
       '$ git commit\ngit commit failed: pre-commit hook failed',
     );
+  });
+});
+
+describe('landing media integration helpers', () => {
+  const landingJob = {
+    runId: '00000000-0000-4000-8000-000000000000',
+    issueIdentifier: 'MAC-120',
+    repoUrl: 'git@example.com:repo.git',
+    baseBranch: 'main',
+    branch: 'agent/mac-120',
+    commands: [],
+    title: 'Criar landing page para clínica premium',
+    description: 'Use visual forte no hero.',
+    plan: 'Criar página Astro + React.',
+    lessons: '',
+    reviewFeedback: '',
+    agentKey: 'landing-page-agent',
+    agentCapabilities: ['landing-page', 'generative-media', 'higgsfield'],
+  } satisfies Job;
+
+  it('ativa mídia automática para landing-page-agent com capability Higgsfield', () => {
+    expect(shouldAutoGenerateLandingMedia(landingJob)).toBe(true);
+    expect(shouldAutoGenerateLandingMedia({ ...landingJob, reviewFeedback: 'ajustar' })).toBe(
+      false,
+    );
+    expect(shouldAutoGenerateLandingMedia({ ...landingJob, agentKey: 'coder-agent' })).toBe(false);
+  });
+
+  it('gera prompt e contexto para o codegen usar asset local', () => {
+    expect(buildLandingMediaPrompt(landingJob)).toContain('no text in image');
+    expect(landingMediaContext()).toContain('public/generated/higgsfield-hero.jpg');
+    expect(landingMediaContext()).toContain('/generated/higgsfield-hero.jpg');
   });
 });
