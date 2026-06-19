@@ -41,6 +41,13 @@ export const envSchema = z.object({
   FIRECRAWL_BASE_URL: z.string().url().default('https://api.firecrawl.dev'),
   FIRECRAWL_TIMEOUT_MS: z.coerce.number().int().positive().default(60_000),
 
+  // Higgsfield: wrapper governado para mídia gerada por landing/media agents.
+  HIGGSFIELD_PREFERRED_IMAGE_MODELS: z
+    .string()
+    .default('seedream_v5_lite,flux_2,seedream_v4_5,nano_banana,kling_omni_image,gpt_image_2'),
+  HIGGSFIELD_GENERATE_TIMEOUT: z.string().min(1).default('10m'),
+  HIGGSFIELD_POLL_INTERVAL: z.string().min(1).default('5s'),
+
   // Cloudflare Workers deploy de landing pages geradas. Opcional no boot; jobs
   // que chamarem Wrangler falham explicitamente se o token não estiver presente.
   CLOUDFLARE_API_TOKEN: optionalNonEmpty,

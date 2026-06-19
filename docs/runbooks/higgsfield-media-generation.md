@@ -17,6 +17,9 @@ storyboards e referências visuais para animações.
   `HIGGSFIELD_HOME`.
 - Conta Higgsfield autenticada no runner e validada por job sandbox com
   `higgsfield account status` e `higgsfield model list --json`.
+- Wrapper governado no runner: `POST /tools/higgsfield/generate-image`, com
+  bearer `RUNNER_AUTH_TOKEN`, seleção de modelo preferencial, `cost` antes de
+  gerar, `wait`, download do asset e metadata em `RUNNER_ARTIFACTS_DIR`.
 
 ## Fonte externa
 
@@ -87,6 +90,32 @@ Antes de criar uma geração fora dessa lista, estimar custo:
 higgsfield generate cost <model> --prompt "..." --aspect_ratio 16:9 --json
 ```
 
+## Interface interna
+
+O runner expõe uma tool HTTP interna autenticada:
+
+```bash
+curl -sS -X POST http://runner.agent.local:8080/tools/higgsfield/generate-image \
+  -H "authorization: Bearer $RUNNER_AUTH_TOKEN" \
+  -H "content-type: application/json" \
+  -d '{"prompt":"premium SaaS landing page hero","aspectRatio":"16:9","runId":"run-id"}'
+```
+
+Resposta principal:
+
+- `model`: modelo usado, preferindo `HIGGSFIELD_PREFERRED_IMAGE_MODELS`.
+- `costCredits`: custo estimado retornado pelo CLI, quando disponível.
+- `jobId` e `resultUrl`: rastreio no Higgsfield.
+- `artifactPath`: arquivo baixado em `/srv/agent-runners/artifacts/higgsfield/...`.
+- `metadataPath`: JSON com prompt, modelo, custo, job id e URL fonte.
+- `commands`: auditoria de `cost`, `create` e `wait`.
+
+Variáveis do runner:
+
+- `HIGGSFIELD_PREFERRED_IMAGE_MODELS`: ordem de fallback dos modelos.
+- `HIGGSFIELD_GENERATE_TIMEOUT`: timeout do `generate wait` (`10m` default).
+- `HIGGSFIELD_POLL_INTERVAL`: intervalo do polling (`5s` default).
+
 ## Uso no landing-page-agent
 
 Quando a issue pedir mídia visual, o agente deve:
@@ -94,26 +123,21 @@ Quando a issue pedir mídia visual, o agente deve:
 - decidir primeiro o papel da mídia na conversão;
 - produzir um asset brief com tipo, propósito, prompt, requisitos de saída e
   fallback;
-- usar Higgsfield somente se houver MCP/CLI autenticado disponível;
+- chamar a tool interna do runner quando houver Higgsfield autenticado;
 - salvar assets gerados no padrão do repo, nunca hotlinkar URL temporária;
 - configurar dimensões, poster/fallback, `alt`, lazy loading e reduced motion;
 - manter uma versão boa da página mesmo sem geração externa.
 
-## Próxima integração runtime
+## Próximas integrações
 
-Para transformar isso em tool executável:
+O wrapper atual cobre geração de imagem prompt-first. Próximas expansões:
 
-1. Escolher se a interface interna fica em CLI direto ou MCP Higgsfield.
-2. Implementar wrapper interno que escolha modelos preferenciais e rode `cost`
-   antes de geração paga.
-3. Criar artifact store para imagens/vídeos gerados e metadados de prompt.
-4. Expor uma interface interna de tool, por exemplo:
-   - `media.generate_image`
-   - `media.generate_video`
-   - `media.upload_reference`
-   - `media.list_generations`
-5. Só depois criar um `media-generation-agent` dedicado, reutilizável por
-   landing pages, social posts, ads e conteúdo de produto.
+1. Registrar artifacts de mídia no artifact store do orchestrator.
+2. Expor `media.generate_video`, `media.upload_reference` e
+   `media.list_generations`.
+3. Criar `media-generation-agent` dedicado, reutilizável por landing pages,
+   social posts, ads e conteúdo de produto.
+4. Adicionar métricas de modelo, créditos estimados, duração, falhas e retry.
 
 Se a conta Higgsfield estiver indisponível ou o modelo preferencial falhar, a
 skill deve cair para prompts/slots/fallbacks e não prometer asset gerado.

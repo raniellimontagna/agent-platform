@@ -13,6 +13,9 @@ loops, character-consistent visuals, or visual references for animation.
 
 - Prefer Higgsfield MCP/CLI when the runtime has an authenticated Higgsfield
   account.
+- In agent-platform runners, prefer the internal authenticated tool
+  `POST /tools/higgsfield/generate-image` over raw CLI calls. It runs cost
+  estimation, model selection, job waiting, asset download, and metadata capture.
 - Do not assume API keys exist; Higgsfield authentication is account/OAuth based.
 - Do not block delivery if Higgsfield is unavailable. Ship a strong layout with
   clear asset slots, prompts, alt text, dimensions, and fallback styling.
@@ -71,6 +74,17 @@ tool:
 - `output_requirements`: dimensions, duration, format, transparent/background,
   poster need, and target filename.
 - `fallback`: CSS/HTML or static placeholder plan if generation is unavailable.
+
+For image generation on agent-platform, call the runner tool with:
+
+- `prompt`
+- `aspectRatio`
+- optional `model`
+- optional `runId`
+- optional `outputFilename`
+
+Use the returned `artifactPath` as the source asset to copy into the generated
+site repository. Do not use `resultUrl` directly in production code.
 
 ## Guardrails
 

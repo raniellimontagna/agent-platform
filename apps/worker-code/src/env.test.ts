@@ -15,6 +15,9 @@ describe('envSchema', () => {
     expect(env.AGENT_MAX_FIX_ATTEMPTS).toBe(3);
     expect(env.AGENT_COMMAND_ALLOWLIST).toContain('higgsfield');
     expect(env.HIGGSFIELD_HOME).toBe('/srv/agent-runners/higgsfield');
+    expect(env.HIGGSFIELD_PREFERRED_IMAGE_MODELS).toContain('seedream_v5_lite');
+    expect(env.HIGGSFIELD_GENERATE_TIMEOUT).toBe('10m');
+    expect(env.HIGGSFIELD_POLL_INTERVAL).toBe('5s');
     expect(env.FIRECRAWL_BASE_URL).toBe('https://api.firecrawl.dev');
     expect(env.FIRECRAWL_TIMEOUT_MS).toBe(60_000);
   });
