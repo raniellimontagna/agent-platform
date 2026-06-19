@@ -58,10 +58,7 @@ export function shouldAutoGenerateLandingMedia(job: Job): boolean {
   if (!env.HIGGSFIELD_AUTO_GENERATE_LANDING_MEDIA) return false;
   if (job.reviewFeedback?.trim()) return false;
   if (job.agentKey !== LANDING_PAGE_AGENT_KEY) return false;
-  return (
-    job.agentCapabilities.includes('generative-media') ||
-    job.agentCapabilities.includes('higgsfield')
-  );
+  return true;
 }
 
 export function buildLandingMediaPrompt(job: Job): string {
