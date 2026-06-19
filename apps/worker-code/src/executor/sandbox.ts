@@ -16,6 +16,8 @@ export interface SandboxCommandArgs {
     | 'AGENT_SANDBOX_CPUS'
     | 'AGENT_SANDBOX_MEMORY'
     | 'AGENT_SANDBOX_PIDS_LIMIT'
+    | 'CLOUDFLARE_API_TOKEN'
+    | 'CLOUDFLARE_ACCOUNT_ID'
   >;
 }
 
@@ -58,11 +60,17 @@ export function buildDockerRunArgs(args: SandboxCommandArgs): string[] {
     `${args.cwd}:${args.cwd}`,
     '--env',
     'CI=true',
+    ...optionalEnv('CLOUDFLARE_API_TOKEN', args.env.CLOUDFLARE_API_TOKEN),
+    ...optionalEnv('CLOUDFLARE_ACCOUNT_ID', args.env.CLOUDFLARE_ACCOUNT_ID),
     args.env.AGENT_SANDBOX_IMAGE,
     'bash',
     '-lc',
     args.command,
   ];
+}
+
+function optionalEnv(name: string, value: string | undefined): string[] {
+  return value ? ['--env', `${name}=${value}`] : [];
 }
 
 function runDockerCommand(args: SandboxCommandArgs): Promise<CommandResult> {

@@ -125,6 +125,7 @@ export async function runJob(job: Job): Promise<JobResult> {
       repoUrl: job.repoUrl,
       baseBranch: job.baseBranch,
       branch: job.branch,
+      checkoutOnly: job.checkoutOnly,
       revise: reviseMode,
     });
 

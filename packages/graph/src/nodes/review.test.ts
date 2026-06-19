@@ -32,6 +32,30 @@ describe('decideAfterReview', () => {
     expect(r).toBe('pr');
   });
 
+  it('APROVADO COM RESSALVAS sem bug bloqueante em Problemas → pr', () => {
+    const r = decideAfterReview(
+      {
+        ...base,
+        review:
+          'Veredito: APROVADO COM RESSALVAS\n\n## Problemas\nNenhum bug bloqueante identificado no diff.\n\n## Observações\n- Teste específico faltando.',
+      },
+      opts,
+    );
+    expect(r).toBe('pr');
+  });
+
+  it('APROVADO COM RESSALVAS com problema acionável → coding mesmo com observação operacional', () => {
+    const r = decideAfterReview(
+      {
+        ...base,
+        review:
+          'Veredito: APROVADO COM RESSALVAS\n\n## Problemas\n- `src/pages/index.astro` — adicionar rel="noopener noreferrer".\n\n## Observações\n- Falta evidência de cobertura específica.',
+      },
+      opts,
+    );
+    expect(r).toBe('coding');
+  });
+
   it('REPROVADO com rounds == teto → failed', () => {
     const r = decideAfterReview({ ...base, reviewRounds: 1, review: 'Veredito: REPROVADO' }, opts);
     expect(r).toBe('failed');

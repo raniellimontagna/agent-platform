@@ -48,6 +48,6 @@ export function makeMergingNode(deps: MergingDeps) {
       const msg = err instanceof Error ? err.message : String(err);
       await deps.linear.comment(state.issueId, `## ⚠️ Pós-merge parcial\n\`\`\`\n${msg}\n\`\`\``);
     }
-    return {};
+    return { autoMerged: true };
   };
 }

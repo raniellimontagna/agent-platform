@@ -50,6 +50,7 @@ export interface RunnerJobBody {
   reviewFeedback: string;
   agentKey?: string;
   agentCapabilities?: string[];
+  checkoutOnly?: boolean;
 }
 
 export interface RunnerResult {

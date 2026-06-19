@@ -85,6 +85,10 @@ export const AgentState = Annotation.Root({
   agentCapabilities: Annotation<string[]>(),
   /** Número do PR aberto (pro auto-merge). MAC-67. */
   prNumber: Annotation<number>(),
+  /** PR foi mergeado automaticamente com sucesso. */
+  autoMerged: Annotation<boolean>(),
+  /** URL publicada pelo deploy Cloudflare pós-merge, quando houver. */
+  cloudflareDeployUrl: Annotation<string>(),
 });
 
 export type AgentStateType = typeof AgentState.State;

@@ -3,6 +3,7 @@ import type { LinearGateway } from '@agent-platform/linear';
 import type { LlmClient } from '@agent-platform/llm';
 import { END, START, StateGraph } from '@langchain/langgraph';
 import { PostgresSaver } from '@langchain/langgraph-checkpoint-postgres';
+import { makeCloudflareDeployNode } from './nodes/cloudflareDeploy.js';
 import { type DispatchFn, makeCoderNode } from './nodes/coder.js';
 import { makeMergingNode } from './nodes/merging.js';
 import { makePlannerNode } from './nodes/planner.js';
@@ -33,6 +34,12 @@ export interface GraphDeps {
   maxCostPerRunUsd?: number;
   /** Estado "Done" do time no Linear p/ mover a issue após auto-merge (MAC-67). */
   doneStateId: string;
+  /** Deploy automático de landing gerada pós auto-merge. */
+  cloudflareDeployGeneratedLandings?: boolean;
+  /** Owner dos repos gerados que podem ser publicados automaticamente. */
+  generatedReposOwner?: string;
+  /** Comandos executados pelo runner no checkout da main para publicar Cloudflare. */
+  cloudflareDeployCommands?: string[];
 }
 
 /**
@@ -84,6 +91,16 @@ export function buildAgentGraph(deps: GraphDeps, checkpointer: PostgresSaver) {
     linear: deps.linear,
     doneStateId: deps.doneStateId,
   });
+  const cloudflareDeploy = makeCloudflareDeployNode({
+    linear: deps.linear,
+    dispatch: deps.dispatch,
+    repoUrl: deps.runnerRepoUrl,
+    resolveRepoUrl: deps.resolveRunnerRepoUrl,
+    baseBranch: deps.baseBranch ?? 'main',
+    enabled: deps.cloudflareDeployGeneratedLandings ?? false,
+    generatedReposOwner: deps.generatedReposOwner ?? '',
+    deployCommands: deps.cloudflareDeployCommands ?? [],
+  });
   const report = makeReportNode({ linear: deps.linear });
 
   return (
@@ -94,6 +111,7 @@ export function buildAgentGraph(deps: GraphDeps, checkpointer: PostgresSaver) {
       .addNode('reviewing', review)
       .addNode('pr', pr)
       .addNode('merging', merging)
+      .addNode('cloudflareDeploy', cloudflareDeploy)
       .addNode('report', report)
       .addEdge(START, 'planning')
       .addEdge('planning', 'coding')
@@ -121,7 +139,8 @@ export function buildAgentGraph(deps: GraphDeps, checkpointer: PostgresSaver) {
         { reviewing: 'reviewing', report: 'report' },
       )
       .addEdge('pr', 'merging')
-      .addEdge('merging', 'report')
+      .addEdge('merging', 'cloudflareDeploy')
+      .addEdge('cloudflareDeploy', 'report')
       .addEdge('report', END)
       .compile({ checkpointer, interruptBefore: ['coding'] })
   );
