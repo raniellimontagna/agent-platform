@@ -8,6 +8,7 @@ describe('checkCommand', () => {
     expect(checkCommand('pnpm install --frozen-lockfile', allow).allowed).toBe(true);
     expect(checkCommand('pnpm -r build', allow).allowed).toBe(true);
     expect(checkCommand('pnpm verify', allow).allowed).toBe(true);
+    expect(checkCommand('pnpm deploy:cloudflare -- --name lp-acme', allow).allowed).toBe(true);
   });
 
   it('bloqueia binário fora da allowlist', () => {

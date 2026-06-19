@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  cloudflareDeployCommands,
   makeCloudflareDeployNode,
   parseCloudflareDeployUrl,
   wranglerNameCommand,
@@ -48,9 +49,20 @@ describe('parseCloudflareDeployUrl', () => {
 });
 
 describe('wranglerNameCommand', () => {
-  it('gera comando node para trocar o nome do Worker', () => {
-    expect(wranglerNameCommand('lp-acme')).toContain('wrangler.jsonc');
-    expect(wranglerNameCommand('lp-acme')).toContain("'lp-acme'");
+  it('gera comando de deploy com nome único permitido pelo sandbox', () => {
+    expect(wranglerNameCommand('lp-acme')).toBe('pnpm deploy:cloudflare -- --name lp-acme');
+    expect(wranglerNameCommand('LP Acme!')).toBe('pnpm deploy:cloudflare -- --name LP-Acme');
+  });
+});
+
+describe('cloudflareDeployCommands', () => {
+  it('injeta o nome do worker no comando de deploy padrão', () => {
+    expect(
+      cloudflareDeployCommands(
+        ['pnpm install --frozen-lockfile', 'pnpm deploy:cloudflare'],
+        'acme',
+      ),
+    ).toEqual(['pnpm install --frozen-lockfile', 'pnpm deploy:cloudflare -- --name acme']);
   });
 });
 
@@ -75,11 +87,7 @@ describe('makeCloudflareDeployNode', () => {
       title: 'Landing Acme',
       description: 'desc',
       plan: '',
-      commands: [
-        wranglerNameCommand('acme'),
-        'pnpm install --frozen-lockfile',
-        'pnpm deploy:cloudflare',
-      ],
+      commands: ['pnpm install --frozen-lockfile', 'pnpm deploy:cloudflare -- --name acme'],
       lessons: '',
       reviewFeedback: '',
       checkoutOnly: true,
