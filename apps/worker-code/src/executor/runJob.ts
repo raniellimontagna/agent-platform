@@ -81,8 +81,20 @@ export function landingMediaContext(assetPath = LANDING_HERO_ASSET_PATH): string
     '',
     `A Higgsfield hero image has already been generated and copied to \`${assetPath}\`.`,
     `Use it in the landing page as \`${publicPath}\` for the primary hero/visual section.`,
+    'Do not create, edit, overwrite, inline, or include this binary asset in generated JSON/code output; only reference the local public URL.',
     'Do not hotlink the external Higgsfield result URL. Keep meaningful alt text and explicit image dimensions/aspect ratio.',
   ].join('\n');
+}
+
+export async function restoreLandingMediaAsset(
+  dir: string,
+  artifactPath: string,
+  assetPath = LANDING_HERO_ASSET_PATH,
+): Promise<string> {
+  const destination = join(dir, assetPath);
+  await mkdir(join(dir, 'public/generated'), { recursive: true });
+  await copyFile(artifactPath, destination);
+  return assetPath;
 }
 
 /**
@@ -169,6 +181,7 @@ export async function runJob(job: Job): Promise<JobResult> {
     // Fluxo de code-gen (MAC-17): há plano aprovado.
     if (job.plan.trim()) {
       let plan = job.plan;
+      let landingMediaArtifactPath: string | undefined;
       if (shouldAutoGenerateLandingMedia(job)) {
         try {
           log.info('generating landing hero media with Higgsfield');
@@ -187,9 +200,8 @@ export async function runJob(job: Job): Promise<JobResult> {
             },
           );
           commands.push(...media.commands);
-          const destination = join(dir, LANDING_HERO_ASSET_PATH);
-          await mkdir(join(dir, 'public/generated'), { recursive: true });
-          await copyFile(media.artifactPath, destination);
+          landingMediaArtifactPath = media.artifactPath;
+          await restoreLandingMediaAsset(dir, landingMediaArtifactPath);
           plan = `${job.plan}\n\n${landingMediaContext(LANDING_HERO_ASSET_PATH)}`;
           log.info(
             {
@@ -215,8 +227,13 @@ export async function runJob(job: Job): Promise<JobResult> {
         agentCapabilities: job.agentCapabilities,
         log,
       });
+      if (landingMediaArtifactPath) {
+        await restoreLandingMediaAsset(dir, landingMediaArtifactPath);
+      }
       base.summary = gen.summary;
-      base.filesChanged = gen.filesChanged;
+      base.filesChanged = landingMediaArtifactPath
+        ? [...new Set([...gen.filesChanged, LANDING_HERO_ASSET_PATH])]
+        : gen.filesChanged;
       base.costUsd = gen.costUsd;
       base.prTitle = gen.prTitle;
 
@@ -229,7 +246,7 @@ export async function runJob(job: Job): Promise<JobResult> {
       // Acumula os arquivos tocados ao longo das tentativas — um fix pode criar um
       // arquivo novo cujo erro só aparece na revalidação seguinte; sem isso a próxima
       // tentativa releria só o conjunto original e ficaria cega a ele.
-      let touched = gen.filesChanged;
+      let touched = base.filesChanged;
       const applySelfCorrection = async (failureTail: string, reason: string) => {
         fixAttempts++;
         log.info({ attempt: fixAttempts, reason }, 'tentando auto-correção');
@@ -247,6 +264,10 @@ export async function runJob(job: Job): Promise<JobResult> {
           });
           base.costUsd = (base.costUsd ?? 0) + fix.costUsd;
           touched = [...new Set([...touched, ...fix.filesChanged])];
+          if (landingMediaArtifactPath) {
+            await restoreLandingMediaAsset(dir, landingMediaArtifactPath);
+            touched = [...new Set([...touched, LANDING_HERO_ASSET_PATH])];
+          }
           return true;
         } catch (err) {
           log.warn({ err, attempt: fixAttempts }, 'fix falhou — encerrando o loop');

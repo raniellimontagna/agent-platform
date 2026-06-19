@@ -1,3 +1,6 @@
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { CommandResult } from '../types.js';
 import type { Job } from '../types.js';
@@ -6,6 +9,7 @@ import {
   buildLandingMediaPrompt,
   commitErrorResult,
   landingMediaContext,
+  restoreLandingMediaAsset,
   shouldAutoGenerateLandingMedia,
   summarizeFailureTail,
 } from './runJob.js';
@@ -126,5 +130,26 @@ describe('landing media integration helpers', () => {
     expect(buildLandingMediaPrompt(landingJob)).toContain('no text in image');
     expect(landingMediaContext()).toContain('public/generated/higgsfield-hero.jpg');
     expect(landingMediaContext()).toContain('/generated/higgsfield-hero.jpg');
+    expect(landingMediaContext()).toContain('Do not create, edit, overwrite');
+  });
+
+  it('restaura o asset binário caso o codegen sobrescreva o caminho', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'landing-media-'));
+    try {
+      const artifactPath = join(dir, 'artifact.jpg');
+      await writeFile(artifactPath, Buffer.from([0xff, 0xd8, 0xff, 0x00]));
+      await writeFile(join(dir, 'public-generated-placeholder.txt'), 'placeholder');
+
+      const restoredPath = await restoreLandingMediaAsset(dir, artifactPath);
+
+      expect(restoredPath).toBe('public/generated/higgsfield-hero.jpg');
+      await writeFile(join(dir, restoredPath), '');
+      await restoreLandingMediaAsset(dir, artifactPath);
+      await expect(readFile(join(dir, restoredPath))).resolves.toEqual(
+        Buffer.from([0xff, 0xd8, 0xff, 0x00]),
+      );
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
   });
 });
