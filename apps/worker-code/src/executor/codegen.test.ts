@@ -190,6 +190,19 @@ describe('selectFixCandidateFiles', () => {
     ).toEqual(['apps/worker-code/src/eval/scoring.ts']);
   });
 
+  it('inclui testes já tocados junto com o arquivo citado no erro', () => {
+    expect(
+      selectFixCandidateFiles(
+        [
+          'src/components/landing-page.tsx',
+          'src/data/landing-content.ts',
+          'test/landing-page.test.mjs',
+        ],
+        'src/components/landing-page.tsx:42:7 - error TS2322',
+      ),
+    ).toEqual(['src/components/landing-page.tsx', 'test/landing-page.test.mjs']);
+  });
+
   it('limita o fallback quando não consegue inferir arquivos do erro', () => {
     const files = Array.from({ length: 10 }, (_, index) => `src/file${index}.ts`);
 
