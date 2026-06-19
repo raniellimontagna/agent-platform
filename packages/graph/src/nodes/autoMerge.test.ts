@@ -19,6 +19,19 @@ describe('shouldAutoMerge', () => {
     expect(hasOnlyOperationalCaveats(review)).toBe(true);
     expect(shouldAutoMerge({ ...base, review })).toBe(true);
   });
+  it('true com heading Problemas em negrito e negação explícita de bloqueio', () => {
+    const review = [
+      '## **Veredito**: APROVADO COM RESSALVAS',
+      '',
+      '## **Problemas**',
+      'Nenhum bug bloqueante, falha de segurança ou erro lógico evidente no diff.',
+      '',
+      '## **Observações**',
+      '- Não há evidência no diff do ciclo RED previsto no plano.',
+    ].join('\n');
+    expect(hasOnlyOperationalCaveats(review)).toBe(true);
+    expect(shouldAutoMerge({ ...base, review })).toBe(true);
+  });
   it('false com ressalva técnica bloqueante', () => {
     const review =
       'Veredito: APROVADO COM RESSALVAS\nProblema: bug de lógica incorreta no arquivo src/foo.ts.';
