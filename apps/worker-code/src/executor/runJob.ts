@@ -72,6 +72,31 @@ async function runValidation(
   return { passed, results, failureTail: summarizeFailureTail(results) };
 }
 
+type CommitAttempt =
+  | Awaited<ReturnType<typeof commitAll>>
+  | {
+      failure: CommandResult;
+    };
+
+async function tryCommitAll(dir: string, message: string): Promise<CommitAttempt> {
+  try {
+    return await commitAll(dir, message);
+  } catch (err) {
+    return { failure: commitErrorResult(err) };
+  }
+}
+
+export function commitErrorResult(err: unknown): CommandResult {
+  const message = err instanceof Error ? err.message : String(err);
+  return {
+    command: 'git commit',
+    exitCode: 1,
+    stdout: '',
+    stderr: message,
+    durationMs: 0,
+  };
+}
+
 /**
  * Executa um job em sandbox: prepara worktree, gera código via `strong_coder`
  * (MAC-17), commita/pusha a branch e roda os comandos de validação. Devolve o
@@ -123,23 +148,24 @@ export async function runJob(job: Job): Promise<JobResult> {
       base.prTitle = gen.prTitle;
 
       // Self-correction (fix intra-run): valida no worktree; se falhar, corrige e
-      // revalida até passar ou esgotar AGENT_MAX_FIX_ATTEMPTS. Pusha o estado final
-      // uma vez (best-effort mesmo se ainda falhar — humano decide no PR).
+      // revalida até passar ou esgotar AGENT_MAX_FIX_ATTEMPTS. O mesmo orçamento
+      // cobre falhas de hook/pre-commit no `git commit`: nesse caso o erro também
+      // vira feedback para o modelo antes de desistir.
       let validation = await runValidation(job.commands, dir, job.runId, log);
       let fixAttempts = 0;
       // Acumula os arquivos tocados ao longo das tentativas — um fix pode criar um
       // arquivo novo cujo erro só aparece na revalidação seguinte; sem isso a próxima
       // tentativa releria só o conjunto original e ficaria cega a ele.
       let touched = gen.filesChanged;
-      while (!validation.passed && fixAttempts < env.AGENT_MAX_FIX_ATTEMPTS) {
+      const applySelfCorrection = async (failureTail: string, reason: string) => {
         fixAttempts++;
-        log.info({ attempt: fixAttempts }, 'validação falhou — tentando corrigir');
+        log.info({ attempt: fixAttempts, reason }, 'tentando auto-correção');
         try {
           const fix = await applyFix({
             llm,
             dir,
             filesChanged: touched,
-            failureTail: validation.failureTail,
+            failureTail,
             plan: job.plan,
             title: job.title,
             agentKey: job.agentKey,
@@ -148,17 +174,50 @@ export async function runJob(job: Job): Promise<JobResult> {
           });
           base.costUsd = (base.costUsd ?? 0) + fix.costUsd;
           touched = [...new Set([...touched, ...fix.filesChanged])];
+          return true;
         } catch (err) {
           log.warn({ err, attempt: fixAttempts }, 'fix falhou — encerrando o loop');
-          break;
+          return false;
         }
-        validation = await runValidation(job.commands, dir, job.runId, log);
-      }
-      base.fixAttempts = fixAttempts;
+      };
+      const fixValidationFailures = async () => {
+        while (!validation.passed && fixAttempts < env.AGENT_MAX_FIX_ATTEMPTS) {
+          const fixed = await applySelfCorrection(validation.failureTail, 'validation failed');
+          if (!fixed) break;
+          validation = await runValidation(job.commands, dir, job.runId, log);
+        }
+      };
 
-      // Commit do estado final + push único.
+      await fixValidationFailures();
+      base.fixAttempts = fixAttempts;
+      base.filesChanged = touched;
+
+      // Commit do estado final + push único. Se hooks de commit falharem, tenta
+      // corrigir usando a saída do próprio git commit como diagnóstico e revalida.
       const message = buildCommitMessage(job, gen.prTitle, gen.summary);
-      const commit = await commitAll(dir, message);
+      let commitFailure: CommandResult | undefined;
+      let commit = await tryCommitAll(dir, message);
+      while ('failure' in commit && fixAttempts < env.AGENT_MAX_FIX_ATTEMPTS) {
+        commitFailure = commit.failure;
+        const fixed = await applySelfCorrection(
+          summarizeFailureTail([commit.failure]),
+          'git commit failed',
+        );
+        if (!fixed) break;
+        validation = await runValidation(job.commands, dir, job.runId, log);
+        await fixValidationFailures();
+        base.fixAttempts = fixAttempts;
+        base.filesChanged = touched;
+        commit = await tryCommitAll(dir, message);
+      }
+
+      if ('failure' in commit) {
+        commands.push(...validation.results, commit.failure);
+        base.sandbox = summarizeSandbox(commands);
+        base.testsPassed = validation.passed;
+        base.error = commit.failure.stderr || commit.failure.stdout || 'git commit failed';
+        return { ...base, status: 'failed' };
+      }
       if (!commit.committed) {
         if (reviseMode) {
           base.diff = await diffAgainst(dir, job.baseBranch);
@@ -171,6 +230,9 @@ export async function runJob(job: Job): Promise<JobResult> {
           return { ...base, status: 'succeeded' };
         }
         throw new Error('geração de código não produziu mudanças commitáveis');
+      }
+      if (commitFailure) {
+        log.info({ attempts: fixAttempts }, 'git commit passou após auto-correção');
       }
       base.commitSha = commit.sha;
       base.diff = await diffAgainst(dir, job.baseBranch);

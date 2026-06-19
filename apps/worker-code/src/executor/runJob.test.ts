@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { CommandResult } from '../types.js';
 import type { Job } from '../types.js';
-import { buildCommitMessage, summarizeFailureTail } from './runJob.js';
+import { buildCommitMessage, commitErrorResult, summarizeFailureTail } from './runJob.js';
 
 function cmd(command: string, exitCode: number, stderr = '', stdout = ''): CommandResult {
   return { command, exitCode, stdout, stderr, durationMs: 1 };
@@ -70,5 +70,21 @@ describe('buildCommitMessage', () => {
     const msg = buildCommitMessage(job, 'docs: add note', '', { name: 'Codex' });
 
     expect(msg).toBe('docs: add note\n\nRef: MAC-84');
+  });
+});
+
+describe('commitErrorResult', () => {
+  it('transforma falha de git commit em CommandResult para auto-fix', () => {
+    const result = commitErrorResult(new Error('git commit failed: pre-commit hook failed'));
+
+    expect(result).toMatchObject({
+      command: 'git commit',
+      exitCode: 1,
+      stdout: '',
+      stderr: 'git commit failed: pre-commit hook failed',
+    });
+    expect(summarizeFailureTail([result])).toBe(
+      '$ git commit\ngit commit failed: pre-commit hook failed',
+    );
   });
 });
