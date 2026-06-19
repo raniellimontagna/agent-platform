@@ -19,6 +19,29 @@ loops, character-consistent visuals, or visual references for animation.
 - Treat generated media as source assets: save them under the repo's existing
   public/assets convention, use stable filenames, and reference them from code.
 - Never hotlink transient generation URLs directly in production pages.
+- Prefer Higgsfield models covered by the account's unlimited/free-generation
+  allowance before spending credits on router or premium models.
+
+## Model Selection
+
+For prompt-first landing page images, prefer this order unless the issue asks
+for a specific model or visual style:
+
+1. `seedream_v5_lite`
+2. `flux_2`
+3. `seedream_v4_5`
+4. `nano_banana`
+5. `kling_omni_image`
+6. `gpt_image_2`
+
+Use `text2image_soul_v2`, `soul_cinematic`, `soul_location`, or
+`soul_cinema_studio` when the brief benefits from Higgsfield Soul/Cinema style
+or character/location consistency.
+
+Use `image_auto` only when model routing is specifically useful, when the issue
+allows credit spend, or when the preferred models fail validation. Before using a
+credit-consuming model, run `higgsfield generate cost <model> ...` and prefer
+the lowest-cost acceptable option.
 
 ## Landing Page Usage
 
@@ -40,6 +63,8 @@ When Higgsfield is available, generate a concise asset brief before calling the
 tool:
 
 - `asset_type`: image, video, loop, product shot, background, storyboard, etc.
+- `preferred_model`: Higgsfield model id, with a short reason and cost/unlimited
+  assumption.
 - `purpose`: what page section and conversion moment it supports.
 - `prompt`: concrete visual prompt with subject, scene, style, camera, lighting,
   brand mood, aspect ratio, and negative constraints.

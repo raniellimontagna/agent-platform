@@ -15,7 +15,8 @@ storyboards e referências visuais para animações.
 - Auth persistente montado em `HIGGSFIELD_HOME` (`/srv/agent-runners/higgsfield`
   por padrão) e repassado para sandboxes via `HOME`, `XDG_CONFIG_HOME` e
   `HIGGSFIELD_HOME`.
-- Falta autenticar a conta Higgsfield no ambiente persistente.
+- Conta Higgsfield autenticada no runner e validada por job sandbox com
+  `higgsfield account status` e `higgsfield model list --json`.
 
 ## Fonte externa
 
@@ -58,6 +59,34 @@ HIGGSFIELD_HOME=/srv/agent-runners/higgsfield \
 higgsfield model list --json
 ```
 
+## Modelos preferenciais
+
+A página de pricing do Higgsfield informa que o acesso unlimited/free-gens vale
+para modelos específicos do card do plano, não para todo o catálogo. Para
+landing pages, preferir modelos prompt-first cobertos por esse grupo antes de
+usar `image_auto` ou modelos premium que consomem créditos:
+
+- `seedream_v5_lite`
+- `flux_2`
+- `seedream_v4_5`
+- `nano_banana`
+- `kling_omni_image`
+- `gpt_image_2`
+
+Para cenas com identidade/personagem/local consistente, usar os modelos Soul ou
+Cinema quando fizer sentido:
+
+- `text2image_soul_v2`
+- `soul_cinematic`
+- `soul_location`
+- `soul_cinema_studio`
+
+Antes de criar uma geração fora dessa lista, estimar custo:
+
+```bash
+higgsfield generate cost <model> --prompt "..." --aspect_ratio 16:9 --json
+```
+
 ## Uso no landing-page-agent
 
 Quando a issue pedir mídia visual, o agente deve:
@@ -74,18 +103,17 @@ Quando a issue pedir mídia visual, o agente deve:
 
 Para transformar isso em tool executável:
 
-1. Concluir login OAuth no runner.
-2. Validar `higgsfield account` e `higgsfield model list --json` dentro de um
-   job sandbox.
-3. Escolher se a interface interna fica em CLI direto ou MCP Higgsfield.
-4. Criar artifact store para imagens/vídeos gerados e metadados de prompt.
-5. Expor uma interface interna de tool, por exemplo:
+1. Escolher se a interface interna fica em CLI direto ou MCP Higgsfield.
+2. Implementar wrapper interno que escolha modelos preferenciais e rode `cost`
+   antes de geração paga.
+3. Criar artifact store para imagens/vídeos gerados e metadados de prompt.
+4. Expor uma interface interna de tool, por exemplo:
    - `media.generate_image`
    - `media.generate_video`
    - `media.upload_reference`
    - `media.list_generations`
-6. Só depois criar um `media-generation-agent` dedicado, reutilizável por
+5. Só depois criar um `media-generation-agent` dedicado, reutilizável por
    landing pages, social posts, ads e conteúdo de produto.
 
-Até a autenticação estar concluída, a skill deve orientar planos e prompts, mas
-não prometer assets gerados quando a conta Higgsfield não estiver disponível.
+Se a conta Higgsfield estiver indisponível ou o modelo preferencial falhar, a
+skill deve cair para prompts/slots/fallbacks e não prometer asset gerado.
