@@ -44,6 +44,11 @@ Regras CRÍTICAS:
 - Ao MODIFICAR um arquivo existente, PRESERVE todo o código não relacionado ao plano.
   Parta do conteúdo atual fornecido e aplique APENAS as mudanças necessárias.
   NUNCA remova imports, bootstrap, handlers ou rotas que não fazem parte da tarefa.
+- Você só pode alterar/criar os arquivos listados para ESTE lote.
+- Não importe, referencie ou dependa de arquivo novo que não esteja listado em
+  "Arquivos a criar neste lote" e que não exista em "Arquivos disponíveis".
+  Se precisar de dados auxiliares e não houver arquivo permitido para criá-los,
+  mantenha esses dados inline no arquivo que está modificando.
 - "content" é o arquivo inteiro e final (não um diff/patch).
 - Mantenha o estilo e as convenções já presentes no repositório (ESM, imports com .js, etc.).
 - Siga os ARQUIVOS-EXEMPLO (vizinhos) e as CONVENÇÕES fornecidas: mesmo padrão de
@@ -66,6 +71,9 @@ Responda APENAS com um objeto JSON válido, sem markdown:
 Regras CRÍTICAS:
 - "content" é o arquivo inteiro e final (não um diff/patch).
 - Inclua só os arquivos que você precisou alterar para corrigir o erro.
+- Não importe, referencie ou dependa de arquivo novo que não esteja listado em
+  "Arquivos disponíveis". Se o erro for "Cannot find module", remova/substitua
+  o import ausente usando os arquivos existentes que recebeu.
 - NÃO adicione dependências/imports que o repositório não tem.
 - Não escreva nada fora do JSON.`;
 
@@ -345,6 +353,12 @@ function chunkArray<T>(items: T[], size: number): T[][] {
   return chunks;
 }
 
+function formatAvailableFiles(repoFiles: string[], generatedFiles: { path: string }[]): string {
+  return [...new Set([...repoFiles, ...generatedFiles.map((file) => file.path)])]
+    .slice(0, 900)
+    .join('\n');
+}
+
 function isDocumentationPath(path: string): boolean {
   const normalized = path.replace(/^\/+/, '').toLowerCase();
   return normalized.startsWith('docs/') || normalized.endsWith('.md');
@@ -494,6 +508,7 @@ export async function generateAndApplyCode(args: CodegenArgs): Promise<CodegenRe
       ? `\n# Arquivos a criar neste lote\n${chunkCreate.join('\n')}`
       : '';
     const examples = await buildExamples(dir, repoFiles, { edit: chunkEdit, create: chunkCreate });
+    const availableFiles = formatAvailableFiles(repoFiles, generatedFiles);
 
     log.info(
       {
@@ -524,6 +539,7 @@ export async function generateAndApplyCode(args: CodegenArgs): Promise<CodegenRe
                 : '',
               conventions ? `\n# Convenções do projeto\n${conventions}` : '',
               examples ? `\n# Arquivos-exemplo (siga este padrão)${examples}` : '',
+              `\n# Arquivos disponíveis para imports/referências\n${availableFiles}`,
               lessons
                 ? `\n# Lições de runs anteriores (evite repetir estes erros)\n${lessons}`
                 : '',
@@ -609,6 +625,8 @@ export async function applyFix(args: FixArgs): Promise<FixResult> {
   const currentBlock = current
     .map((f) => `\n## ${f.path}\n\`\`\`\n${f.content}\n\`\`\``)
     .join('\n');
+  const repoFiles = await listRepoFiles(dir);
+  const availableFiles = [...new Set([...repoFiles, ...filesChanged])].slice(0, 900).join('\n');
 
   const usage: TokenUsage = { promptTokens: 0, completionTokens: 0 };
   log.info({ files: fixCandidates.length, originalFiles: filesChanged.length }, 'requesting fix');
@@ -629,6 +647,7 @@ export async function applyFix(args: FixArgs): Promise<FixResult> {
             `# Issue: ${title}`,
             `\n# Plano aprovado\n${plan}`,
             agentInstructions ? `\n# Instruções do agente especializado\n${agentInstructions}` : '',
+            `\n# Arquivos disponíveis\n${availableFiles}`,
             `\n# Arquivos que você escreveu${currentBlock || '\n(nenhum)'}`,
             `\n# Saída do comando que FALHOU\n\`\`\`\n${failureTail}\n\`\`\``,
           ].join('\n'),
