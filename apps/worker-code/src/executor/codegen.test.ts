@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import {
   buildAgentInstructions,
+  buildFixCandidateFiles,
   completeJson,
   extractJson,
   filterAllowedFiles,
@@ -207,6 +208,29 @@ describe('selectFixCandidateFiles', () => {
     const files = Array.from({ length: 10 }, (_, index) => `src/file${index}.ts`);
 
     expect(selectFixCandidateFiles(files, 'erro sem caminho')).toEqual(files.slice(0, 6));
+  });
+});
+
+describe('buildFixCandidateFiles', () => {
+  it('exclui mídia gerada e binários dos candidatos de self-fix', () => {
+    const result = buildFixCandidateFiles(
+      [
+        'src/components/landing-page.tsx',
+        'public/generated/higgsfield-hero.jpg',
+        'public/logo.png',
+        'test/landing-page.test.mjs',
+      ],
+      'src/components/landing-page.tsx:42:7 - error TS2322',
+    );
+
+    expect(result.fixableChangedFiles).toEqual([
+      'src/components/landing-page.tsx',
+      'test/landing-page.test.mjs',
+    ]);
+    expect(result.fixCandidates).toEqual([
+      'src/components/landing-page.tsx',
+      'test/landing-page.test.mjs',
+    ]);
   });
 });
 
