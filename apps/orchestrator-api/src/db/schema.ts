@@ -105,6 +105,8 @@ export const runs = pgTable(
     scheduleId: uuid('schedule_id').references(() => schedules.id, { onDelete: 'set null' }),
     agentId: uuid('agent_id').references(() => agents.id, { onDelete: 'set null' }),
     workflow: text('workflow'),
+    targetRepo: text('target_repo'),
+    targetRepoCreate: boolean('target_repo_create').notNull().default(false),
     autoApprove: boolean('auto_approve').notNull().default(false),
     autoMerge: boolean('auto_merge').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

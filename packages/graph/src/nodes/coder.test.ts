@@ -106,4 +106,37 @@ describe('makeCoderNode', () => {
     expect(result.research).toBe('# Research Pack');
     expect(comments[0]).toContain('## 🔎 Coleta de dados');
   });
+
+  it('usa repo alvo dinâmico quando targetRepo está no estado', async () => {
+    let dispatched: { repoUrl?: string } | undefined;
+    const coder = makeCoderNode({
+      linear: { comment: async () => {} } as never,
+      repoUrl: 'https://github.com/default/repo.git',
+      resolveRepoUrl: (targetRepo) =>
+        targetRepo ? `https://token@github.com/${targetRepo}.git` : 'default',
+      baseBranch: 'main',
+      testCommands: [],
+      dispatch: async (body) => {
+        dispatched = body;
+        return {
+          status: 'succeeded',
+          branch: body.branch,
+          pushed: true,
+          testsPassed: true,
+        };
+      },
+    });
+
+    await coder({
+      runId: '12345678-1234-1234-1234-123456789abc',
+      issueId: 'issue-1',
+      issueIdentifier: 'MAC-99',
+      title: 'Landing',
+      description: '',
+      plan: 'Plano',
+      targetRepo: 'attodevlabs/lp-acme',
+    } as never);
+
+    expect(dispatched?.repoUrl).toBe('https://token@github.com/attodevlabs/lp-acme.git');
+  });
 });

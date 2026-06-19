@@ -184,4 +184,33 @@ describe('POST /webhooks/linear', () => {
       }),
     );
   });
+
+  it('persiste opt-in repo:create no run inicial', async () => {
+    vi.mocked(resolveAgentByKey).mockResolvedValue({ id: 'collector-id' } as never);
+    vi.mocked(createRun).mockResolvedValue('run-workflow');
+    const body = JSON.stringify({
+      action: 'update',
+      type: 'Issue',
+      data: {
+        id: 'issue-workflow',
+        identifier: 'MAC-99',
+        title: 'Criar landing page de empresa',
+        labels: [{ name: 'ai-ready' }, { name: 'workflow:landing-page' }, { name: 'repo:create' }],
+      },
+      updatedFrom: { labels: [] },
+    });
+
+    const res = await app.request('/webhooks/linear', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'linear-signature': signed(body) },
+      body,
+    });
+
+    expect(res.status).toBe(200);
+    expect(createRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targetRepoCreate: true,
+      }),
+    );
+  });
 });

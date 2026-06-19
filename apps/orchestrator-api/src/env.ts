@@ -34,6 +34,11 @@ const envSchema = z.object({
 
   // Repo alvo que o agente vai modificar (default: o próprio agent-platform).
   REPO_URL: z.string().min(1).default('https://github.com/raniellimontagna/agent-platform.git'),
+  // Repositórios gerados para entregas finais (landing pages, sites, etc.).
+  GENERATED_REPOS_OWNER: z.string().default('attodevlabs'),
+  GENERATED_REPOS_TOKEN: z.string().optional(),
+  GENERATED_REPOS_TEMPLATE: z.string().optional(),
+  GENERATED_REPOS_ALLOW_CREATE: z.coerce.boolean().default(false),
 
   // Comandos de validação rodados no sandbox após o push (MAC-29), um por linha.
   // install → verify. O verify cobre lint, build, testes, eval e regressão do eval.
@@ -69,6 +74,7 @@ const SECRET_KEYS = [
   'LINEAR_API_KEY',
   'LINEAR_WEBHOOK_SECRET',
   'GITHUB_TOKEN',
+  'GENERATED_REPOS_TOKEN',
   'RUNNER_AUTH_TOKEN',
   'DATABASE_URL',
 ] as const;
@@ -80,7 +86,10 @@ function loadEnv(): Env {
     throw new Error(`Invalid environment variables:\n${issues}`);
   }
   // Guard de secret: recusa subir com placeholder (defesa além do deploy.sh).
-  const placeholders = SECRET_KEYS.filter((k) => /change-me/i.test(parsed.data[k]));
+  const placeholders = SECRET_KEYS.filter((k) => {
+    const value = parsed.data[k];
+    return typeof value === 'string' && /change-me/i.test(value);
+  });
   if (placeholders.length > 0) {
     throw new Error(`Secrets com placeholder (preencha o .env): ${placeholders.join(', ')}`);
   }

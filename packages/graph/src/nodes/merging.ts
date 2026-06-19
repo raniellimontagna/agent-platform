@@ -1,4 +1,4 @@
-import type { GithubGateway } from '@agent-platform/github';
+import { type GithubGateway, parseRepoFullName } from '@agent-platform/github';
 import type { LinearGateway } from '@agent-platform/linear';
 import type { AgentStateType } from '../state.js';
 import { shouldAutoMerge } from './report.js';
@@ -18,8 +18,13 @@ export interface MergingDeps {
 export function makeMergingNode(deps: MergingDeps) {
   return async (state: AgentStateType): Promise<Partial<AgentStateType>> => {
     if (!shouldAutoMerge(state) || !state.prNumber) return {};
+    const targetRepo = state.targetRepo ? parseRepoFullName(state.targetRepo) : undefined;
     try {
-      await deps.github.mergePullRequest({ number: state.prNumber, method: 'squash' });
+      await deps.github.mergePullRequest({
+        number: state.prNumber,
+        method: 'squash',
+        ...(targetRepo ? { repo: targetRepo } : {}),
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       await deps.linear.comment(
@@ -30,7 +35,10 @@ export function makeMergingNode(deps: MergingDeps) {
     }
     // Pós-merge best-effort (não reverte o merge se algo aqui falhar).
     try {
-      if (state.branch) await deps.github.deleteBranch(state.branch);
+      if (state.branch) {
+        if (targetRepo) await deps.github.deleteBranch(state.branch, targetRepo);
+        else await deps.github.deleteBranch(state.branch);
+      }
       await deps.linear.setIssueState(state.issueId, deps.doneStateId);
       await deps.linear.comment(
         state.issueId,
