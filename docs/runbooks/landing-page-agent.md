@@ -26,7 +26,8 @@ O agente carrega o pacote definido em `agent-skills/registry.json`:
 - `astro-react-landing`;
 - `seo-page`;
 - `biome-formatting`;
-- `gsap-motion`.
+- `gsap-motion`;
+- `higgsfield-media-generation`.
 
 Essas skills orientam o runner/codegen a:
 
@@ -40,6 +41,8 @@ Essas skills orientam o runner/codegen a:
 - usar Astro + React como stack preferencial para LPs do zero;
 - incluir SEO técnico/on-page/schema quando o stack permitir;
 - validar formatação/lint pelo Biome do repo;
+- planejar e usar assets gerados por Higgsfield quando houver MCP/CLI
+  autenticado, mantendo fallback explícito quando não houver;
 - evitar página genérica, paleta de uma única cor, excesso de cards e sobreposição
   de texto;
 - seguir componentes e padrões existentes do app;
@@ -50,7 +53,10 @@ Veja também `docs/runbooks/agent-skills.md`.
 ## Limites atuais
 
 - Ainda usa o mesmo grafo de execução (`planning -> coding -> reviewing -> PR`).
-- Não gera imagens via ferramenta externa automaticamente.
+- Não executa Higgsfield automaticamente enquanto o runner não tiver MCP/CLI
+  autenticado por OAuth de forma persistente. A skill já orienta prompts,
+  slots, nomes de arquivos, fallback e integração dos assets quando a tool
+  estiver disponível.
 - Não faz deploy automático da LP.
 - `gsap-motion` só deve ser aplicado quando a dependência existir ou puder ser
   adicionada com segurança.
@@ -64,3 +70,6 @@ Veja também `docs/runbooks/agent-skills.md`.
 - Criar eval específico para landing pages verificando estrutura mínima de LP.
 - Adicionar critic especializado de UX/conversão.
 - Permitir geração de asset visual quando a issue pedir explicitamente.
+- Criar integração runtime para Higgsfield: autenticação OAuth persistida no
+  runner, comandos/MCP controlados por policy, artifact store para mídia gerada
+  e possível `media-generation-agent` dedicado para imagens/vídeos/animações.

@@ -9,7 +9,8 @@
       "astro-react-landing",
       "seo-page",
       "biome-formatting",
-      "gsap-motion"
+      "gsap-motion",
+      "higgsfield-media-generation"
     ],
     "data-collector-agent": ["research-data-collection", "instagram-public-research"]
   },
@@ -53,6 +54,11 @@
       "name": "gsap-motion",
       "path": "agent-skills/gsap-motion/SKILL.md",
       "description": "Use GSAP for polished motion when the repository already supports frontend animation or can add GSAP safely."
+    },
+    {
+      "name": "higgsfield-media-generation",
+      "path": "agent-skills/higgsfield-media-generation/SKILL.md",
+      "description": "Plan and use Higgsfield-generated images, videos, character-consistent media, and motion assets when an authenticated Higgsfield MCP/CLI tool is available."
     },
     {
       "name": "research-data-collection",

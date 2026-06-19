@@ -13,7 +13,7 @@ the landing-page skill bundle.
 
 1. Identify the audience, offer, primary CTA, and expected conversion.
 2. Define the page's visual direction before writing code: product category,
-   mood, palette, typography, imagery, motion level, and proof style.
+   mood, palette, typography, imagery, motion/media level, and proof style.
 3. Inspect the existing app stack and components before adding new structure.
 4. For new landing pages, prefer Astro for the page shell and React only for
    useful interactive islands.
@@ -27,18 +27,24 @@ the landing-page skill bundle.
    controls, or media.
 7. Add metadata, semantic headings, crawlable body copy, meaningful alt text, and
    schema only when it reflects real content.
-8. Add motion only when it improves attention, comprehension, or perceived
+8. Use generated media when it materially improves the page. If an authenticated
+   Higgsfield MCP/CLI tool is available, create a concise asset brief before
+   generation and save production assets into the repo; otherwise ship explicit
+   asset slots, prompts, dimensions, alt text, and fallback styling.
+9. Add motion only when it improves attention, comprehension, or perceived
    quality; respect reduced-motion preferences.
-9. Use existing design primitives first. Add dependencies only when the repo
+10. Use existing design primitives first. Add dependencies only when the repo
    already uses them or the plan explicitly allows it.
-10. Before finishing, verify every CTA `href` points to an existing section id
+11. Before finishing, verify every CTA `href` points to an existing section id
    or valid route, especially hero and final CTA buttons.
-11. Validate with Biome and the repo's normal lint, typecheck, test, or build
+12. Validate with Biome and the repo's normal lint, typecheck, test, or build
    command.
 
 ## Quality Bar
 
 - Show the product, place, state, or workflow as a first-viewport signal.
+- Prefer high-signal generated media over decorative placeholders when a media
+  generation tool is available and the issue scope allows it.
 - Use precise copy. Avoid "transform your business", "unlock potential", and other filler.
 - Prefer one memorable composition over many decorative cards.
 - Avoid one-hue palettes, generic gradients, decorative blobs, and stock-like empty visuals.
@@ -60,7 +66,7 @@ the landing-page skill bundle.
   differentiator, and objections handled.
 - Bottom: final CTA, concise reassurance, and SEO-friendly supporting details.
 - Technical: Astro/React fit, SEO metadata/schema, WCAG basics, Biome formatting,
-  CTA anchor integrity, and build validation.
+  generated-media fallback, CTA anchor integrity, and build validation.
 
 ## Output Rules
 

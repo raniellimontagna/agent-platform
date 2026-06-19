@@ -91,7 +91,7 @@ export async function updateToolStatus(id: string, status: ToolStatus): Promise<
 }
 
 /** Tools default = allowlist atual do runner + tools planejadas no catálogo. */
-const DEFAULT_TOOLS: NewTool[] = [
+export const DEFAULT_TOOLS: NewTool[] = [
   {
     key: 'git',
     version: 'v1',
@@ -157,6 +157,14 @@ const DEFAULT_TOOLS: NewTool[] = [
     scopes: ['network', 'browser', 'web_extract', 'crawl'],
     description:
       'Framework Python/CLI para scraping HTTP, páginas JS e crawling. Uso condicionado à política de scraping.',
+  },
+  {
+    key: 'higgsfield',
+    version: 'v1',
+    risk: 'dangerous',
+    scopes: ['network', 'generative_media', 'oauth', 'fs_write'],
+    description:
+      'Higgsfield MCP/CLI para geração de imagens, vídeos, animações, assets de campanha e mídia visual para sites. Requer autenticação OAuth/conta Higgsfield antes de uso automatizado.',
   },
 ];
 

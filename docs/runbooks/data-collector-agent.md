@@ -65,6 +65,9 @@ As tools foram adicionadas ao Tool Registry como metadado:
 - `python`: scripts de coleta/normalização.
 - `instagram-public-research`: skill de coleta segura para fontes públicas,
   Graph API autorizada e exports first-party de Instagram.
+- `higgsfield`: mídia generativa via MCP/CLI para downstream visual
+  (`landing-page-agent`, futuro `media-generation-agent`), condicionada a OAuth
+  persistido e policy específica.
 
 Nesta etapa, Firecrawl roda via integração controlada no worker. As demais tools
 ainda não entram no `AGENT_COMMAND_ALLOWLIST` do runner. Isso evita habilitar
