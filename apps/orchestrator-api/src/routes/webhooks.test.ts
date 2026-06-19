@@ -150,4 +150,38 @@ describe('POST /webhooks/linear', () => {
       }),
     );
   });
+
+  it('workflow:landing-page inicia pelo data-collector-agent e grava workflow', async () => {
+    vi.mocked(resolveAgentByKey).mockResolvedValue({ id: 'collector-id' } as never);
+    vi.mocked(createRun).mockResolvedValue('run-workflow');
+    const body = JSON.stringify({
+      action: 'update',
+      type: 'Issue',
+      data: {
+        id: 'issue-workflow',
+        identifier: 'MAC-98',
+        title: 'Criar landing page de empresa',
+        labels: [{ name: 'ai-ready' }, { name: 'workflow:landing-page' }],
+      },
+      updatedFrom: { labels: [] },
+    });
+
+    const res = await app.request('/webhooks/linear', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'linear-signature': signed(body) },
+      body,
+    });
+
+    expect(res.status).toBe(200);
+    expect(resolveAgentByKey).toHaveBeenCalledWith('data-collector-agent');
+    expect(createRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        linearIssueId: 'issue-workflow',
+        linearIssueIdentifier: 'MAC-98',
+        title: 'Criar landing page de empresa',
+        agentId: 'collector-id',
+        workflow: 'research_landing_page',
+      }),
+    );
+  });
 });

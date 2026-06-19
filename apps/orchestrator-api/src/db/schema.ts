@@ -104,6 +104,7 @@ export const runs = pgTable(
     sandboxFailedCommand: text('sandbox_failed_command'),
     scheduleId: uuid('schedule_id').references(() => schedules.id, { onDelete: 'set null' }),
     agentId: uuid('agent_id').references(() => agents.id, { onDelete: 'set null' }),
+    workflow: text('workflow'),
     autoApprove: boolean('auto_approve').notNull().default(false),
     autoMerge: boolean('auto_merge').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

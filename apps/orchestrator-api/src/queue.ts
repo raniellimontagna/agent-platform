@@ -15,7 +15,7 @@ export const connection: ConnectionOptions = {
 
 /** `plan`: roda planning e pausa na aprovação. `resume`: retoma após aprovado. */
 export type AgentJobData =
-  | { kind: 'plan'; runId: string; issueId: string }
+  | { kind: 'plan'; runId: string; issueId: string; context?: string }
   | { kind: 'resume'; runId: string };
 
 export const AGENT_QUEUE = 'agent-runs';

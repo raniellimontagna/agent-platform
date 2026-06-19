@@ -49,6 +49,8 @@ export interface NewRunInput {
   autoMerge?: boolean;
   /** Agente que vai rodar (MAC-42). Default = agente vigente da key padrão. */
   agentId?: string;
+  /** Workflow composto que originou/guia o run. */
+  workflow?: string;
 }
 
 /** Cria o registro do run (MAC-36) e devolve o id. */
@@ -68,6 +70,7 @@ export async function createRun(input: NewRunInput): Promise<string> {
       ...(input.autoApprove !== undefined ? { autoApprove: input.autoApprove } : {}),
       ...(input.autoMerge !== undefined ? { autoMerge: input.autoMerge } : {}),
       ...(agentId ? { agentId } : {}),
+      ...(input.workflow ? { workflow: input.workflow } : {}),
     })
     .returning({ id: schema.runs.id });
   // biome-ignore lint/style/noNonNullAssertion: insert ... returning sempre retorna a linha

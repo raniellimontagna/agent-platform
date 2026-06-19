@@ -11,6 +11,10 @@ Em uma issue Linear:
 - adicione `agent:data-collector`;
 - aprove normalmente com `approved` quando o plano estiver bom.
 
+Para o fluxo completo coleta → landing page, use `workflow:landing-page` em vez
+de `agent:data-collector`. Nesse modo o orchestrator roda a coleta primeiro e
+encadeia automaticamente o `landing-page-agent` com o artifact `research`.
+
 ## Especialização
 
 O agente carrega a skill `research-data-collection`, que orienta o runner/codegen
