@@ -49,6 +49,8 @@ export async function prepareWorktree(args: {
   branch: string;
   /** MAC-59: parte da branch de trabalho já existente (revisão incremental). */
   revise?: boolean;
+  /** Mantém o checkout clonado da base sem criar branch nova. */
+  checkoutOnly?: boolean;
 }): Promise<string> {
   const dir = worktreePath(args.runId);
   // Garante diretório limpo antes de clonar.
@@ -62,6 +64,8 @@ export async function prepareWorktree(args: {
   if (clone.exitCode !== 0) {
     throw new Error(`git clone failed: ${clone.stderr || clone.stdout}`);
   }
+
+  if (args.checkoutOnly) return dir;
 
   if (args.revise) {
     // Modo revisão: traz a branch de trabalho (já tem o código da passada

@@ -40,6 +40,12 @@ const envSchema = z.object({
   GENERATED_REPOS_TEMPLATE: z.string().optional(),
   GENERATED_REPOS_ALLOW_CREATE: z.coerce.boolean().default(false),
 
+  // Cloudflare Workers deploy automático para landing pages geradas após auto-merge.
+  CLOUDFLARE_DEPLOY_GENERATED_LANDINGS: z.coerce.boolean().default(false),
+  CLOUDFLARE_DEPLOY_COMMANDS: z
+    .string()
+    .default('pnpm install --frozen-lockfile\npnpm deploy:cloudflare'),
+
   // Comandos de validação rodados no sandbox após o push (MAC-29), um por linha.
   // install → verify. O verify cobre lint, build, testes, eval e regressão do eval.
   AGENT_TEST_COMMANDS: z.string().default('pnpm install --frozen-lockfile\npnpm verify'),

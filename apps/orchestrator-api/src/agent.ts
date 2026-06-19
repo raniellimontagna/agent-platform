@@ -121,6 +121,11 @@ async function init(): Promise<Agent> {
       maxReviewRounds: env.AGENT_MAX_REVIEW_ROUNDS,
       maxCostPerRunUsd: env.AGENT_MAX_COST_PER_RUN_USD,
       doneStateId: env.LINEAR_DONE_STATE_ID,
+      cloudflareDeployGeneratedLandings: env.CLOUDFLARE_DEPLOY_GENERATED_LANDINGS,
+      generatedReposOwner: env.GENERATED_REPOS_OWNER,
+      cloudflareDeployCommands: env.CLOUDFLARE_DEPLOY_COMMANDS.split(/\n|\\n/)
+        .map((c) => c.trim())
+        .filter(Boolean),
       runnerRepoUrl: repoUrl,
       resolveRunnerRepoUrl: resolveRepoUrl,
       dispatch: workerManager.dispatch,

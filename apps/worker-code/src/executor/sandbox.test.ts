@@ -54,4 +54,20 @@ describe('buildDockerRunArgs', () => {
     expect(args.join(' ')).not.toContain('RUNNER_AUTH_TOKEN');
     expect(args.join(' ')).not.toContain('LITELLM_API_KEY');
   });
+
+  it('repassa apenas secrets Cloudflare explicitamente permitidos', () => {
+    const args = buildDockerRunArgs({
+      command: 'pnpm deploy:cloudflare',
+      cwd: '/srv/agent-runners/worktrees/run-1',
+      runId: 'run-1',
+      env: {
+        ...env,
+        CLOUDFLARE_API_TOKEN: 'cf-token',
+        CLOUDFLARE_ACCOUNT_ID: 'account-id',
+      },
+    });
+
+    expect(args).toContain('CLOUDFLARE_API_TOKEN=cf-token');
+    expect(args).toContain('CLOUDFLARE_ACCOUNT_ID=account-id');
+  });
 });

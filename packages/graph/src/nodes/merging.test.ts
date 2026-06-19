@@ -29,11 +29,12 @@ describe('makeMergingNode', () => {
 
   it('mergeia (squash), deleta branch, comenta e move pra Done', async () => {
     const d = deps();
-    await makeMergingNode(d as never)(okState as never);
+    const out = await makeMergingNode(d as never)(okState as never);
     expect(d.github.mergePullRequest).toHaveBeenCalledWith({ number: 7, method: 'squash' });
     expect(d.github.deleteBranch).toHaveBeenCalledWith('agent/x');
     expect(d.linear.setIssueState).toHaveBeenCalledWith('iss', 'done-id');
     expect(d.linear.comment).toHaveBeenCalled();
+    expect(out).toEqual({ autoMerged: true });
   });
 
   it('passa repo alvo para merge e delete quando targetRepo está no estado', async () => {

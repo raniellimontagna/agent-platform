@@ -40,6 +40,11 @@ export const envSchema = z.object({
   FIRECRAWL_BASE_URL: z.string().url().default('https://api.firecrawl.dev'),
   FIRECRAWL_TIMEOUT_MS: z.coerce.number().int().positive().default(60_000),
 
+  // Cloudflare Workers deploy de landing pages geradas. Opcional no boot; jobs
+  // que chamarem Wrangler falham explicitamente se o token não estiver presente.
+  CLOUDFLARE_API_TOKEN: optionalNonEmpty,
+  CLOUDFLARE_ACCOUNT_ID: optionalNonEmpty,
+
   // Sandbox executor (MAC-28). `process` mantém dev/test simples; produção usa
   // containers efêmeros via Docker socket montado na VM de runners.
   AGENT_SANDBOX_BACKEND: z.enum(['process', 'docker']).default('process'),

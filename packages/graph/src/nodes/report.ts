@@ -23,6 +23,13 @@ export function hasOnlyOperationalCaveats(review?: string): boolean {
   if (verdictOf(review) !== 'APROVADO COM RESSALVAS') return false;
 
   const text = review.toLowerCase();
+  const problems = text.match(/##\s*problemas([\s\S]*?)(?:\n##\s|\n#\s|$)/i)?.[1] ?? '';
+  if (/^\s*[-*]\s+\S/m.test(problems)) return false;
+
+  const explicitlyNonBlocking =
+    /nenhum (bug|problema) bloqueante|sem (bug|problema) bloqueante/.test(problems);
+  if (explicitlyNonBlocking) return true;
+
   const operational =
     /valida[cç][aã]o operacional|evid[eê]ncia|consulta ao banco|sandbox_backend|e2e real|p[oó]s-merge|processo/.test(
       text,

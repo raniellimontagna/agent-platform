@@ -9,6 +9,8 @@ export const jobSchema = z.object({
   branch: z.string().min(1),
   /** Comandos a rodar após preparar o worktree (ex.: install, test). */
   commands: z.array(z.string()).default([]),
+  /** Usa a branch base clonada sem criar uma branch de trabalho. */
+  checkoutOnly: z.boolean().default(false),
   /** Título da issue — contexto para a geração de código (MAC-17). */
   title: z.string().default(''),
   /** Descrição da issue — contexto para a geração de código. */
