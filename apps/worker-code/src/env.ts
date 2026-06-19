@@ -47,6 +47,7 @@ export const envSchema = z.object({
     .default('seedream_v5_lite,flux_2,seedream_v4_5,nano_banana,kling_omni_image,gpt_image_2'),
   HIGGSFIELD_GENERATE_TIMEOUT: z.string().min(1).default('10m'),
   HIGGSFIELD_POLL_INTERVAL: z.string().min(1).default('5s'),
+  HIGGSFIELD_AUTO_GENERATE_LANDING_MEDIA: z.coerce.boolean().default(true),
 
   // Cloudflare Workers deploy de landing pages geradas. Opcional no boot; jobs
   // que chamarem Wrangler falham explicitamente se o token não estiver presente.

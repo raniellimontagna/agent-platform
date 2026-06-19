@@ -18,6 +18,7 @@ describe('envSchema', () => {
     expect(env.HIGGSFIELD_PREFERRED_IMAGE_MODELS).toContain('seedream_v5_lite');
     expect(env.HIGGSFIELD_GENERATE_TIMEOUT).toBe('10m');
     expect(env.HIGGSFIELD_POLL_INTERVAL).toBe('5s');
+    expect(env.HIGGSFIELD_AUTO_GENERATE_LANDING_MEDIA).toBe(true);
     expect(env.FIRECRAWL_BASE_URL).toBe('https://api.firecrawl.dev');
     expect(env.FIRECRAWL_TIMEOUT_MS).toBe(60_000);
   });

@@ -2,7 +2,7 @@
 Description=Agent Platform registry LAN proxy socket
 
 [Socket]
-ListenStream=192.168.0.10:8088
+ListenStream=0.0.0.0:8088
 NoDelay=true
 
 [Install]
