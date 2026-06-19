@@ -31,7 +31,9 @@ the landing-page skill bundle.
    quality; respect reduced-motion preferences.
 9. Use existing design primitives first. Add dependencies only when the repo
    already uses them or the plan explicitly allows it.
-10. Validate with Biome and the repo's normal lint, typecheck, test, or build
+10. Before finishing, verify every CTA `href` points to an existing section id
+   or valid route, especially hero and final CTA buttons.
+11. Validate with Biome and the repo's normal lint, typecheck, test, or build
    command.
 
 ## Quality Bar
@@ -58,11 +60,14 @@ the landing-page skill bundle.
   differentiator, and objections handled.
 - Bottom: final CTA, concise reassurance, and SEO-friendly supporting details.
 - Technical: Astro/React fit, SEO metadata/schema, WCAG basics, Biome formatting,
-  and build validation.
+  CTA anchor integrity, and build validation.
 
 ## Output Rules
 
 - Keep changes scoped to the page and required supporting assets/components.
 - Do not create a marketing explainer page for the platform unless the task explicitly asks for marketing copy about the platform.
 - Do not leave placeholder copy, TODOs, lorem ipsum, or fake controls that cannot work.
+- Do not leave duplicate competing page implementations. If a route stops
+  rendering a React component, remove or stop modifying the dead component/data;
+  if React remains the source of truth, keep the Astro route as a thin shell.
 - Do not sacrifice clarity or accessibility for visual novelty.

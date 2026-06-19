@@ -13,6 +13,8 @@ stateful UI, forms, calculators, carousels, dashboards, and reusable components.
 - Prefer `.astro` routes, layouts, and static content for the landing page shell.
 - Prefer React components only where interactivity or component state is useful.
 - Keep static sections server-rendered by Astro when possible.
+- Choose one rendered source of truth for the landing page. Do not maintain a
+  full Astro implementation and a full React implementation in parallel.
 - Use Astro image/content primitives when the repo already uses them.
 - Avoid shipping client JavaScript for sections that can be static HTML/CSS.
 - Keep route, layout, and component names clear and product-specific.
@@ -25,11 +27,15 @@ stateful UI, forms, calculators, carousels, dashboards, and reusable components.
 4. Place interactive React components near existing component conventions.
 5. Hydrate React islands intentionally with Astro client directives only when needed.
 6. Keep metadata, canonical URL, Open Graph, and structured content close to the page/layout.
-7. Validate with the repo's Astro, TypeScript, Biome, test, or build command.
+7. If changing CTA hrefs or section ids, add or update a small smoke test that
+   verifies the primary CTA, secondary CTA, and target section ids stay aligned.
+8. Validate with the repo's Astro, TypeScript, Biome, test, or build command.
 
 ## Quality Rules
 
 - Do not turn every section into React by default.
+- Do not update unused React components/data after moving the rendered landing
+  into an `.astro` route; remove dead code or keep the React island rendered.
 - Do not add Astro or React dependencies if the repo already has an app stack and the task does not allow migration.
 - Prefer static generation for landing pages unless the product needs request-time data.
 - Keep above-the-fold content fast, semantic, and crawlable.
