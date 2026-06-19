@@ -317,6 +317,26 @@ async function applyFiles(
   return applied;
 }
 
+export function filterAllowedFiles(
+  files: { path: string; content: string }[],
+  allowedPaths: string[],
+): { files: { path: string; content: string }[]; dropped: string[] } {
+  const allowed = new Set(allowedPaths.map((path) => path.replace(/^\/+/, '')));
+  const out: { path: string; content: string }[] = [];
+  const dropped: string[] = [];
+
+  for (const file of files) {
+    const normalized = file.path.replace(/^\/+/, '');
+    if (allowed.has(normalized)) {
+      out.push({ ...file, path: normalized });
+    } else {
+      dropped.push(normalized);
+    }
+  }
+
+  return { files: out, dropped };
+}
+
 function chunkArray<T>(items: T[], size: number): T[][] {
   const chunks: T[][] = [];
   for (let i = 0; i < items.length; i += size) {
@@ -521,7 +541,11 @@ export async function generateAndApplyCode(args: CodegenArgs): Promise<CodegenRe
     );
     if (!prTitle && parsed.prTitle.trim()) prTitle = parsed.prTitle;
     if (parsed.summary.trim()) summaries.push(parsed.summary);
-    generatedFiles.push(...parsed.files);
+    const allowed = filterAllowedFiles(parsed.files, [...chunkEdit, ...chunkCreate]);
+    if (allowed.dropped.length > 0) {
+      log.warn({ droppedFiles: allowed.dropped }, 'generated files outside selected chunk ignored');
+    }
+    generatedFiles.push(...allowed.files);
   }
 
   if (generatedFiles.length === 0) {
@@ -615,7 +639,11 @@ export async function applyFix(args: FixArgs): Promise<FixResult> {
     log,
   );
 
-  const applied = await applyFiles(dir, parsed.files);
+  const allowed = filterAllowedFiles(parsed.files, fixCandidates);
+  if (allowed.dropped.length > 0) {
+    log.warn({ droppedFiles: allowed.dropped }, 'fix files outside selected candidates ignored');
+  }
+  const applied = await applyFiles(dir, allowed.files);
   const costUsd = estimateCostUsd('strong_coder', usage);
   log.info({ filesChanged: applied, costUsd }, 'applied fix');
   return { summary: parsed.summary, filesChanged: applied, costUsd };

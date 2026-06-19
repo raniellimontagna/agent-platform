@@ -6,6 +6,7 @@ import {
   buildAgentInstructions,
   completeJson,
   extractJson,
+  filterAllowedFiles,
   filterDocumentationTargets,
   filterReviewCreates,
   selectFixCandidateFiles,
@@ -215,5 +216,24 @@ describe('filterReviewCreates', () => {
       selection: { edit: ['src/a.ts'], create: [] },
       droppedCreates: ['src/b.ts', 'src/c.ts'],
     });
+  });
+});
+
+describe('filterAllowedFiles', () => {
+  it('mantém apenas arquivos explicitamente permitidos', () => {
+    const result = filterAllowedFiles(
+      [
+        { path: 'src/a.ts', content: 'a' },
+        { path: '/src/b.ts', content: 'b' },
+        { path: 'tests/generated.test.ts', content: 'test' },
+      ],
+      ['src/a.ts', 'src/b.ts'],
+    );
+
+    expect(result.files).toEqual([
+      { path: 'src/a.ts', content: 'a' },
+      { path: 'src/b.ts', content: 'b' },
+    ]);
+    expect(result.dropped).toEqual(['tests/generated.test.ts']);
   });
 });
