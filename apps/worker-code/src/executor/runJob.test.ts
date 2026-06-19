@@ -8,6 +8,7 @@ import {
   buildCommitMessage,
   buildLandingMediaPrompt,
   commitErrorResult,
+  landingHeroAssetPathForArtifact,
   landingMediaContext,
   restoreLandingMediaAsset,
   shouldAutoGenerateLandingMedia,
@@ -131,6 +132,15 @@ describe('landing media integration helpers', () => {
     expect(landingMediaContext()).toContain('public/generated/higgsfield-hero.jpg');
     expect(landingMediaContext()).toContain('/generated/higgsfield-hero.jpg');
     expect(landingMediaContext()).toContain('Do not create, edit, overwrite');
+  });
+
+  it('mantém a extensão real do artefato Higgsfield no caminho público', () => {
+    expect(landingHeroAssetPathForArtifact('/tmp/artifacts/higgsfield-hero.png')).toBe(
+      'public/generated/higgsfield-hero.png',
+    );
+    expect(landingHeroAssetPathForArtifact('/tmp/artifacts/higgsfield-hero.jpeg')).toBe(
+      'public/generated/higgsfield-hero.jpg',
+    );
   });
 
   it('restaura o asset binário caso o codegen sobrescreva o caminho', async () => {

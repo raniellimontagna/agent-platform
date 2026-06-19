@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import type { CommandResult } from '../types.js';
 import {
+  detectImageExtension,
   generateHiggsfieldImage,
   parseJsonOutput,
   parsePreferredModels,
@@ -80,6 +81,43 @@ describe('generateHiggsfieldImage', () => {
     expect(fetchImpl).toHaveBeenCalledWith('https://cdn.example.com/asset.jpg');
   });
 
+  it('usa a extensão real do asset baixado quando diverge do nome pedido', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'higgsfield-tool-'));
+    const pngBytes = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    const execHiggsfield = vi.fn(async (args: string[]) => {
+      if (args[1] === 'cost') return command(args, { credits: 1 });
+      if (args[1] === 'create') return command(args, { id: 'job-123' });
+      return command(args, { result_url: 'https://cdn.example.com/asset' });
+    });
+    const fetchImpl = vi.fn(
+      async () =>
+        new Response(pngBytes, {
+          status: 200,
+          headers: { 'content-type': 'image/png' },
+        }),
+    ) as typeof fetch;
+
+    const result = await generateHiggsfieldImage(
+      {
+        prompt: 'premium landing page hero',
+        outputFilename: 'higgsfield-hero.jpg',
+      },
+      {
+        artifactsDir: dir,
+        preferredImageModels: ['seedream_v5_lite'],
+        timeout: '10m',
+        interval: '5s',
+        execHiggsfield,
+        fetchImpl,
+      },
+    );
+
+    expect(result.artifactPath).toMatch(/higgsfield-hero\.png$/);
+    expect(result.metadataPath).toMatch(/higgsfield-hero\.json$/);
+    expect(await readFile(result.artifactPath)).toEqual(pngBytes);
+    expect(await readFile(result.metadataPath, 'utf8')).toContain('"detectedExtension": ".png"');
+  });
+
   it('aceita job id retornado como array de string pela CLI', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'higgsfield-tool-'));
     const execHiggsfield = vi.fn(async (args: string[]) => {
@@ -139,5 +177,15 @@ describe('generateHiggsfieldImage', () => {
       ),
     ).rejects.toThrow('not authenticated');
     expect(execHiggsfield).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('detectImageExtension', () => {
+  it('detecta por content-type, assinatura binária e URL', () => {
+    expect(detectImageExtension(Buffer.from([]), 'image/webp')).toBe('.webp');
+    expect(detectImageExtension(Buffer.from([0xff, 0xd8, 0xff]))).toBe('.jpg');
+    expect(detectImageExtension(Buffer.from([]), undefined, 'https://cdn.example.com/a.jpeg')).toBe(
+      '.jpg',
+    );
   });
 });

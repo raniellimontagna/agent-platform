@@ -21,6 +21,9 @@ loops, character-consistent visuals, or visual references for animation.
   clear asset slots, prompts, alt text, dimensions, and fallback styling.
 - Treat generated media as source assets: save them under the repo's existing
   public/assets convention, use stable filenames, and reference them from code.
+- Preserve the actual media format. If the downloaded asset is PNG/WebP/JPEG,
+  use the matching extension in the repository and in page code/tests; do not
+  force `.jpg` for every generated image.
 - Never hotlink transient generation URLs directly in production pages.
 - Prefer Higgsfield models covered by the account's unlimited/free-generation
   allowance before spending credits on router or premium models.
@@ -59,6 +62,8 @@ the lowest-cost acceptable option.
    no critical text baked into images unless duplicated in HTML.
 6. Optimize for web delivery: modern formats, explicit dimensions/aspect ratio,
    lazy loading below the fold, and no oversized media in the first viewport.
+7. After generation, verify the saved asset is a real image and that code,
+   metadata, tests, and alt text reference the same path and extension.
 
 ## Prompt Contract
 
