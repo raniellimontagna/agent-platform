@@ -2,8 +2,14 @@ import { parseRepoRef } from '@agent-platform/github';
 import { verdictOf } from '@agent-platform/graph';
 import { distillLesson } from '@agent-platform/memory';
 import { Worker } from 'bullmq';
+import type { Logger } from 'pino';
 import { getAgent as getRuntimeAgent } from './agent.js';
-import { ensureDefaultAgents, getAgent as getCatalogAgent } from './agents.js';
+import {
+  LANDING_PAGE_AGENT_KEY,
+  ensureDefaultAgents,
+  getAgent as getCatalogAgent,
+  resolveAgentByKey,
+} from './agents.js';
 import { hasCriticalReason, isCriticalReason } from './approvalPolicy.js';
 import { saveArtifacts } from './artifacts.js';
 import { env } from './env.js';
@@ -13,6 +19,7 @@ import { logger } from './logger.js';
 import { AGENT_QUEUE, type AgentJobData, JOB_PRIORITY, agentQueue, connection } from './queue.js';
 import {
   type RunStatus,
+  createRun,
   findResumableRuns,
   getRun,
   recordApproval,
@@ -22,6 +29,10 @@ import {
   updateRunStatus,
 } from './runs.js';
 import { ensureDefaultTools } from './tools.js';
+import {
+  formatResearchToLandingContext,
+  shouldStartResearchToLandingContinuation,
+} from './workflows.js';
 
 /**
  * Worker que consome a fila e roda o grafo LangGraph (MAC-14). Cada run usa
@@ -94,6 +105,9 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
         const issue = await linear.getIssue(job.data.issueId);
         const run = await getRun(runId);
         const selectedAgent = run?.agentId ? await getCatalogAgent(run.agentId) : null;
+        const description = job.data.context
+          ? `${issue.description}\n\n---\n\n${job.data.context}`
+          : issue.description;
         await updateRunStatus(runId, 'planning');
         result = await graph.invoke(
           {
@@ -101,7 +115,7 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
             issueId: job.data.issueId,
             issueIdentifier: issue.identifier,
             title: issue.title,
-            description: issue.description,
+            description,
             status: 'planning',
             autoMerge: run?.autoMerge ?? false,
             agentKey: selectedAgent?.key,
@@ -226,6 +240,16 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
       } catch (err) {
         log.warn({ err }, 'falha ao salvar artefatos (não-fatal)');
       }
+
+      if (job.data.kind !== 'plan') {
+        await maybeStartResearchToLandingWorkflow({
+          runId,
+          status,
+          result,
+          linear,
+          log,
+        });
+      }
     },
     { connection, concurrency: env.AGENT_MAX_CONCURRENCY },
   );
@@ -253,4 +277,51 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
 
   logger.info({ recovered: resumable.length }, 'agent worker started');
   return worker;
+}
+
+async function maybeStartResearchToLandingWorkflow(args: {
+  runId: string;
+  status: RunStatus;
+  result: { research?: string };
+  linear: Awaited<ReturnType<typeof getRuntimeAgent>>['linear'];
+  log: Logger;
+}) {
+  const sourceRun = await getRun(args.runId);
+  if (!sourceRun) return;
+  if (
+    !shouldStartResearchToLandingContinuation({
+      workflow: sourceRun.workflow,
+      status: args.status,
+      research: args.result.research,
+    })
+  ) {
+    return;
+  }
+
+  const landingAgent = await resolveAgentByKey(LANDING_PAGE_AGENT_KEY);
+  const landingRunId = await createRun({
+    linearIssueId: sourceRun.linearIssueId,
+    linearIssueIdentifier: sourceRun.linearIssueIdentifier,
+    title: `${sourceRun.title} — landing page`,
+    agentId: landingAgent?.id,
+    autoApprove: true,
+    autoMerge: sourceRun.autoMerge,
+  });
+
+  await agentQueue.add(
+    'plan',
+    {
+      kind: 'plan',
+      runId: landingRunId,
+      issueId: sourceRun.linearIssueId,
+      context: formatResearchToLandingContext(args.result.research ?? '', args.runId),
+    },
+    { priority: JOB_PRIORITY.plan },
+  );
+
+  await args.linear.comment(
+    sourceRun.linearIssueId,
+    `## 🔁 Workflow composto\nColeta concluída. Iniciando etapa de landing page com o \`landing-page-agent\`.\n\nRun de landing page: \`${landingRunId}\`.`,
+  );
+  args.log.info({ sourceRunId: args.runId, landingRunId }, 'research→landing workflow enqueued');
 }
