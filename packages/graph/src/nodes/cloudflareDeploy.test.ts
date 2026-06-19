@@ -50,8 +50,8 @@ describe('parseCloudflareDeployUrl', () => {
 
 describe('wranglerNameCommand', () => {
   it('gera comando de deploy com nome único permitido pelo sandbox', () => {
-    expect(wranglerNameCommand('lp-acme')).toBe('pnpm deploy:cloudflare -- --name lp-acme');
-    expect(wranglerNameCommand('LP Acme!')).toBe('pnpm deploy:cloudflare -- --name LP-Acme');
+    expect(wranglerNameCommand('lp-acme')).toBe('pnpm exec wrangler deploy --name lp-acme');
+    expect(wranglerNameCommand('LP Acme!')).toBe('pnpm exec wrangler deploy --name LP-Acme');
   });
 });
 
@@ -62,7 +62,11 @@ describe('cloudflareDeployCommands', () => {
         ['pnpm install --frozen-lockfile', 'pnpm deploy:cloudflare'],
         'acme',
       ),
-    ).toEqual(['pnpm install --frozen-lockfile', 'pnpm deploy:cloudflare -- --name acme']);
+    ).toEqual([
+      'pnpm install --frozen-lockfile',
+      'pnpm exec astro build',
+      'pnpm exec wrangler deploy --name acme',
+    ]);
   });
 });
 
@@ -87,7 +91,11 @@ describe('makeCloudflareDeployNode', () => {
       title: 'Landing Acme',
       description: 'desc',
       plan: '',
-      commands: ['pnpm install --frozen-lockfile', 'pnpm deploy:cloudflare -- --name acme'],
+      commands: [
+        'pnpm install --frozen-lockfile',
+        'pnpm exec astro build',
+        'pnpm exec wrangler deploy --name acme',
+      ],
       lessons: '',
       reviewFeedback: '',
       checkoutOnly: true,
