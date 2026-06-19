@@ -18,12 +18,14 @@ export function parseCloudflareDeployUrl(output: string): string | undefined {
 }
 
 export function wranglerNameCommand(workerName: string): string {
-  return `pnpm deploy:cloudflare -- --name ${shellArg(workerName)}`;
+  return `pnpm exec wrangler deploy --name ${shellArg(workerName)}`;
 }
 
 export function cloudflareDeployCommands(commands: string[], workerName: string): string[] {
-  return commands.map((command) =>
-    command.trim() === 'pnpm deploy:cloudflare' ? wranglerNameCommand(workerName) : command,
+  return commands.flatMap((command) =>
+    command.trim() === 'pnpm deploy:cloudflare'
+      ? ['pnpm exec astro build', wranglerNameCommand(workerName)]
+      : [command],
   );
 }
 
