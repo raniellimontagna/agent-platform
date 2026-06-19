@@ -115,6 +115,7 @@ describe('landing media integration helpers', () => {
 
   it('ativa mídia automática para landing-page-agent com capability Higgsfield', () => {
     expect(shouldAutoGenerateLandingMedia(landingJob)).toBe(true);
+    expect(shouldAutoGenerateLandingMedia({ ...landingJob, agentCapabilities: [] })).toBe(true);
     expect(shouldAutoGenerateLandingMedia({ ...landingJob, reviewFeedback: 'ajustar' })).toBe(
       false,
     );
