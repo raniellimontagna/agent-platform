@@ -120,6 +120,8 @@ const DEFAULT_AGENTS: NewAgent[] = [
       'responsive-design',
       'conversion-copy',
       'visual-polish',
+      'generative-media',
+      'higgsfield',
       'single-repo',
     ],
   },

@@ -49,5 +49,8 @@ Exemplo:
 - `seo-page`: SEO técnico, on-page, schema, conteúdo e GEO para páginas.
 - `biome-formatting`: formatação/lint com Biome e comandos do monorepo.
 - `gsap-motion`: motion com GSAP quando o stack permitir.
+- `higgsfield-media-generation`: planejamento e uso de mídia gerada via
+  Higgsfield MCP/CLI para imagens, vídeos, loops, assets de campanha e fallback
+  web quando a geração não estiver disponível.
 - `research-data-collection`: coleta pública com fontes, evidências, política de
   scraping e saída estruturada para agentes downstream.

@@ -73,6 +73,7 @@ describe('buildAgentInstructions', () => {
     expect(instructions).toContain('ui-ux-pro-max');
     expect(instructions).toContain('astro-react-landing');
     expect(instructions).toContain('seo-page');
+    expect(instructions).toContain('higgsfield-media-generation');
     expect(instructions).toContain('CTA');
     expect(instructions).toContain('responsive');
   });

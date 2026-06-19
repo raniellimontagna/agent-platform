@@ -17,6 +17,7 @@ describe('agentSkills', () => {
       'seo-page',
       'biome-formatting',
       'gsap-motion',
+      'higgsfield-media-generation',
     ]);
   });
 
@@ -32,11 +33,13 @@ describe('agentSkills', () => {
     expect(instructions).toContain('## Skill: seo-page');
     expect(instructions).toContain('## Skill: biome-formatting');
     expect(instructions).toContain('## Skill: gsap-motion');
+    expect(instructions).toContain('## Skill: higgsfield-media-generation');
     expect(instructions).toContain('Treat this skill as the orchestrator');
     expect(instructions).toContain('Make the interface perceivable, operable');
     expect(instructions).toContain('Use product-level design judgment');
     expect(instructions).toContain('Use Astro as the page and content framework');
     expect(instructions).toContain('Treat SEO as part of the landing page implementation');
+    expect(instructions).toContain('Higgsfield MCP/CLI');
   });
 
   it('injeta skill de coleta para data-collector-agent', () => {

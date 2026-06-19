@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Tool } from './db/schema.js';
-import { createToolSchema, pickActiveTool } from './tools.js';
+import { DEFAULT_TOOLS, createToolSchema, pickActiveTool } from './tools.js';
 
 function tool(over: Partial<Tool>): Tool {
   return {
@@ -60,6 +60,19 @@ describe('createToolSchema', () => {
     );
     expect(createToolSchema.safeParse({ key: 'git', version: 'v1', scopes: [1] }).success).toBe(
       false,
+    );
+  });
+});
+
+describe('DEFAULT_TOOLS', () => {
+  it('registra Higgsfield como tool de mídia generativa planejada', () => {
+    expect(DEFAULT_TOOLS).toContainEqual(
+      expect.objectContaining({
+        key: 'higgsfield',
+        version: 'v1',
+        risk: 'dangerous',
+        scopes: expect.arrayContaining(['network', 'generative_media', 'oauth', 'fs_write']),
+      }),
     );
   });
 });
