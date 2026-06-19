@@ -18,21 +18,13 @@ export function parseCloudflareDeployUrl(output: string): string | undefined {
 }
 
 export function wranglerNameCommand(workerName: string): string {
-  return [
-    'node -e',
-    shellQuote(
-      [
-        'const fs = require("node:fs");',
-        'const path = "wrangler.jsonc";',
-        'const name = process.argv[1];',
-        'const input = fs.readFileSync(path, "utf8");',
-        'const output = input.replace(/"name"\\s*:\\s*"[^"]+"/, `"name": "${name}"`);',
-        'if (input === output) throw new Error("wrangler.jsonc name field not found");',
-        'fs.writeFileSync(path, output);',
-      ].join(' '),
-    ),
-    shellQuote(workerName),
-  ].join(' ');
+  return `pnpm deploy:cloudflare -- --name ${shellArg(workerName)}`;
+}
+
+export function cloudflareDeployCommands(commands: string[], workerName: string): string[] {
+  return commands.map((command) =>
+    command.trim() === 'pnpm deploy:cloudflare' ? wranglerNameCommand(workerName) : command,
+  );
 }
 
 /**
@@ -56,7 +48,7 @@ export function makeCloudflareDeployNode(deps: CloudflareDeployDeps) {
       title: state.title,
       description: state.description,
       plan: '',
-      commands: [wranglerNameCommand(repoName), ...deps.deployCommands],
+      commands: cloudflareDeployCommands(deps.deployCommands, repoName),
       lessons: '',
       reviewFeedback: '',
       checkoutOnly: true,
@@ -95,6 +87,6 @@ export function makeCloudflareDeployNode(deps: CloudflareDeployDeps) {
   };
 }
 
-function shellQuote(value: string): string {
-  return `'${value.replace(/'/g, `'\\''`)}'`;
+function shellArg(value: string): string {
+  return value.replace(/[^a-zA-Z0-9_.-]+/g, '-').replace(/^-+|-+$/g, '') || 'landing-page';
 }
