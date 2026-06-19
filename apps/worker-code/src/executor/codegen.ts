@@ -414,6 +414,34 @@ export function selectFixCandidateFiles(filesChanged: string[], failureTail: str
     : candidates.slice(0, 6);
 }
 
+export function isTextFixablePath(path: string): boolean {
+  const normalized = path.replace(/^\/+/, '').replaceAll('\\', '/').toLowerCase();
+  if (normalized.startsWith('public/generated/')) return false;
+  return !/\.(?:avif|bin|gif|ico|jpe?g|mov|mp4|otf|pdf|png|ttf|webm|webp|woff2?|zip)$/.test(
+    normalized,
+  );
+}
+
+export function buildFixCandidateFiles(
+  filesChanged: string[],
+  failureTail: string,
+): {
+  fixableChangedFiles: string[];
+  prioritizedCandidates: string[];
+  fixCandidates: string[];
+} {
+  const fixableChangedFiles = filesChanged.filter(isTextFixablePath);
+  const prioritizedCandidates = selectFixCandidateFiles(fixableChangedFiles, failureTail);
+  return {
+    fixableChangedFiles,
+    prioritizedCandidates,
+    fixCandidates: [...new Set([...prioritizedCandidates, ...fixableChangedFiles])].slice(
+      0,
+      MAX_EDIT_FILES,
+    ),
+  };
+}
+
 function isTestPath(path: string): boolean {
   const normalized = path.replace(/^\/+/, '').replaceAll('\\', '/');
   return (
@@ -619,15 +647,15 @@ export async function applyFix(args: FixArgs): Promise<FixResult> {
   // Relê on-disk os arquivos tocados (recém-escritos; arquivos novos podem não
   // estar no git ls-files, então lemos direto, sem filtro de tracking).
   const current: { path: string; content: string }[] = [];
-  const prioritizedCandidates = selectFixCandidateFiles(filesChanged, failureTail);
-  const fixCandidates = [...new Set([...prioritizedCandidates, ...filesChanged])].slice(
-    0,
-    MAX_EDIT_FILES,
+  const { fixableChangedFiles, prioritizedCandidates, fixCandidates } = buildFixCandidateFiles(
+    filesChanged,
+    failureTail,
   );
   log.info(
     {
       files: fixCandidates.length,
       originalFiles: filesChanged.length,
+      fixableFiles: fixableChangedFiles.length,
       prioritizedCandidates,
       fixCandidates,
     },
@@ -646,10 +674,19 @@ export async function applyFix(args: FixArgs): Promise<FixResult> {
     .map((f) => `\n## ${f.path}\n\`\`\`\n${f.content}\n\`\`\``)
     .join('\n');
   const repoFiles = await listRepoFiles(dir);
-  const availableFiles = [...new Set([...repoFiles, ...filesChanged])].slice(0, 900).join('\n');
+  const availableFiles = [...new Set([...repoFiles, ...fixableChangedFiles])]
+    .slice(0, 900)
+    .join('\n');
 
   const usage: TokenUsage = { promptTokens: 0, completionTokens: 0 };
-  log.info({ files: fixCandidates.length, originalFiles: filesChanged.length }, 'requesting fix');
+  log.info(
+    {
+      files: fixCandidates.length,
+      originalFiles: filesChanged.length,
+      fixableFiles: fixableChangedFiles.length,
+    },
+    'requesting fix',
+  );
   const parsed = await completeJson(
     llm,
     {
