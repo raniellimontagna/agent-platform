@@ -31,7 +31,7 @@ export function slugifyRepoName(text: string): string {
 
 function directiveValue(description: string, key: string): string | undefined {
   const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const match = description.match(new RegExp(`^${escaped}:\\s*(.+?)\\s*$`, 'im'));
+  const match = description.match(new RegExp(`^${escaped}\\s*[:=]\\s*(.+?)\\s*$`, 'im'));
   return match?.[1]?.trim();
 }
 

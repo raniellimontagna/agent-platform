@@ -61,6 +61,20 @@ describe('generated repos', () => {
     });
   });
 
+  it('aceita diretiva TARGET_REPO_NAME com sinal de igual', () => {
+    expect(
+      resolveGeneratedRepoTarget({
+        title: 'ACME',
+        description: 'TARGET_REPO_NAME=lp-acme',
+        createRequested: true,
+        config,
+      }),
+    ).toMatchObject({
+      fullName: 'attodevlabs/lp-acme',
+      create: true,
+    });
+  });
+
   it('cria a partir do template quando permitido', async () => {
     const github = {
       createRepository: vi.fn(async () => ({
