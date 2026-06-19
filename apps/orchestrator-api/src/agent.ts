@@ -1,4 +1,10 @@
-import { createGithubGateway, parseRepoFullName, parseRepoRef } from '@agent-platform/github';
+import {
+  type GithubGateway,
+  type RepoRef,
+  createGithubGateway,
+  parseRepoFullName,
+  parseRepoRef,
+} from '@agent-platform/github';
 import { type AgentGraph, buildAgentGraph, createCheckpointer } from '@agent-platform/graph';
 import { type LinearGateway, createLinearGateway } from '@agent-platform/linear';
 import { type LlmClient, createLlmClient } from '@agent-platform/llm';
@@ -10,7 +16,7 @@ export interface Agent {
   graph: AgentGraph;
   linear: LinearGateway;
   llm: LlmClient;
-  github: ReturnType<typeof createGithubGateway>;
+  github: GithubGateway;
   workerManager: WorkerManager;
 }
 
@@ -25,6 +31,34 @@ export function getAgent(): Promise<Agent> {
     agentPromise = init();
   }
   return agentPromise;
+}
+
+function isGeneratedRepo(repo: RepoRef | undefined): boolean {
+  return repo?.owner === env.GENERATED_REPOS_OWNER;
+}
+
+function createRoutedGithubGateway(defaultGateway: GithubGateway, generatedGateway: GithubGateway) {
+  const byRepo = (repo: RepoRef | undefined) =>
+    isGeneratedRepo(repo) ? generatedGateway : defaultGateway;
+
+  return {
+    createPullRequest(args: Parameters<GithubGateway['createPullRequest']>[0]) {
+      return byRepo(args.repo).createPullRequest(args);
+    },
+    mergePullRequest(args: Parameters<GithubGateway['mergePullRequest']>[0]) {
+      return byRepo(args.repo).mergePullRequest(args);
+    },
+    deleteBranch(
+      branch: Parameters<GithubGateway['deleteBranch']>[0],
+      repo?: Parameters<GithubGateway['deleteBranch']>[1],
+    ) {
+      return byRepo(repo).deleteBranch(branch, repo);
+    },
+    createRepository(input: Parameters<GithubGateway['createRepository']>[0]) {
+      const gateway = input.owner === env.GENERATED_REPOS_OWNER ? generatedGateway : defaultGateway;
+      return gateway.createRepository(input);
+    },
+  } satisfies GithubGateway;
 }
 
 async function init(): Promise<Agent> {
@@ -50,7 +84,14 @@ async function init(): Promise<Agent> {
   };
 
   // Gateway do GitHub (MAC-26) — owner/repo derivados da URL do repo alvo.
-  const github = createGithubGateway(env.GITHUB_TOKEN, parseRepoRef(env.REPO_URL));
+  const defaultGithub = createGithubGateway(env.GITHUB_TOKEN, parseRepoRef(env.REPO_URL));
+  const generatedRepoRef = env.GENERATED_REPOS_TEMPLATE
+    ? parseRepoFullName(env.GENERATED_REPOS_TEMPLATE)
+    : { owner: env.GENERATED_REPOS_OWNER, repo: 'generated-repos' };
+  const generatedGithub = env.GENERATED_REPOS_TOKEN
+    ? createGithubGateway(env.GENERATED_REPOS_TOKEN, generatedRepoRef)
+    : defaultGithub;
+  const github = createRoutedGithubGateway(defaultGithub, generatedGithub);
 
   // Worker Manager (MAC-39): fleet de runners + health/failover no dispatch.
   const workerManager = createWorkerManager({
