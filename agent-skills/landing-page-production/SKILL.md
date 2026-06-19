@@ -40,6 +40,22 @@ the landing-page skill bundle.
 12. Validate with Biome and the repo's normal lint, typecheck, test, or build
    command.
 
+## Evidence and Claims
+
+- Do not present scraped, user-provided, or partially collected social links as
+  official profiles unless the research confirms they are official/current.
+- If Instagram, Facebook, LinkedIn, or similar sources were provided but not
+  validated, label them as "informados" / "pendentes de validação manual" and
+  keep them out of primary CTA/reference claims.
+- Do not use JSON-LD `sameAs` for Serasa, directories, search-result pages, or
+  social profiles that were not validated as official identity. Use neutral
+  visible references in the page instead.
+- For organizations, include only schema fields supported by evidence
+  (`name`, `alternateName`, `taxID`, location, founding date, description).
+- If public records indicate inactive/baixada/closed status, keep copy
+  editorial and historical. Do not imply current service, booking, support, or
+  commercial availability without explicit evidence.
+
 ## Quality Bar
 
 - Show the product, place, state, or workflow as a first-viewport signal.
@@ -66,7 +82,16 @@ the landing-page skill bundle.
   differentiator, and objections handled.
 - Bottom: final CTA, concise reassurance, and SEO-friendly supporting details.
 - Technical: Astro/React fit, SEO metadata/schema, WCAG basics, Biome formatting,
-  generated-media fallback, CTA anchor integrity, and build validation.
+  generated-media fallback, CTA anchor integrity, evidence-safe schema, and
+  build validation.
+
+## Test Expectations
+
+- Tests should verify specific CTAs inside the intended section instead of using
+  broad regexes that can cross unrelated anchors.
+- Tests should assert evidence-sensitive SEO behavior: no unvalidated `sameAs`,
+  no placeholder copy, hardened external links, and generated media referenced
+  with the real file extension.
 
 ## Output Rules
 

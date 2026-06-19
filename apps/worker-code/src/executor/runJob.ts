@@ -1,5 +1,5 @@
 import { copyFile, mkdir } from 'node:fs/promises';
-import { join } from 'node:path';
+import { extname, join } from 'node:path';
 import { createLlmClient } from '@agent-platform/llm';
 import type { Logger } from 'pino';
 import { env } from '../env.js';
@@ -26,7 +26,8 @@ const COMMAND_ALLOWLIST = env.AGENT_COMMAND_ALLOWLIST.split(',')
   .filter(Boolean);
 
 const LANDING_PAGE_AGENT_KEY = 'landing-page-agent';
-const LANDING_HERO_ASSET_PATH = 'public/generated/higgsfield-hero.jpg';
+const LANDING_HERO_ASSET_BASENAME = 'higgsfield-hero';
+const DEFAULT_LANDING_HERO_ASSET_PATH = `public/generated/${LANDING_HERO_ASSET_BASENAME}.jpg`;
 
 /**
  * Roda um comando do job aplicando a allowlist (MAC-31). Comando bloqueado não
@@ -74,7 +75,13 @@ export function buildLandingMediaPrompt(job: Job): string {
     .join('\n');
 }
 
-export function landingMediaContext(assetPath = LANDING_HERO_ASSET_PATH): string {
+export function landingHeroAssetPathForArtifact(artifactPath: string): string {
+  const extension = extname(artifactPath).toLowerCase();
+  const normalized = extension === '.jpeg' ? '.jpg' : extension || '.jpg';
+  return `public/generated/${LANDING_HERO_ASSET_BASENAME}${normalized}`;
+}
+
+export function landingMediaContext(assetPath = DEFAULT_LANDING_HERO_ASSET_PATH): string {
   const publicPath = assetPath.replace(/^public\//, '/');
   return [
     '## Generated Higgsfield Media',
@@ -89,7 +96,7 @@ export function landingMediaContext(assetPath = LANDING_HERO_ASSET_PATH): string
 export async function restoreLandingMediaAsset(
   dir: string,
   artifactPath: string,
-  assetPath = LANDING_HERO_ASSET_PATH,
+  assetPath = DEFAULT_LANDING_HERO_ASSET_PATH,
 ): Promise<string> {
   const destination = join(dir, assetPath);
   await mkdir(join(dir, 'public/generated'), { recursive: true });
@@ -182,6 +189,7 @@ export async function runJob(job: Job): Promise<JobResult> {
     if (job.plan.trim()) {
       let plan = job.plan;
       let landingMediaArtifactPath: string | undefined;
+      let landingMediaAssetPath = DEFAULT_LANDING_HERO_ASSET_PATH;
       if (shouldAutoGenerateLandingMedia(job)) {
         try {
           log.info('generating landing hero media with Higgsfield');
@@ -201,13 +209,14 @@ export async function runJob(job: Job): Promise<JobResult> {
           );
           commands.push(...media.commands);
           landingMediaArtifactPath = media.artifactPath;
-          await restoreLandingMediaAsset(dir, landingMediaArtifactPath);
-          plan = `${job.plan}\n\n${landingMediaContext(LANDING_HERO_ASSET_PATH)}`;
+          landingMediaAssetPath = landingHeroAssetPathForArtifact(media.artifactPath);
+          await restoreLandingMediaAsset(dir, landingMediaArtifactPath, landingMediaAssetPath);
+          plan = `${job.plan}\n\n${landingMediaContext(landingMediaAssetPath)}`;
           log.info(
             {
               model: media.model,
               costCredits: media.costCredits,
-              assetPath: LANDING_HERO_ASSET_PATH,
+              assetPath: landingMediaAssetPath,
             },
             'landing hero media generated',
           );
@@ -228,11 +237,11 @@ export async function runJob(job: Job): Promise<JobResult> {
         log,
       });
       if (landingMediaArtifactPath) {
-        await restoreLandingMediaAsset(dir, landingMediaArtifactPath);
+        await restoreLandingMediaAsset(dir, landingMediaArtifactPath, landingMediaAssetPath);
       }
       base.summary = gen.summary;
       base.filesChanged = landingMediaArtifactPath
-        ? [...new Set([...gen.filesChanged, LANDING_HERO_ASSET_PATH])]
+        ? [...new Set([...gen.filesChanged, landingMediaAssetPath])]
         : gen.filesChanged;
       base.costUsd = gen.costUsd;
       base.prTitle = gen.prTitle;
@@ -265,8 +274,8 @@ export async function runJob(job: Job): Promise<JobResult> {
           base.costUsd = (base.costUsd ?? 0) + fix.costUsd;
           touched = [...new Set([...touched, ...fix.filesChanged])];
           if (landingMediaArtifactPath) {
-            await restoreLandingMediaAsset(dir, landingMediaArtifactPath);
-            touched = [...new Set([...touched, LANDING_HERO_ASSET_PATH])];
+            await restoreLandingMediaAsset(dir, landingMediaArtifactPath, landingMediaAssetPath);
+            touched = [...new Set([...touched, landingMediaAssetPath])];
           }
           return true;
         } catch (err) {

@@ -131,19 +131,26 @@ export async function generateHiggsfieldImage(
   ]);
   if (!resultUrl) throw new Error('higgsfield wait did not return a result url');
 
+  const response = await (opts.fetchImpl ?? fetch)(resultUrl);
+  if (!response.ok) throw new Error(`failed to download Higgsfield asset: HTTP ${response.status}`);
+  const bytes = Buffer.from(await response.arrayBuffer());
+  const detectedExtension = detectImageExtension(
+    bytes,
+    response.headers.get('content-type'),
+    resultUrl,
+  );
+
   const generatedAt = opts.now?.() ?? new Date();
   const runSegment = safeSegment(input.runId || 'manual');
   const dir = join(opts.artifactsDir, 'higgsfield', runSegment);
   await mkdir(dir, { recursive: true });
-  const filename = safeFilename(
-    input.outputFilename || `higgsfield-${model}-${generatedAt.getTime()}.jpg`,
-  );
+  const requestedFilename =
+    input.outputFilename ||
+    `higgsfield-${model}-${generatedAt.getTime()}${detectedExtension ?? '.jpg'}`;
+  const filename = withExtension(requestedFilename, detectedExtension);
   const artifactPath = join(dir, filename);
   const metadataPath = join(dir, `${basename(filename, extname(filename))}.json`);
 
-  const response = await (opts.fetchImpl ?? fetch)(resultUrl);
-  if (!response.ok) throw new Error(`failed to download Higgsfield asset: HTTP ${response.status}`);
-  const bytes = Buffer.from(await response.arrayBuffer());
   await writeFile(artifactPath, bytes);
   await writeFile(
     metadataPath,
@@ -157,6 +164,7 @@ export async function generateHiggsfieldImage(
         jobId,
         resultUrl,
         artifactPath,
+        detectedExtension,
         generatedAt: generatedAt.toISOString(),
       },
       null,
@@ -165,6 +173,55 @@ export async function generateHiggsfieldImage(
   );
 
   return { model, costCredits, jobId, resultUrl, artifactPath, metadataPath, commands };
+}
+
+export function detectImageExtension(
+  bytes: Buffer,
+  contentType?: string | null,
+  url?: string,
+): string | undefined {
+  const lowerType = contentType?.split(';')[0]?.trim().toLowerCase();
+  if (lowerType === 'image/png') return '.png';
+  if (lowerType === 'image/jpeg' || lowerType === 'image/jpg') return '.jpg';
+  if (lowerType === 'image/webp') return '.webp';
+  if (lowerType === 'image/gif') return '.gif';
+  if (lowerType === 'image/avif') return '.avif';
+
+  if (bytes.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) {
+    return '.png';
+  }
+  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return '.jpg';
+  if (
+    bytes.subarray(0, 4).toString('ascii') === 'RIFF' &&
+    bytes.subarray(8, 12).toString('ascii') === 'WEBP'
+  ) {
+    return '.webp';
+  }
+  if (bytes.subarray(0, 3).toString('ascii') === 'GIF') return '.gif';
+
+  const urlExtension = imageExtensionFromUrl(url);
+  if (urlExtension) return urlExtension;
+  return undefined;
+}
+
+function imageExtensionFromUrl(url?: string): string | undefined {
+  if (!url) return undefined;
+  try {
+    const extension = extname(new URL(url).pathname).toLowerCase();
+    if (extension === '.jpeg') return '.jpg';
+    if (['.png', '.jpg', '.webp', '.gif', '.avif'].includes(extension)) return extension;
+  } catch {
+    return undefined;
+  }
+  return undefined;
+}
+
+function withExtension(filename: string, extension?: string): string {
+  const safe = safeFilename(filename);
+  if (!extension) return safe;
+  const current = extname(safe);
+  const base = current ? safe.slice(0, -current.length) : safe;
+  return `${base}${extension}`;
 }
 
 export function parseJsonOutput(stdout: string): unknown {
