@@ -23,6 +23,9 @@ FROM base AS deploy
 # pelo sandbox executor contra o docker.sock montado na VM de runners.
 RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates docker.io \
     && rm -rf /var/lib/apt/lists/*
+# Higgsfield CLI para geração de mídia via jobs/sandbox. A autenticação é OAuth
+# e deve ser persistida por volume em HIGGSFIELD_HOME.
+RUN npm install -g @higgsfield/cli@0.2.3
 # Copia o workspace já buildado (mantém os symlinks dos workspace packages).
 COPY --from=build /app /app
 

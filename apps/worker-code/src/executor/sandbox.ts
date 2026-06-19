@@ -16,6 +16,7 @@ export interface SandboxCommandArgs {
     | 'AGENT_SANDBOX_CPUS'
     | 'AGENT_SANDBOX_MEMORY'
     | 'AGENT_SANDBOX_PIDS_LIMIT'
+    | 'HIGGSFIELD_HOME'
     | 'CLOUDFLARE_API_TOKEN'
     | 'CLOUDFLARE_ACCOUNT_ID'
   >;
@@ -58,8 +59,16 @@ export function buildDockerRunArgs(args: SandboxCommandArgs): string[] {
     args.cwd,
     '--volume',
     `${args.cwd}:${args.cwd}`,
+    '--volume',
+    `${args.env.HIGGSFIELD_HOME}:${args.env.HIGGSFIELD_HOME}`,
     '--env',
     'CI=true',
+    '--env',
+    `HOME=${args.env.HIGGSFIELD_HOME}`,
+    '--env',
+    `XDG_CONFIG_HOME=${args.env.HIGGSFIELD_HOME}/.config`,
+    '--env',
+    `HIGGSFIELD_HOME=${args.env.HIGGSFIELD_HOME}`,
     ...optionalEnv('CLOUDFLARE_API_TOKEN', args.env.CLOUDFLARE_API_TOKEN),
     ...optionalEnv('CLOUDFLARE_ACCOUNT_ID', args.env.CLOUDFLARE_ACCOUNT_ID),
     args.env.AGENT_SANDBOX_IMAGE,

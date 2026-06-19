@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { checkCommand } from './commandPolicy.js';
 
-const allow = ['pnpm', 'node', 'git'];
+const allow = ['pnpm', 'node', 'git', 'higgsfield', 'higgs'];
 
 describe('checkCommand', () => {
   it('permite binário da allowlist', () => {
@@ -9,6 +9,8 @@ describe('checkCommand', () => {
     expect(checkCommand('pnpm -r build', allow).allowed).toBe(true);
     expect(checkCommand('pnpm verify', allow).allowed).toBe(true);
     expect(checkCommand('pnpm exec wrangler deploy --name lp-acme', allow).allowed).toBe(true);
+    expect(checkCommand('higgsfield model list --json', allow).allowed).toBe(true);
+    expect(checkCommand('higgs generate list', allow).allowed).toBe(true);
   });
 
   it('bloqueia binário fora da allowlist', () => {
