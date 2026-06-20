@@ -5,16 +5,17 @@ import {
   parseRepoFullName,
   parseRepoRef,
 } from '@agent-platform/github';
+import type { CardGatewayRegistry } from '@agent-platform/cards';
 import { type AgentGraph, buildAgentGraph, createCheckpointer } from '@agent-platform/graph';
-import { type LinearGateway, createLinearGateway } from '@agent-platform/linear';
 import { type LlmClient, createLlmClient } from '@agent-platform/llm';
+import { createRuntimeCards } from './cards.js';
 import { env } from './env.js';
 import { buildLessonLoader } from './lessonLoader.js';
 import { type WorkerManager, createWorkerManager, parseRunnerUrls } from './workerManager.js';
 
 export interface Agent {
   graph: AgentGraph;
-  linear: LinearGateway;
+  cards: CardGatewayRegistry;
   llm: LlmClient;
   github: GithubGateway;
   workerManager: WorkerManager;
@@ -68,7 +69,7 @@ async function init(): Promise<Agent> {
     timeoutMs: env.LLM_TIMEOUT_MS,
     maxRetries: env.LLM_MAX_RETRIES,
   });
-  const linear = createLinearGateway(env.LINEAR_API_KEY);
+  const cards = createRuntimeCards(env);
   const checkpointer = await createCheckpointer(env.DATABASE_URL);
 
   // Injeta a credencial do GitHub na URL de clone (repo pode ser privado).
@@ -114,13 +115,13 @@ async function init(): Promise<Agent> {
   const graph = buildAgentGraph(
     {
       llm,
-      linear,
+      cards: cards.primary,
       github,
       testCommands,
       loadLessons,
       maxReviewRounds: env.AGENT_MAX_REVIEW_ROUNDS,
       maxCostPerRunUsd: env.AGENT_MAX_COST_PER_RUN_USD,
-      doneStateId: env.LINEAR_DONE_STATE_ID,
+      doneStateId: env.PLANE_DONE_STATE_ID ?? env.LINEAR_DONE_STATE_ID,
       cloudflareDeployGeneratedLandings: env.CLOUDFLARE_DEPLOY_GENERATED_LANDINGS,
       generatedReposOwner: env.GENERATED_REPOS_OWNER,
       cloudflareDeployCommands: env.CLOUDFLARE_DEPLOY_COMMANDS.split(/\n|\\n/)
@@ -133,5 +134,5 @@ async function init(): Promise<Agent> {
     checkpointer,
   );
 
-  return { graph, linear, llm, github, workerManager };
+  return { graph, cards, llm, github, workerManager };
 }
