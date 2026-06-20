@@ -1,9 +1,14 @@
 import { z } from 'zod';
 import type { CommandResult, Job, JobResult } from '../types.js';
+import {
+  DEFAULT_SCRAPING_LIMITS,
+  type ScrapingLimits,
+  buildScrapingPolicy,
+  extractExplicitUrls,
+} from './scrapingPolicy.js';
 
 export const DATA_COLLECTOR_AGENT_KEY = 'data-collector-agent';
 
-const MAX_SOURCES = 5;
 const MAX_SUMMARY_CHARS = 1_500;
 const MAX_EXTRACT_CHARS = 4_000;
 
@@ -13,6 +18,9 @@ interface FirecrawlResearchOptions {
   apiKey?: string;
   baseUrl: string;
   timeoutMs: number;
+  maxPages?: number;
+  maxOutputChars?: number;
+  rateLimitPerMinute?: number;
   fetchImpl?: FetchImpl;
   now?: () => Date;
 }
@@ -57,16 +65,7 @@ const firecrawlResponseSchema = z
   })
   .passthrough();
 
-export function extractResearchUrls(text: string, limit = MAX_SOURCES): string[] {
-  const urls = new Set<string>();
-  const pattern = /https?:\/\/[^\s<>"')\]]+/gi;
-  for (const match of text.matchAll(pattern)) {
-    const normalized = match[0].replace(/[`*_~]+$/g, '').replace(/[.,;:!?]+$/g, '');
-    urls.add(normalized);
-    if (urls.size >= limit) break;
-  }
-  return [...urls];
-}
+export const extractResearchUrls = extractExplicitUrls;
 
 export async function runFirecrawlResearchJob(
   job: Job,
@@ -82,11 +81,29 @@ export async function runFirecrawlResearchJob(
     testsPassed: true,
   };
 
-  const urls = extractResearchUrls(`${job.title}\n${job.description}\n${job.plan}`);
-  if (urls.length === 0) {
+  const policy = buildScrapingPolicy({
+    title: job.title,
+    description: job.description,
+    plan: job.plan,
+    limits: {
+      maxPages: opts.maxPages ?? DEFAULT_SCRAPING_LIMITS.maxPages,
+      timeoutMs: opts.timeoutMs,
+      maxOutputChars: opts.maxOutputChars ?? DEFAULT_SCRAPING_LIMITS.maxOutputChars,
+      rateLimitPerMinute: opts.rateLimitPerMinute ?? DEFAULT_SCRAPING_LIMITS.rateLimitPerMinute,
+    },
+    defaults: DEFAULT_SCRAPING_LIMITS,
+  });
+  if (policy.urls.length === 0) {
     return {
       ...base,
       error: 'data-collector-agent precisa de pelo menos uma URL na issue ou no plano.',
+      testsPassed: false,
+    };
+  }
+  if (!policy.allowed) {
+    return {
+      ...base,
+      error: `Política de scraping bloqueou a coleta: ${policy.reasons.join('; ')}`,
       testsPassed: false,
     };
   }
@@ -99,7 +116,7 @@ export async function runFirecrawlResearchJob(
   }
 
   const sources: ResearchSource[] = [];
-  for (const [index, url] of urls.entries()) {
+  for (const [index, url] of policy.urls.slice(0, policy.limits.maxPages).entries()) {
     if (!url) continue;
     const started = Date.now();
     try {
@@ -108,7 +125,7 @@ export async function runFirecrawlResearchJob(
         url,
         apiKey: opts.apiKey,
         baseUrl: opts.baseUrl,
-        timeoutMs: opts.timeoutMs,
+        timeoutMs: policy.limits.timeoutMs,
         fetchImpl: opts.fetchImpl ?? fetch,
       });
       sources.push({ ...source, durationMs: Date.now() - started });
@@ -145,7 +162,7 @@ export async function runFirecrawlResearchJob(
       commands,
       error: 'Firecrawl não conseguiu coletar nenhuma fonte.',
       summary: 'Falha na coleta de dados: nenhuma fonte retornou conteúdo utilizável.',
-      research: buildResearchPack(job, sources, opts.now?.() ?? new Date()),
+      research: buildResearchPack(job, sources, opts.now?.() ?? new Date(), policy.limits),
       testsPassed: false,
     };
   }
@@ -155,7 +172,7 @@ export async function runFirecrawlResearchJob(
     status: 'succeeded',
     commands,
     summary: `Research pack gerado com ${successes.length}/${sources.length} fonte(s) coletada(s).`,
-    research: buildResearchPack(job, sources, opts.now?.() ?? new Date()),
+    research: buildResearchPack(job, sources, opts.now?.() ?? new Date(), policy.limits),
   };
 }
 
@@ -216,7 +233,12 @@ async function scrapeFirecrawl(args: {
   }
 }
 
-function buildResearchPack(job: Job, sources: ResearchSource[], generatedAt: Date): string {
+function buildResearchPack(
+  job: Job,
+  sources: ResearchSource[],
+  generatedAt: Date,
+  limits: ScrapingLimits,
+): string {
   const lines = [
     `# Research Pack - ${job.issueIdentifier}`,
     '',
@@ -253,6 +275,9 @@ function buildResearchPack(job: Job, sources: ResearchSource[], generatedAt: Dat
 
   const failed = sources.filter((source) => source.error);
   lines.push('## Limitations', '');
+  lines.push(
+    `- Policy: explicit URLs only; max ${limits.maxPages} page(s), timeout ${limits.timeoutMs}ms, output cap ${limits.maxOutputChars} chars, rate ${limits.rateLimitPerMinute}/min.`,
+  );
   if (failed.length === 0) {
     lines.push(
       '- Coleta limitada a URLs explícitas da issue/plano; não executa crawl amplo nesta fase.',
