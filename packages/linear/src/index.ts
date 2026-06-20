@@ -1,6 +1,6 @@
 import { LinearClient } from '@linear/sdk';
+import type { CardContext, CardGateway, CreateCardInput } from '@agent-platform/cards';
 
-/** Retry com backoff p/ chamadas read-only transitórias ao Linear (MAC-33). */
 async function withRetry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
   let lastErr: unknown;
   for (let i = 1; i <= attempts; i++) {
@@ -8,7 +8,7 @@ async function withRetry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
       return await fn();
     } catch (err) {
       lastErr = err;
-      if (i < attempts) await new Promise((r) => setTimeout(r, 500 * 2 ** (i - 1)));
+      if (i < attempts) await new Promise((resolve) => setTimeout(resolve, 500 * 2 ** (i - 1)));
     }
   }
   throw lastErr;
@@ -21,43 +21,72 @@ export interface IssueContext {
   description: string;
 }
 
-export interface LinearGateway {
+function toIssueContext(issue: {
+  id: string;
+  identifier: string;
+  title: string;
+  description?: string | null;
+}): IssueContext {
+  return {
+    id: issue.id,
+    identifier: issue.identifier,
+    title: issue.title,
+    description: issue.description ?? '',
+  };
+}
+
+function toCardContext(issue: IssueContext): CardContext {
+  return {
+    provider: 'linear',
+    id: issue.id,
+    identifier: issue.identifier,
+    title: issue.title,
+    description: issue.description,
+    labels: [],
+  };
+}
+
+export interface LinearGateway extends CardGateway {
+  provider: 'linear';
   getIssue(id: string): Promise<IssueContext>;
-  comment(issueId: string, body: string): Promise<void>;
-  setIssueState(issueId: string, stateId: string): Promise<void>;
   createIssue(input: {
     title: string;
     description: string;
     teamId: string;
     labelIds?: string[];
   }): Promise<IssueContext>;
+  setIssueState(issueId: string, stateId: string): Promise<void>;
 }
 
 /**
  * Wrapper mínimo sobre o SDK do Linear com só o que o orquestrador precisa:
  * ler a issue (contexto) e comentar (plano, progresso, resultado).
  */
-export function createLinearGateway(apiKey: string): LinearGateway {
+export function createLinearGateway(apiKey: string, defaults?: { teamId?: string }): LinearGateway {
   const client = new LinearClient({ apiKey });
 
-  return {
+  const gateway: LinearGateway = {
+    provider: 'linear',
+
     async getIssue(id) {
-      // Read-only → seguro retentar em falha transitória de rede/API (MAC-33).
       const issue = await withRetry(() => client.issue(id));
-      return {
-        id: issue.id,
-        identifier: issue.identifier,
-        title: issue.title,
-        description: issue.description ?? '',
-      };
+      return toIssueContext(issue);
+    },
+
+    async getCard(id) {
+      return toCardContext(await gateway.getIssue(id));
     },
 
     async comment(issueId, body) {
       await client.createComment({ issueId, body });
     },
 
-    async setIssueState(issueId, stateId) {
+    async setCardState(issueId, stateId) {
       await client.updateIssue(issueId, { stateId });
+    },
+
+    async setIssueState(issueId, stateId) {
+      await gateway.setCardState(issueId, stateId);
     },
 
     async createIssue(input) {
@@ -68,13 +97,24 @@ export function createLinearGateway(apiKey: string): LinearGateway {
         ...(input.labelIds?.length ? { labelIds: input.labelIds } : {}),
       });
       const issue = await payload.issue;
-      if (!issue) throw new Error('Linear createIssue não retornou a issue');
-      return {
-        id: issue.id,
-        identifier: issue.identifier,
-        title: issue.title,
-        description: issue.description ?? '',
-      };
+      if (!issue) throw new Error('Linear createIssue nao retornou a issue');
+      return toIssueContext(issue);
+    },
+
+    async createCard(input: CreateCardInput) {
+      if (!defaults?.teamId) {
+        throw new Error('Linear teamId default is required to create cards');
+      }
+      return toCardContext(
+        await gateway.createIssue({
+          title: input.title,
+          description: input.description,
+          teamId: defaults.teamId,
+          labelIds: input.labelIds,
+        }),
+      );
     },
   };
+
+  return gateway;
 }
