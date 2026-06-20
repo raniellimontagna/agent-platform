@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { Hono } from 'hono';
 import { DATA_COLLECTOR_AGENT_KEY, agentKeyFromLabels, resolveAgentByKey } from '../agents.js';
+import { labelJustAdded } from '../cardWebhook.js';
 import { isUniqueViolation } from '../db/pgError.js';
 import { env } from '../env.js';
 import { hasRepoCreateLabel } from '../generatedRepos.js';
@@ -10,8 +11,8 @@ import { JOB_PRIORITY, agentQueue } from '../queue.js';
 import {
   costLast24hUsd,
   createRun,
-  findAwaitingApprovalRun,
-  hasActiveRunForIssue,
+  findAwaitingApprovalRunForCard,
+  hasActiveRunForCard,
   resolveApproval,
   updateRunStatus,
 } from '../runs.js';
@@ -21,6 +22,7 @@ export const webhooks = new Hono();
 
 const AI_READY_LABEL = 'ai-ready';
 const APPROVED_LABEL = 'approved';
+const AUTO_MERGE_LABEL = 'auto-merge';
 
 interface IssueData {
   id?: string;
@@ -36,45 +38,153 @@ interface IssuePayload {
   updatedFrom?: { labels?: { name: string }[]; labelIds?: string[] };
 }
 
-/** A issue tem a label (por nome ou por id)? */
-function hasLabel(d: IssueData | undefined, name: string, id: string): boolean {
-  const names = d?.labels?.map((l) => l.name) ?? [];
-  return names.includes(name) || (d?.labelIds ?? []).includes(id);
+interface PlaneLabel {
+  id?: string;
+  name?: string;
 }
 
-export function labelNames(d: IssueData | undefined): string[] {
-  return d?.labels?.map((l) => l.name) ?? [];
+interface PlaneWorkItemData {
+  id?: string;
+  sequence_id?: number;
+  sequenceId?: number;
+  name?: string;
+  labels?: PlaneLabel[];
+  project_id?: string;
+  project_detail?: { identifier?: string };
+  project_identifier?: string;
 }
 
-/** A label foi ADICIONADA neste evento? (create com a label, ou update que a acrescentou) */
-function labelJustAdded(p: IssuePayload, name: string, id: string): boolean {
-  if (!hasLabel(p.data, name, id)) return false;
-  if (p.action !== 'update') return true; // create com a label
-  const labelsChanged =
-    p.updatedFrom?.labels !== undefined || p.updatedFrom?.labelIds !== undefined;
-  const had =
-    (p.updatedFrom?.labels?.map((l) => l.name) ?? []).includes(name) ||
-    (p.updatedFrom?.labelIds ?? []).includes(id);
-  return labelsChanged && !had;
+interface PlanePayload {
+  action: string;
+  type: string;
+  data?: PlaneWorkItemData;
+  updated_from?: { labels?: PlaneLabel[] };
 }
 
-/**
- * Valida a assinatura HMAC-SHA256 do webhook do Linear.
- * O Linear envia o header `linear-signature` com o hash do corpo cru.
- */
-function verifySignature(rawBody: string, signature: string | undefined): boolean {
+function verifySignature(rawBody: string, signature: string | undefined, secret: string): boolean {
   if (!signature) return false;
-  const expected = createHmac('sha256', env.LINEAR_WEBHOOK_SECRET).update(rawBody).digest('hex');
+  const expected = createHmac('sha256', secret).update(rawBody).digest('hex');
   const a = Buffer.from(expected);
   const b = Buffer.from(signature);
   return a.length === b.length && timingSafeEqual(a, b);
+}
+
+function issueLabelNames(d: IssueData | undefined): string[] {
+  return d?.labels?.map((l) => l.name) ?? [];
+}
+
+function issueLabelIds(d: IssueData | undefined): string[] {
+  return d?.labelIds ?? [];
+}
+
+function planeLabelNames(labels: PlaneLabel[] | undefined): string[] {
+  return (labels ?? []).map((label) => label.name ?? '').filter(Boolean);
+}
+
+function planeLabelIds(labels: PlaneLabel[] | undefined): string[] {
+  return (labels ?? []).map((label) => label.id ?? '').filter(Boolean);
+}
+
+function hasLabel(input: { names: string[]; ids: string[]; name: string; id?: string }): boolean {
+  return input.names.includes(input.name) || (!!input.id && input.ids.includes(input.id));
+}
+
+function planeCardIdentifier(data: PlaneWorkItemData): string {
+  const projectIdentifier = data.project_detail?.identifier ?? data.project_identifier ?? 'AGP';
+  const sequence = data.sequence_id ?? data.sequenceId;
+  return sequence ? `${projectIdentifier}-${sequence}` : (data.id ?? projectIdentifier);
+}
+
+function verifyPlaneSignature(rawBody: string, signature: string | undefined): boolean {
+  if (!env.PLANE_WEBHOOK_SECRET) {
+    return env.NODE_ENV !== 'production';
+  }
+  return verifySignature(rawBody, signature, env.PLANE_WEBHOOK_SECRET);
+}
+
+async function handleAiReadyCard(input: {
+  provider: 'plane' | 'linear';
+  cardId: string;
+  cardIdentifier: string;
+  cardProjectId?: string;
+  title: string;
+  labels: string[];
+  hasAutoMerge: boolean;
+  targetRepoCreate: boolean;
+}) {
+  if (await hasActiveRunForCard(input.provider, input.cardId)) {
+    logger.warn(
+      { provider: input.provider, card: input.cardIdentifier },
+      'run ativo já existe; ignorando duplicata',
+    );
+    return { skipped: true, reason: 'active run already exists' } as const;
+  }
+
+  if (await isPaused()) {
+    logger.warn({ provider: input.provider, card: input.cardIdentifier }, 'agents paused; ai-ready ignorado');
+    return { skipped: true, reason: 'agents paused' } as const;
+  }
+
+  const spent = await costLast24hUsd();
+  if (spent >= env.AGENT_MAX_COST_PER_DAY_USD) {
+    logger.warn({ spent, limit: env.AGENT_MAX_COST_PER_DAY_USD }, 'orçamento diário estourado');
+    return { skipped: true, reason: 'daily cost budget exceeded' } as const;
+  }
+
+  const workflow = workflowFromLabels(input.labels);
+  const agentKey = workflow ? DATA_COLLECTOR_AGENT_KEY : agentKeyFromLabels(input.labels);
+  const agent = await resolveAgentByKey(agentKey);
+
+  let runId: string;
+  try {
+    runId = await createRun({
+      linearIssueId: input.cardId,
+      linearIssueIdentifier: input.cardIdentifier,
+      cardProvider: input.provider,
+      cardId: input.cardId,
+      cardIdentifier: input.cardIdentifier,
+      cardProjectId: input.cardProjectId,
+      title: input.title,
+      autoMerge: input.hasAutoMerge,
+      agentId: agent?.id,
+      workflow,
+      targetRepoCreate: input.targetRepoCreate,
+    });
+  } catch (err) {
+    if (isUniqueViolation(err)) {
+      logger.warn(
+        { provider: input.provider, card: input.cardIdentifier },
+        'run ativo já existe (índice); ignorando duplicata',
+      );
+      return { skipped: true, reason: 'active run exists' } as const;
+    }
+    throw err;
+  }
+
+  await agentQueue.add(
+    'plan',
+    {
+      kind: 'plan',
+      runId,
+      cardProvider: input.provider,
+      cardId: input.cardId,
+      ...(input.provider === 'linear' ? { issueId: input.cardId } : {}),
+    },
+    { priority: JOB_PRIORITY.plan },
+  );
+
+  logger.info(
+    { runId, provider: input.provider, card: input.cardIdentifier },
+    'ai-ready card enqueued',
+  );
+  return { queued: true, runId } as const;
 }
 
 webhooks.post('/webhooks/linear', async (c) => {
   const rawBody = await c.req.text();
   const signature = c.req.header('linear-signature');
 
-  if (!verifySignature(rawBody, signature)) {
+  if (!verifySignature(rawBody, signature, env.LINEAR_WEBHOOK_SECRET)) {
     logger.warn('Linear webhook with invalid signature rejected');
     return c.json({ error: 'invalid signature' }, 401);
   }
@@ -89,11 +199,25 @@ webhooks.post('/webhooks/linear', async (c) => {
   if (!issueId) {
     return c.json({ ok: true, skipped: true, reason: 'no issue id' });
   }
-  const identifier = payload.data?.identifier;
+  const identifier = payload.data?.identifier ?? issueId;
+  const currentNames = issueLabelNames(payload.data);
+  const currentIds = issueLabelIds(payload.data);
+  const previousNames = issueLabelNames(payload.updatedFrom);
+  const previousIds = payload.updatedFrom?.labelIds ?? [];
 
   // Approve via Linear (MAC-22): label `approved` adicionada → retoma o run pausado.
-  if (labelJustAdded(payload, APPROVED_LABEL, env.LINEAR_APPROVED_LABEL_ID)) {
-    const run = await findAwaitingApprovalRun(issueId);
+  if (
+    labelJustAdded({
+      currentNames,
+      currentIds,
+      previousNames,
+      previousIds,
+      action: payload.action,
+      name: APPROVED_LABEL,
+      id: env.LINEAR_APPROVED_LABEL_ID,
+    })
+  ) {
+    const run = await findAwaitingApprovalRunForCard('linear', issueId);
     if (!run) {
       return c.json({ ok: true, skipped: true, reason: 'nenhum run aguardando aprovação' });
     }
@@ -109,62 +233,93 @@ webhooks.post('/webhooks/linear', async (c) => {
   }
 
   // ai-ready: dispara um novo run — só quando a label é ADICIONADA (não em toda edição).
-  if (!labelJustAdded(payload, AI_READY_LABEL, env.LINEAR_AI_READY_LABEL_ID)) {
+  if (
+    !labelJustAdded({
+      currentNames,
+      currentIds,
+      previousNames,
+      previousIds,
+      action: payload.action,
+      name: AI_READY_LABEL,
+      id: env.LINEAR_AI_READY_LABEL_ID,
+    })
+  ) {
     return c.json({ ok: true, skipped: true });
   }
 
-  // Dedup: já há um run ativo (não-terminal) para esta issue → ignora duplicata.
-  if (await hasActiveRunForIssue(issueId)) {
-    logger.warn({ issue: identifier }, 'run ativo já existe; ignorando duplicata');
-    return c.json({ ok: true, skipped: true, reason: 'active run already exists' });
+  const result = await handleAiReadyCard({
+    provider: 'linear',
+    cardId: issueId,
+    cardIdentifier: identifier,
+    title: payload.data?.title ?? '(sem título)',
+    labels: currentNames,
+    hasAutoMerge: hasLabel({
+      names: currentNames,
+      ids: currentIds,
+      name: AUTO_MERGE_LABEL,
+      id: env.LINEAR_AUTO_MERGE_LABEL_ID,
+    }),
+    targetRepoCreate: hasRepoCreateLabel(currentNames),
+  });
+
+  return c.json({ ok: true, ...result });
+});
+
+webhooks.post('/webhooks/plane', async (c) => {
+  const rawBody = await c.req.text();
+  const signature = c.req.header('x-plane-signature');
+
+  if (!verifyPlaneSignature(rawBody, signature)) {
+    logger.warn('Plane webhook with invalid signature rejected');
+    return c.json({ error: 'invalid signature' }, 401);
   }
 
-  // Kill switch (MAC-32): pausado → não cria nem enfileira nada.
-  if (await isPaused()) {
-    logger.warn({ issue: payload.data?.identifier }, 'agents paused; ai-ready ignorado');
-    return c.json({ ok: true, skipped: true, reason: 'agents paused' });
+  const payload = JSON.parse(rawBody) as PlanePayload;
+
+  if (payload.type !== 'work_item') {
+    return c.json({ ok: true, skipped: true });
   }
 
-  // Cost Guard (MAC-40): limite de sessão (24h) estourado → bloqueia novos runs.
-  const spent = await costLast24hUsd();
-  if (spent >= env.AGENT_MAX_COST_PER_DAY_USD) {
-    logger.warn({ spent, limit: env.AGENT_MAX_COST_PER_DAY_USD }, 'orçamento diário estourado');
-    return c.json({ ok: true, skipped: true, reason: 'daily cost budget exceeded' });
+  const item = payload.data;
+  const cardId = item?.id;
+  if (!cardId) {
+    return c.json({ ok: true, skipped: true, reason: 'no work item id' });
   }
 
-  // Cria o run e enfileira; a execução longa roda no worker (MAC-20).
-  let runId: string;
-  try {
-    const labels = labelNames(payload.data);
-    const workflow = workflowFromLabels(labels);
-    const agentKey = workflow ? DATA_COLLECTOR_AGENT_KEY : agentKeyFromLabels(labels);
-    const agent = await resolveAgentByKey(agentKey);
-    runId = await createRun({
-      linearIssueId: issueId,
-      linearIssueIdentifier: payload.data?.identifier ?? issueId,
-      title: payload.data?.title ?? '(sem título)',
-      autoMerge: hasLabel(payload.data, 'auto-merge', env.LINEAR_AUTO_MERGE_LABEL_ID ?? ''),
-      agentId: agent?.id,
-      workflow,
-      targetRepoCreate: hasRepoCreateLabel(labels),
-    });
-  } catch (err) {
-    // MAC-47: índice único de issue ativa — webhook concorrente da mesma issue.
-    if (isUniqueViolation(err)) {
-      logger.warn({ issue: identifier }, 'run ativo já existe (índice); ignorando duplicata');
-      return c.json({ ok: true, skipped: true, reason: 'active run exists' });
-    }
-    throw err;
-  }
-  await agentQueue.add(
-    'plan',
-    { kind: 'plan', runId, issueId, cardProvider: 'linear', cardId: issueId },
-    { priority: JOB_PRIORITY.plan },
-  );
+  const currentNames = planeLabelNames(item.labels);
+  const currentIds = planeLabelIds(item.labels);
+  const previousNames = planeLabelNames(payload.updated_from?.labels);
+  const previousIds = planeLabelIds(payload.updated_from?.labels);
 
-  logger.info(
-    { runId, issue: payload.data?.identifier, action: payload.action },
-    'ai-ready issue enqueued',
-  );
-  return c.json({ ok: true, queued: true, runId });
+  if (
+    !labelJustAdded({
+      currentNames,
+      currentIds,
+      previousNames,
+      previousIds,
+      action: payload.action,
+      name: AI_READY_LABEL,
+      id: env.PLANE_AI_READY_LABEL_ID,
+    })
+  ) {
+    return c.json({ ok: true, skipped: true });
+  }
+
+  const result = await handleAiReadyCard({
+    provider: 'plane',
+    cardId,
+    cardIdentifier: planeCardIdentifier(item),
+    cardProjectId: item.project_id,
+    title: item.name ?? '(sem título)',
+    labels: currentNames,
+    hasAutoMerge: hasLabel({
+      names: currentNames,
+      ids: currentIds,
+      name: AUTO_MERGE_LABEL,
+      id: env.PLANE_AUTO_MERGE_LABEL_ID,
+    }),
+    targetRepoCreate: hasRepoCreateLabel(currentNames),
+  });
+
+  return c.json({ ok: true, ...result });
 });

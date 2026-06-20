@@ -8,10 +8,15 @@ import { webhooks } from './webhooks.js';
 
 vi.mock('../env.js', () => ({
   env: {
+    NODE_ENV: 'test',
     LINEAR_WEBHOOK_SECRET: 'secret',
     LINEAR_APPROVED_LABEL_ID: 'approved-id',
     LINEAR_AI_READY_LABEL_ID: 'ai-ready-id',
     LINEAR_AUTO_MERGE_LABEL_ID: 'auto-merge-id',
+    PLANE_WEBHOOK_SECRET: 'secret',
+    PLANE_AI_READY_LABEL_ID: 'plane-ai-ready-id',
+    PLANE_APPROVED_LABEL_ID: 'plane-approved-id',
+    PLANE_AUTO_MERGE_LABEL_ID: 'plane-auto-merge-id',
     AGENT_MAX_COST_PER_DAY_USD: 100,
   },
 }));
@@ -32,6 +37,8 @@ vi.mock('../runs.js', () => ({
   costLast24hUsd: vi.fn().mockResolvedValue(0),
   createRun: vi.fn(),
   findAwaitingApprovalRun: vi.fn(),
+  findAwaitingApprovalRunForCard: vi.fn(),
+  hasActiveRunForCard: vi.fn().mockResolvedValue(false),
   hasActiveRunForIssue: vi.fn().mockResolvedValue(false),
   resolveApproval: vi.fn(),
   updateRunStatus: vi.fn(),
@@ -217,6 +224,45 @@ describe('POST /webhooks/linear', () => {
       expect.objectContaining({
         targetRepoCreate: true,
       }),
+    );
+  });
+
+  it('POST /webhooks/plane enqueues ai-ready work item', async () => {
+    vi.mocked(resolveAgentByKey).mockResolvedValue({ id: 'agent-id' } as never);
+    vi.mocked(createRun).mockResolvedValue('run-plane');
+    const body = JSON.stringify({
+      action: 'update',
+      type: 'work_item',
+      data: {
+        id: 'plane-work-1',
+        sequence_id: 1,
+        name: 'Plane card',
+        labels: [{ id: 'plane-ai-ready-id', name: 'ai-ready' }],
+        project_id: 'plane-project',
+        project_detail: { identifier: 'AGP' },
+      },
+      updated_from: { labels: [] },
+    });
+
+    const res = await app.request('/webhooks/plane', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-plane-signature': signed(body) },
+      body,
+    });
+
+    expect(res.status).toBe(200);
+    expect(createRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cardProvider: 'plane',
+        cardId: 'plane-work-1',
+        cardIdentifier: 'AGP-1',
+        cardProjectId: 'plane-project',
+      }),
+    );
+    expect(agentQueue.add).toHaveBeenCalledWith(
+      'plan',
+      { kind: 'plan', runId: 'run-plane', cardProvider: 'plane', cardId: 'plane-work-1' },
+      { priority: 10 },
     );
   });
 });
