@@ -1,5 +1,6 @@
+import type { CardGateway } from '@agent-platform/cards';
 import { describe, expect, it } from 'vitest';
-import { verdictOf } from './report.js';
+import { makeReportNode, verdictOf } from './report.js';
 
 describe('verdictOf', () => {
   it('extrai veredito com markdown', () => {
@@ -18,4 +19,43 @@ describe('verdictOf', () => {
     expect(verdictOf(undefined)).toBe('—');
     expect(verdictOf('sem veredito aqui')).toBe('—');
   });
+});
+
+it('report node accepts a generic card gateway', async () => {
+  const comments: string[] = [];
+  const cards: CardGateway = {
+    provider: 'plane',
+    getCard: async () => ({
+      provider: 'plane',
+      id: 'card-1',
+      identifier: 'AGP-1',
+      title: 'Card',
+      description: '',
+      labels: [],
+    }),
+    comment: async (_cardId, body) => {
+      comments.push(body);
+    },
+    setCardState: async () => undefined,
+    createCard: async () => ({
+      provider: 'plane',
+      id: 'card-1',
+      identifier: 'AGP-1',
+      title: 'Card',
+      description: '',
+      labels: [],
+    }),
+  };
+
+  const node = makeReportNode({ cards });
+  await node({
+    runId: 'run-1',
+    issueId: 'card-1',
+    issueIdentifier: 'AGP-1',
+    title: 'Card',
+    description: '',
+    status: 'completed',
+  } as never);
+
+  expect(comments[0]).toContain('AGP-1');
 });

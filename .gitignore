@@ -22,6 +22,9 @@ logs/
 # Local implementation worktrees
 .worktrees/
 
+# Superpowers local execution ledger
+.superpowers/
+
 # Drizzle
 drizzle/meta/_journal.json.bak
 

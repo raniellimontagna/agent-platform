@@ -39,6 +39,9 @@ importers:
 
   apps/orchestrator-api:
     dependencies:
+      '@agent-platform/cards':
+        specifier: workspace:*
+        version: link:../../packages/cards
       '@agent-platform/github':
         specifier: workspace:*
         version: link:../../packages/github
@@ -54,6 +57,9 @@ importers:
       '@agent-platform/memory':
         specifier: workspace:*
         version: link:../../packages/memory
+      '@agent-platform/plane':
+        specifier: workspace:*
+        version: link:../../packages/plane
       '@agent-platform/policy':
         specifier: workspace:*
         version: link:../../packages/policy
@@ -135,6 +141,18 @@ importers:
         specifier: ^5.7.3
         version: 5.9.3
 
+  packages/cards:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.13.4
+        version: 22.19.20
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.0
+        version: 3.2.6(@types/node@22.19.20)(tsx@4.22.4)
+
   packages/github:
     devDependencies:
       '@types/node':
@@ -146,12 +164,12 @@ importers:
 
   packages/graph:
     dependencies:
+      '@agent-platform/cards':
+        specifier: workspace:*
+        version: link:../cards
       '@agent-platform/github':
         specifier: workspace:*
         version: link:../github
-      '@agent-platform/linear':
-        specifier: workspace:*
-        version: link:../linear
       '@agent-platform/llm':
         specifier: workspace:*
         version: link:../llm
@@ -174,6 +192,9 @@ importers:
 
   packages/linear:
     dependencies:
+      '@agent-platform/cards':
+        specifier: workspace:*
+        version: link:../cards
       '@linear/sdk':
         specifier: ^39.0.0
         version: 39.2.1
@@ -184,6 +205,9 @@ importers:
       typescript:
         specifier: ^5.7.3
         version: 5.9.3
+      vitest:
+        specifier: ^3.2.0
+        version: 3.2.6(@types/node@22.19.20)(tsx@4.22.4)
 
   packages/llm:
     dependencies:
@@ -210,6 +234,22 @@ importers:
       typescript:
         specifier: ^5.7.3
         version: 5.9.3
+
+  packages/plane:
+    dependencies:
+      '@agent-platform/cards':
+        specifier: workspace:*
+        version: link:../cards
+    devDependencies:
+      '@types/node':
+        specifier: ^22.13.4
+        version: 22.19.20
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.0
+        version: 3.2.6(@types/node@22.19.20)(tsx@4.22.4)
 
   packages/policy:
     devDependencies:

@@ -1,11 +1,11 @@
+import type { CardGateway } from '@agent-platform/cards';
 import { type GithubGateway, parseRepoFullName } from '@agent-platform/github';
-import type { LinearGateway } from '@agent-platform/linear';
 import type { AgentStateType } from '../state.js';
 import { shouldAutoMerge } from './report.js';
 
 export interface PrDeps {
   github: GithubGateway;
-  linear: LinearGateway;
+  cards: CardGateway;
   /** Branch base do PR (default: main). */
   baseBranch: string;
 }
@@ -52,7 +52,7 @@ export function makePrNode(deps: PrDeps) {
         ...(state.targetRepo ? { repo: parseRepoFullName(state.targetRepo) } : {}),
       });
 
-      await deps.linear.comment(
+      await deps.cards.comment(
         state.issueId,
         `## 🔀 Draft PR aberto\n[#${pr.number}](${pr.url}) — branch \`${state.branch}\`.`,
       );
@@ -60,7 +60,7 @@ export function makePrNode(deps: PrDeps) {
       return { prUrl: pr.url, prNumber: pr.number, status: 'completed' };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      await deps.linear.comment(
+      await deps.cards.comment(
         state.issueId,
         `## ⚠️ Falha ao abrir o PR\n\n\`\`\`\n${message}\n\`\`\``,
       );

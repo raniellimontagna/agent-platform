@@ -1,9 +1,9 @@
-import type { LinearGateway } from '@agent-platform/linear';
+import type { CardGateway } from '@agent-platform/cards';
 import type { AgentStateType } from '../state.js';
 import type { DispatchFn } from './coder.js';
 
 export interface CloudflareDeployDeps {
-  linear: LinearGateway;
+  cards: CardGateway;
   dispatch: DispatchFn;
   resolveRepoUrl?: (targetRepo: string | undefined) => string;
   repoUrl: string;
@@ -63,7 +63,7 @@ export function makeCloudflareDeployNode(deps: CloudflareDeployDeps) {
     const url = parseCloudflareDeployUrl(output);
 
     if (result.status === 'succeeded') {
-      await deps.linear.comment(
+      await deps.cards.comment(
         state.issueId,
         [
           '## ☁️ Deploy Cloudflare',
@@ -75,7 +75,7 @@ export function makeCloudflareDeployNode(deps: CloudflareDeployDeps) {
       return url ? { cloudflareDeployUrl: url } : {};
     }
 
-    await deps.linear.comment(
+    await deps.cards.comment(
       state.issueId,
       [
         '## ⚠️ Deploy Cloudflare falhou',

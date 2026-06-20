@@ -1,3 +1,4 @@
+import type { CardGateway } from '@agent-platform/cards';
 import { describe, expect, it } from 'vitest';
 import { makeCoderNode, slugify } from './coder.js';
 
@@ -22,9 +23,32 @@ describe('slugify', () => {
 describe('makeCoderNode', () => {
   it('marca o estado como failed quando a validação do runner falha', async () => {
     const comments: string[] = [];
+    const card: CardGateway = {
+      provider: 'plane',
+      getCard: async () => ({
+        provider: 'plane',
+        id: 'issue-1',
+        identifier: 'MAC-86',
+        title: 'Eval Harness v2',
+        description: '',
+        labels: [],
+      }),
+      comment: async (_issueId: string, body: string) => {
+        comments.push(body);
+      },
+      setCardState: async () => undefined,
+      createCard: async () => ({
+        provider: 'plane',
+        id: 'issue-1',
+        identifier: 'MAC-86',
+        title: 'Eval Harness v2',
+        description: '',
+        labels: [],
+      }),
+    };
     let dispatched: unknown;
     const coder = makeCoderNode({
-      linear: { comment: async (_issueId: string, body: string) => comments.push(body) } as never,
+      cards: card,
       repoUrl: 'git@example.com:repo.git',
       baseBranch: 'main',
       testCommands: ['pnpm test'],
@@ -67,8 +91,31 @@ describe('makeCoderNode', () => {
 
   it('encerra data collector como completed sem seguir para PR', async () => {
     const comments: string[] = [];
+    const card: CardGateway = {
+      provider: 'plane',
+      getCard: async () => ({
+        provider: 'plane',
+        id: 'issue-1',
+        identifier: 'MAC-94',
+        title: 'Coleta',
+        description: 'https://example.com',
+        labels: [],
+      }),
+      comment: async (_issueId: string, body: string) => {
+        comments.push(body);
+      },
+      setCardState: async () => undefined,
+      createCard: async () => ({
+        provider: 'plane',
+        id: 'issue-1',
+        identifier: 'MAC-94',
+        title: 'Coleta',
+        description: 'https://example.com',
+        labels: [],
+      }),
+    };
     const coder = makeCoderNode({
-      linear: { comment: async (_issueId: string, body: string) => comments.push(body) } as never,
+      cards: card,
       repoUrl: 'git@example.com:repo.git',
       baseBranch: 'main',
       testCommands: [],
@@ -109,8 +156,29 @@ describe('makeCoderNode', () => {
 
   it('usa repo alvo dinâmico quando targetRepo está no estado', async () => {
     let dispatched: { repoUrl?: string } | undefined;
+    const card: CardGateway = {
+      provider: 'plane',
+      getCard: async () => ({
+        provider: 'plane',
+        id: 'issue-1',
+        identifier: 'MAC-99',
+        title: 'Landing',
+        description: '',
+        labels: [],
+      }),
+      comment: async () => undefined,
+      setCardState: async () => undefined,
+      createCard: async () => ({
+        provider: 'plane',
+        id: 'issue-1',
+        identifier: 'MAC-99',
+        title: 'Landing',
+        description: '',
+        labels: [],
+      }),
+    };
     const coder = makeCoderNode({
-      linear: { comment: async () => {} } as never,
+      cards: card,
       repoUrl: 'https://github.com/default/repo.git',
       resolveRepoUrl: (targetRepo) =>
         targetRepo ? `https://token@github.com/${targetRepo}.git` : 'default',

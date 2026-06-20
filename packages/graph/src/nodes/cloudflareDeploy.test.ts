@@ -1,3 +1,4 @@
+import type { CardGateway } from '@agent-platform/cards';
 import { describe, expect, it, vi } from 'vitest';
 import {
   cloudflareDeployCommands,
@@ -7,8 +8,29 @@ import {
 } from './cloudflareDeploy.js';
 
 function deps() {
+  const cards: CardGateway = {
+    provider: 'plane',
+    getCard: async () => ({
+      provider: 'plane',
+      id: 'issue-id',
+      identifier: 'MAC-106',
+      title: 'Landing Acme',
+      description: 'desc',
+      labels: [],
+    }),
+    comment: vi.fn(async () => {}),
+    setCardState: vi.fn(async () => {}),
+    createCard: async () => ({
+      provider: 'plane',
+      id: 'issue-id',
+      identifier: 'MAC-106',
+      title: 'Landing Acme',
+      description: 'desc',
+      labels: [],
+    }),
+  };
   return {
-    linear: { comment: vi.fn(async () => {}) },
+    cards,
     dispatch: vi.fn(async () => ({
       status: 'succeeded' as const,
       branch: 'main',
@@ -100,7 +122,7 @@ describe('makeCloudflareDeployNode', () => {
       reviewFeedback: '',
       checkoutOnly: true,
     });
-    expect(d.linear.comment).toHaveBeenCalledWith(
+    expect(d.cards.comment).toHaveBeenCalledWith(
       'issue-id',
       expect.stringContaining('https://acme.workers.dev'),
     );
@@ -118,7 +140,7 @@ describe('makeCloudflareDeployNode', () => {
 
     const out = await makeCloudflareDeployNode(d as never)(state as never);
 
-    expect(d.linear.comment).toHaveBeenCalledWith(
+    expect(d.cards.comment).toHaveBeenCalledWith(
       'issue-id',
       expect.stringContaining('wrangler auth failed'),
     );

@@ -5,7 +5,7 @@ export default defineConfig({
     // Validação do agente roda em repos que podem não ter testes ainda (MAC-29).
     passWithNoTests: true,
     include: ['**/*.test.ts'],
-    exclude: ['**/node_modules/**', '**/dist/**'],
+    exclude: ['**/node_modules/**', '**/dist/**', '**/.worktrees/**'],
     // Popula env dummy antes dos testes (módulos validam env no import).
     setupFiles: ['./vitest.setup.ts'],
   },

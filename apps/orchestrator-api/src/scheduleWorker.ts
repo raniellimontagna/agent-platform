@@ -14,13 +14,14 @@ import {
 import { getSchedule, hasActiveRunForSchedule, listSchedules, touchSchedule } from './schedules.js';
 
 /**
- * Worker dos disparos de agendamento (MAC-38). Cada disparo: cria a issue no
- * Linear (issue sintética), cria o run e enfileira `plan` na fila do agente.
+ * Worker dos disparos de agendamento (MAC-38). Cada disparo: cria a card
+ * sintética no provedor primário, cria o run e enfileira `plan` na fila do
+ * agente.
  * Na subida, reconcilia os Job Schedulers do BullMQ a partir do banco (cobre
  * Redis flush / deploy novo), análogo ao resume de órfãos (MAC-34).
  */
 export async function startScheduleWorker(): Promise<Worker<ScheduleFireData, unknown, string>> {
-  const { linear } = await getAgent();
+  const { cards } = await getAgent();
 
   // Reconciliação: garante um Job Scheduler p/ cada agendamento habilitado.
   const enabled = await listSchedules({ enabledOnly: true });
@@ -55,16 +56,24 @@ export async function startScheduleWorker(): Promise<Worker<ScheduleFireData, un
         return;
       }
 
-      const issue = await linear.createIssue({
+      const card = await cards.primary.createCard({
         title: schedule.title,
         description: schedule.description,
-        teamId: env.LINEAR_TEAM_ID,
-        labelIds: env.LINEAR_SCHEDULED_LABEL_ID ? [env.LINEAR_SCHEDULED_LABEL_ID] : undefined,
+        labelIds: env.PLANE_SCHEDULED_LABEL_ID
+          ? [env.PLANE_SCHEDULED_LABEL_ID]
+          : env.LINEAR_SCHEDULED_LABEL_ID
+            ? [env.LINEAR_SCHEDULED_LABEL_ID]
+            : undefined,
       });
 
       const runId = await createRun({
-        linearIssueId: issue.id,
-        linearIssueIdentifier: issue.identifier,
+        ...(card.provider === 'linear'
+          ? { linearIssueId: card.id, linearIssueIdentifier: card.identifier }
+          : {}),
+        cardProvider: card.provider,
+        cardId: card.id,
+        cardIdentifier: card.identifier,
+        cardProjectId: card.projectId,
         title: schedule.title,
         scheduleId,
         autoApprove: schedule.autoApprove,
@@ -74,11 +83,11 @@ export async function startScheduleWorker(): Promise<Worker<ScheduleFireData, un
 
       await agentQueue.add(
         'plan',
-        { kind: 'plan', runId, issueId: issue.id },
+        { kind: 'plan', runId, cardProvider: card.provider, cardId: card.id },
         { priority: JOB_PRIORITY.plan },
       );
 
-      log.info({ runId, issue: issue.identifier }, 'scheduled run enfileirado');
+      log.info({ runId, issue: card.identifier }, 'scheduled run enfileirado');
     },
     { connection },
   );

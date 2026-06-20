@@ -1,3 +1,4 @@
+import type { CardProvider } from '@agent-platform/cards';
 import { type ConnectionOptions, Queue } from 'bullmq';
 import { env } from './env.js';
 
@@ -14,9 +15,16 @@ export const connection: ConnectionOptions = {
 };
 
 /** `plan`: roda planning e pausa na aprovação. `resume`: retoma após aprovado. */
-export type AgentJobData =
-  | { kind: 'plan'; runId: string; issueId: string; context?: string }
-  | { kind: 'resume'; runId: string };
+export type PlanJobData = {
+  kind: 'plan';
+  runId: string;
+  cardProvider: CardProvider;
+  cardId: string;
+  issueId?: string;
+  context?: string;
+};
+
+export type AgentJobData = PlanJobData | { kind: 'resume'; runId: string };
 
 export const AGENT_QUEUE = 'agent-runs';
 
@@ -41,3 +49,14 @@ export const agentQueue = new Queue<AgentJobData, unknown, string>(AGENT_QUEUE, 
     removeOnFail: 500,
   },
 });
+
+export function resolvePlanJobCardRef(
+  job: Pick<PlanJobData, 'cardProvider' | 'cardId' | 'issueId'>,
+): { cardProvider: CardProvider; cardId: string } {
+  const cardProvider = job.cardProvider ?? 'linear';
+  const cardId = job.cardId ?? job.issueId;
+  if (!cardId) {
+    throw new Error('Plan job is missing cardId');
+  }
+  return { cardProvider, cardId };
+}

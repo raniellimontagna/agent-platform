@@ -1,3 +1,4 @@
+import type { CardGateway, CardGatewayRegistry, CardProvider } from '@agent-platform/cards';
 import {
   type GithubGateway,
   type RepoRef,
@@ -6,15 +7,22 @@ import {
   parseRepoRef,
 } from '@agent-platform/github';
 import { type AgentGraph, buildAgentGraph, createCheckpointer } from '@agent-platform/graph';
-import { type LinearGateway, createLinearGateway } from '@agent-platform/linear';
 import { type LlmClient, createLlmClient } from '@agent-platform/llm';
+import { createRuntimeCards } from './cards.js';
 import { env } from './env.js';
 import { buildLessonLoader } from './lessonLoader.js';
 import { type WorkerManager, createWorkerManager, parseRunnerUrls } from './workerManager.js';
 
+export interface GraphBinding {
+  provider: CardProvider;
+  cardGateway: CardGateway;
+  doneStateId: string;
+}
+
 export interface Agent {
   graph: AgentGraph;
-  linear: LinearGateway;
+  graphs: Partial<Record<CardProvider, AgentGraph>>;
+  cards: CardGatewayRegistry;
   llm: LlmClient;
   github: GithubGateway;
   workerManager: WorkerManager;
@@ -31,6 +39,35 @@ export function getAgent(): Promise<Agent> {
     agentPromise = init();
   }
   return agentPromise;
+}
+
+export function resolveGraphBinding(
+  input: {
+    cards: CardGatewayRegistry;
+    linearDoneStateId: string;
+    planeDoneStateId?: string;
+  },
+  provider: CardProvider,
+): GraphBinding {
+  return {
+    provider,
+    cardGateway: input.cards.forProvider(provider),
+    doneStateId:
+      provider === 'plane'
+        ? (input.planeDoneStateId ?? input.linearDoneStateId)
+        : input.linearDoneStateId,
+  };
+}
+
+export function resolveAgentGraph(
+  agent: Pick<Agent, 'graphs'>,
+  provider: CardProvider,
+): AgentGraph {
+  const graph = agent.graphs[provider];
+  if (!graph) {
+    throw new Error(`Agent graph not configured for card provider: ${provider}`);
+  }
+  return graph;
 }
 
 function isGeneratedRepo(repo: RepoRef | undefined): boolean {
@@ -68,7 +105,7 @@ async function init(): Promise<Agent> {
     timeoutMs: env.LLM_TIMEOUT_MS,
     maxRetries: env.LLM_MAX_RETRIES,
   });
-  const linear = createLinearGateway(env.LINEAR_API_KEY);
+  const cards = createRuntimeCards(env);
   const checkpointer = await createCheckpointer(env.DATABASE_URL);
 
   // Injeta a credencial do GitHub na URL de clone (repo pode ser privado).
@@ -111,27 +148,57 @@ async function init(): Promise<Agent> {
   const repo = `${repoRef.owner}/${repoRef.repo}`;
   const loadLessons = buildLessonLoader(repo);
 
-  const graph = buildAgentGraph(
-    {
-      llm,
-      linear,
-      github,
-      testCommands,
-      loadLessons,
-      maxReviewRounds: env.AGENT_MAX_REVIEW_ROUNDS,
-      maxCostPerRunUsd: env.AGENT_MAX_COST_PER_RUN_USD,
-      doneStateId: env.LINEAR_DONE_STATE_ID,
-      cloudflareDeployGeneratedLandings: env.CLOUDFLARE_DEPLOY_GENERATED_LANDINGS,
-      generatedReposOwner: env.GENERATED_REPOS_OWNER,
-      cloudflareDeployCommands: env.CLOUDFLARE_DEPLOY_COMMANDS.split(/\n|\\n/)
-        .map((c) => c.trim())
-        .filter(Boolean),
-      runnerRepoUrl: repoUrl,
-      resolveRunnerRepoUrl: resolveRepoUrl,
-      dispatch: workerManager.dispatch,
-    },
-    checkpointer,
+  const enabledProviders = Array.from(
+    new Set<CardProvider>([
+      env.CARD_PRIMARY_PROVIDER,
+      ...env.CARD_EXTRA_PROVIDERS.split(',')
+        .map((provider) => provider.trim())
+        .filter(
+          (provider): provider is CardProvider => provider === 'plane' || provider === 'linear',
+        ),
+    ]),
   );
+  const baseGraphDeps = {
+    llm,
+    github,
+    testCommands,
+    loadLessons,
+    maxReviewRounds: env.AGENT_MAX_REVIEW_ROUNDS,
+    maxCostPerRunUsd: env.AGENT_MAX_COST_PER_RUN_USD,
+    cloudflareDeployGeneratedLandings: env.CLOUDFLARE_DEPLOY_GENERATED_LANDINGS,
+    generatedReposOwner: env.GENERATED_REPOS_OWNER,
+    cloudflareDeployCommands: env.CLOUDFLARE_DEPLOY_COMMANDS.split(/\n|\\n/)
+      .map((c) => c.trim())
+      .filter(Boolean),
+    runnerRepoUrl: repoUrl,
+    resolveRunnerRepoUrl: resolveRepoUrl,
+    dispatch: workerManager.dispatch,
+  } as const;
+  const graphs: Partial<Record<CardProvider, AgentGraph>> = {};
 
-  return { graph, linear, llm, github, workerManager };
+  for (const provider of enabledProviders) {
+    const binding = resolveGraphBinding(
+      {
+        cards,
+        linearDoneStateId: env.LINEAR_DONE_STATE_ID,
+        planeDoneStateId: env.PLANE_DONE_STATE_ID,
+      },
+      provider,
+    );
+    graphs[provider] = buildAgentGraph(
+      {
+        ...baseGraphDeps,
+        cards: binding.cardGateway,
+        doneStateId: binding.doneStateId,
+      },
+      checkpointer,
+    );
+  }
+
+  const graph = graphs[cards.primary.provider] ?? graphs[env.CARD_PRIMARY_PROVIDER];
+  if (!graph) {
+    throw new Error(`Primary graph not configured: ${cards.primary.provider}`);
+  }
+
+  return { graph, graphs, cards, llm, github, workerManager };
 }

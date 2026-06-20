@@ -64,8 +64,9 @@ export function renderRegistryPage(input: { agents: Agent[]; tools: Tool[]; runs
   const runRows = input.runs
     .map((run) => {
       const agent = run.agentId ? agentsById.get(run.agentId) : undefined;
+      const cardIdentifier = run.cardIdentifier ?? run.linearIssueIdentifier;
       return `<tr>
-        <td><strong>${escapeHtml(run.linearIssueIdentifier)}</strong><span>${escapeHtml(run.title)}</span></td>
+        <td><strong>${escapeHtml(cardIdentifier)}</strong><span>${escapeHtml(run.title)}</span></td>
         <td><span class="pill ${statusClass(run.status)}">${escapeHtml(run.status)}</span></td>
         <td>${agent ? escapeHtml(`${agent.key} ${formatVersion(agent.version)}`) : '-'}</td>
         <td>${escapeHtml(run.verdict ?? '-')}</td>

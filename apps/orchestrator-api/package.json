@@ -12,12 +12,16 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:deploy": "node dist/db/migrate.js",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "plane:bootstrap": "tsx src/planeBootstrapCli.ts",
+    "plane:migrate-linear": "tsx src/planeMigrationCli.ts"
   },
   "dependencies": {
+    "@agent-platform/cards": "workspace:*",
     "@agent-platform/github": "workspace:*",
     "@agent-platform/graph": "workspace:*",
     "@agent-platform/linear": "workspace:*",
+    "@agent-platform/plane": "workspace:*",
     "@agent-platform/llm": "workspace:*",
     "@agent-platform/memory": "workspace:*",
     "@agent-platform/policy": "workspace:*",
