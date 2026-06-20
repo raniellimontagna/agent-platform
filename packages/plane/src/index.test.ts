@@ -82,4 +82,104 @@ describe('createPlaneGateway', () => {
       external_id: 'MAC-121',
     });
   });
+
+  it('accepts empty responses for write paths', async () => {
+    const responses = [
+      new Response(null, { status: 204, statusText: 'No Content' }),
+      new Response(null, { status: 204, statusText: 'No Content' }),
+    ];
+    const fetchMock = vi.fn().mockImplementation(async () => responses.shift()!);
+    globalThis.fetch = fetchMock as typeof fetch;
+
+    const gateway = createPlaneGateway({
+      baseUrl: 'http://plane.local',
+      apiKey: 'key',
+      workspaceSlug: 'attodev',
+      projectId: 'project-1',
+    });
+
+    await expect(gateway.comment('work-3', 'Body')).resolves.toBeUndefined();
+    await expect(gateway.setCardState('work-3', 'state-2')).resolves.toBeUndefined();
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      'http://plane.local/api/v1/workspaces/attodev/projects/project-1/work-items/work-3/comments/',
+      expect.objectContaining({ method: 'POST' }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      'http://plane.local/api/v1/workspaces/attodev/projects/project-1/work-items/work-3/',
+      expect.objectContaining({ method: 'PATCH' }),
+    );
+  });
+
+  it('surfaces Plane API errors with response details', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue(
+      new Response('boom', { status: 500, statusText: 'Internal Server Error' }),
+    ) as typeof fetch;
+
+    const gateway = createPlaneGateway({
+      baseUrl: 'http://plane.local',
+      apiKey: 'key',
+      workspaceSlug: 'attodev',
+      projectId: 'project-1',
+    });
+
+    await expect(gateway.getCard('work-4')).rejects.toThrow(
+      'Plane API 500 Internal Server Error: boom',
+    );
+  });
+
+  it('looks up cards by external provenance using encoded query params and normalized results', async () => {
+    const calls: Array<{ url: string; init: RequestInit }> = [];
+    globalThis.fetch = vi.fn().mockImplementation(async (url: string, init: RequestInit) => {
+      calls.push({ url, init });
+      return new Response(
+        JSON.stringify({
+          results: [
+            {
+              id: 'work-5',
+              sequence_id: 12,
+              name: 'Lookup result',
+              description_stripped: null,
+              labels: ['ready', { name: 'linked' }, { name: '' }],
+              project_identifier: 'PROJ',
+            },
+          ],
+        }),
+        {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        },
+      );
+    });
+
+    const gateway = createPlaneGateway({
+      baseUrl: 'http://plane.local',
+      apiKey: 'key',
+      workspaceSlug: 'attodev',
+      projectId: 'project-1',
+    });
+
+    await expect(
+      gateway.listCardsByExternal({
+        externalSource: 'linear board',
+        externalId: 'MAC/121',
+      }),
+    ).resolves.toEqual([
+      {
+        provider: 'plane',
+        id: 'work-5',
+        identifier: 'PROJ-12',
+        title: 'Lookup result',
+        description: '',
+        labels: ['ready', 'linked'],
+        projectId: 'project-1',
+      },
+    ]);
+
+    expect(calls[0]?.url).toBe(
+      'http://plane.local/api/v1/workspaces/attodev/projects/project-1/work-items/?external_source=linear%20board&external_id=MAC%2F121',
+    );
+  });
 });

@@ -39,14 +39,21 @@ export function createPlaneGateway(config: PlaneConfig): PlaneGateway {
     'x-api-key': config.apiKey,
   };
 
-  async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  async function request<T>(
+    path: string,
+    init?: RequestInit & { expectJson?: boolean },
+  ): Promise<T> {
+    const { expectJson = true, ...requestInit } = init ?? {};
     const res = await fetch(`${base}${path}`, {
-      ...init,
-      headers: { ...headers, ...(init?.headers ?? {}) },
+      ...requestInit,
+      headers: { ...headers, ...(requestInit.headers ?? {}) },
     });
     if (!res.ok) {
       const body = await res.text().catch(() => '');
       throw new Error(`Plane API ${res.status} ${res.statusText}: ${body}`);
+    }
+    if (!expectJson) {
+      return undefined as T;
     }
     return (await res.json()) as T;
   }
@@ -61,19 +68,21 @@ export function createPlaneGateway(config: PlaneConfig): PlaneGateway {
     },
 
     async comment(cardId, body) {
-      await request(`/projects/${config.projectId}/work-items/${cardId}/comments/`, {
+      await request<void>(`/projects/${config.projectId}/work-items/${cardId}/comments/`, {
         method: 'POST',
         body: JSON.stringify({
           comment_html: markdownToPlaneHtml(body),
           access: 'EXTERNAL',
         }),
+        expectJson: false,
       });
     },
 
     async setCardState(cardId, stateId) {
-      await request(`/projects/${config.projectId}/work-items/${cardId}/`, {
+      await request<void>(`/projects/${config.projectId}/work-items/${cardId}/`, {
         method: 'PATCH',
         body: JSON.stringify({ state: stateId }),
+        expectJson: false,
       });
     },
 
