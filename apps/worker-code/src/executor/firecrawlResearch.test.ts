@@ -88,6 +88,67 @@ describe('runFirecrawlResearchJob', () => {
     expect(result.commands).toEqual([]);
   });
 
+  it('bloqueia URL interna antes de chamar Firecrawl', async () => {
+    const fetchImpl = vi.fn(async () => new Response('{}', { status: 200 })) as typeof fetch;
+
+    const result = await runFirecrawlResearchJob(
+      {
+        ...baseJob,
+        description: 'Colete http://169.254.169.254/latest/meta-data.',
+      },
+      {
+        apiKey: 'fc-test',
+        baseUrl: 'https://api.firecrawl.dev',
+        timeoutMs: 10_000,
+        fetchImpl,
+      },
+    );
+
+    expect(result.status).toBe('failed');
+    expect(result.error).toContain('metadata');
+    expect(result.commands).toEqual([]);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it('clampa timeout e número de páginas ao contrato de scraping', async () => {
+    const fetchImpl = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            success: true,
+            data: {
+              summary: 'Resumo.',
+              metadata: { title: 'Docs', sourceURL: 'https://example.com/docs' },
+            },
+          }),
+          { status: 200 },
+        ),
+    ) as typeof fetch;
+
+    const result = await runFirecrawlResearchJob(
+      {
+        ...baseJob,
+        description:
+          'Use https://example.com/1 https://example.com/2 https://example.com/3 https://example.com/4 https://example.com/5 https://example.com/6',
+      },
+      {
+        apiKey: 'fc-test',
+        baseUrl: 'https://api.firecrawl.dev',
+        timeoutMs: 999_999,
+        maxPages: 3,
+        maxOutputChars: 2_000,
+        rateLimitPerMinute: 4,
+        fetchImpl,
+      },
+    );
+
+    expect(result.status).toBe('succeeded');
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+    expect(JSON.parse(String(fetchImpl.mock.calls[0]?.[1]?.body))).toEqual(
+      expect.objectContaining({ timeout: 60_000 }),
+    );
+  });
+
   it('falha quando nenhuma fonte retorna conteúdo', async () => {
     const fetchImpl = vi.fn(
       async () =>

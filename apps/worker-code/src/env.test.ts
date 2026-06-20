@@ -21,6 +21,10 @@ describe('envSchema', () => {
     expect(env.HIGGSFIELD_AUTO_GENERATE_LANDING_MEDIA).toBe(true);
     expect(env.FIRECRAWL_BASE_URL).toBe('https://api.firecrawl.dev');
     expect(env.FIRECRAWL_TIMEOUT_MS).toBe(60_000);
+    expect(env.SCRAPING_MAX_PAGES).toBe(5);
+    expect(env.SCRAPING_MAX_OUTPUT_CHARS).toBe(20_000);
+    expect(env.SCRAPING_RATE_LIMIT_PER_MINUTE).toBe(6);
+    expect(env.PLAYWRIGHT_TIMEOUT_MS).toBe(30_000);
   });
 
   it('trata FIRECRAWL_API_KEY vazia como ausente', () => {

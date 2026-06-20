@@ -11,6 +11,7 @@ import { DATA_COLLECTOR_AGENT_KEY, runFirecrawlResearchJob } from './firecrawlRe
 import { commitAll, diffAgainst, pushBranch } from './git.js';
 import { generateHiggsfieldImage, parsePreferredModels } from './higgsfieldTool.js';
 import { runLandingQualityGate } from './landingQuality.js';
+import { runPlaywrightResearchJob, shouldUsePlaywrightResearch } from './playwrightResearch.js';
 import { runSandboxedCommand } from './sandbox.js';
 import { summarizeFailureTail } from './validation.js';
 import { cleanupWorktree, prepareWorktree } from './worktree.js';
@@ -185,10 +186,21 @@ export async function runJob(job: Job): Promise<JobResult> {
   try {
     if (job.agentKey === DATA_COLLECTOR_AGENT_KEY) {
       log.info('running data collector research job');
+      if (shouldUsePlaywrightResearch(job)) {
+        return await runPlaywrightResearchJob(job, {
+          timeoutMs: env.PLAYWRIGHT_TIMEOUT_MS,
+          maxPages: env.SCRAPING_MAX_PAGES,
+          maxOutputChars: env.SCRAPING_MAX_OUTPUT_CHARS,
+          rateLimitPerMinute: env.SCRAPING_RATE_LIMIT_PER_MINUTE,
+        });
+      }
       return await runFirecrawlResearchJob(job, {
         apiKey: env.FIRECRAWL_API_KEY,
         baseUrl: env.FIRECRAWL_BASE_URL,
         timeoutMs: env.FIRECRAWL_TIMEOUT_MS,
+        maxPages: env.SCRAPING_MAX_PAGES,
+        maxOutputChars: env.SCRAPING_MAX_OUTPUT_CHARS,
+        rateLimitPerMinute: env.SCRAPING_RATE_LIMIT_PER_MINUTE,
       });
     }
 
