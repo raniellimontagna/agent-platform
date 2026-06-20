@@ -56,7 +56,9 @@ export async function runLandingQualityGate(
     return { passed: true, results: [], failureTail: '' };
   }
 
-  const failures = evaluateLandingQuality(contents);
+  const failures = evaluateLandingQuality(contents, {
+    requiresMotionDev: await projectHasMotionDependency(input.dir),
+  });
   const result: CommandResult = {
     command: 'landing-quality-gate',
     exitCode: failures.length > 0 ? 1 : 0,
@@ -72,7 +74,10 @@ export async function runLandingQualityGate(
   };
 }
 
-export function evaluateLandingQuality(source: string): string[] {
+export function evaluateLandingQuality(
+  source: string,
+  opts: { requiresMotionDev?: boolean } = {},
+): string[] {
   const failures: string[] = [];
   const lower = source.toLowerCase();
   const sectionCount = countMatches(source, /<section\b|data-section=|id=["'][a-z0-9-]+["']/gi);
@@ -82,9 +87,13 @@ export function evaluateLandingQuality(source: string): string[] {
     source,
     /<img\b|<picture\b|\/generated\/|background(?:Image|-image)|hero(?:Image|Media|Visual)/g,
   );
-  const motionCount = countMatches(
+  const motionDevCount = countMatches(
     source,
-    /prefers-reduced-motion|motion\/react|framer-motion|gsap|@keyframes|transition|animation/gi,
+    /from ["']motion(?:\/react)?["']|from ["']framer-motion["']|\b(?:animate|inView|scroll|stagger|useReducedMotion|useScroll)\s*\(/gi,
+  );
+  const motionFallbackCount = countMatches(
+    source,
+    /prefers-reduced-motion|@keyframes|transition|animation/gi,
   );
   const textLength = stripCode(source).replace(/\s+/g, ' ').trim().length;
 
@@ -94,7 +103,11 @@ export function evaluateLandingQuality(source: string): string[] {
     failures.push(`landing must expose at least 2 conversion CTAs; found ${ctaCount}`);
   if (faqCount < 1) failures.push('landing must include an FAQ/objection-handling section');
   if (mediaCount < 1) failures.push('landing must include a real media/visual asset reference');
-  if (motionCount < 1) {
+  if (opts.requiresMotionDev && motionDevCount < 1) {
+    failures.push(
+      'landing project has `motion`; use real Motion APIs/components, not CSS-only transitions',
+    );
+  } else if (!opts.requiresMotionDev && motionFallbackCount < 1) {
     failures.push(
       'landing must include tasteful motion or reduced-motion-aware transition styling',
     );
@@ -112,6 +125,19 @@ export function evaluateLandingQuality(source: string): string[] {
   }
 
   return failures;
+}
+
+async function projectHasMotionDependency(dir: string): Promise<boolean> {
+  try {
+    const raw = await readFile(join(dir, 'package.json'), 'utf8');
+    const pkg = JSON.parse(raw) as {
+      dependencies?: Record<string, string>;
+      devDependencies?: Record<string, string>;
+    };
+    return Boolean(pkg.dependencies?.motion ?? pkg.devDependencies?.motion);
+  } catch {
+    return false;
+  }
 }
 
 async function readCandidateFiles(dir: string, paths: string[]): Promise<string> {

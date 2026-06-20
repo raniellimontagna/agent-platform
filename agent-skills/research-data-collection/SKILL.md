@@ -38,6 +38,10 @@ Return a compact research pack with:
 - extracted facts with citations/source IDs;
 - competitor claims, offers, pricing, proof, objections, and audience language
   when relevant;
+- contact and conversion channels when relevant, especially official website,
+  Instagram, WhatsApp, phone, email, maps/location, booking links, and whether
+  each channel is validated, user-provided, inferred, inaccessible, or pending
+  manual confirmation;
 - SEO terms/entities and content gaps when relevant;
 - screenshots or artifacts when dynamic/visual evidence matters;
 - limitations, inaccessible sources, and confidence;
@@ -51,5 +55,9 @@ When supporting LP generation, prioritize:
 - exact product/service positioning;
 - proof points, testimonials, case studies, integrations, metrics, and pricing;
 - competitor differentiation;
+- Instagram profile, WhatsApp/contact link, phone, email, map/location, and
+  booking/contact channels. Mark each as validated, informed by the user,
+  inferred, inaccessible, or pending manual confirmation. Never invent a
+  WhatsApp number;
 - search terms, entity language, FAQs, objections, and comparison angles;
 - visual references that clarify product category and trust expectations.

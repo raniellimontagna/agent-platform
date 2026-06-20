@@ -36,7 +36,11 @@ the landing-page skill bundle.
    generation and save production assets into the repo; otherwise ship explicit
    asset slots, prompts, dimensions, alt text, and fallback styling.
 9. Add motion only when it improves attention, comprehension, or perceived
-   quality; respect reduced-motion preferences.
+   quality; respect reduced-motion preferences. If the project has the
+   `motion` package, use Motion (`motion/react` components/hooks or the
+   `motion` DOM APIs such as `animate`, `inView`, `scroll`, or `stagger`) for
+   at least the hero and section reveal choreography. CSS-only transitions do
+   not satisfy this requirement when Motion is available.
 10. Use existing design primitives first. Add dependencies only when the repo
    already uses them or the plan explicitly allows it.
 11. Before finishing, verify every CTA `href` points to an existing section id
@@ -51,6 +55,14 @@ the landing-page skill bundle.
 - If Instagram, Facebook, LinkedIn, or similar sources were provided but not
   validated, label them as "informados" / "pendentes de validação manual" and
   keep them out of primary CTA/reference claims.
+- When Instagram or WhatsApp/contact links are available from the user,
+  research pack, or validated public source, include them as visible contact
+  paths in the header, final CTA, or footer. Use `@solar-icons/react` for UI
+  icons and `simple-icons` for brand icons when the project has those packages.
+- For WhatsApp, use only a confirmed phone/link (`wa.me`, `api.whatsapp.com`, or
+  a user-provided number). Do not invent phone numbers. If a WhatsApp channel is
+  expected but unavailable, include a visible "WhatsApp pendente de validação"
+  note or non-primary placeholder, not a fake link.
 - Do not use JSON-LD `sameAs` for Serasa, directories, search-result pages, or
   social profiles that were not validated as official identity. Use neutral
   visible references in the page instead.
@@ -93,8 +105,9 @@ the landing-page skill bundle.
   generated-media fallback, CTA anchor integrity, evidence-safe schema, and
   build validation.
 - Visual: named creative direction, non-repetitive section layouts, at least one
-  meaningful media asset, tasteful motion/reduced-motion support, and enough
-  crawlable copy to read like a complete client-ready page.
+  meaningful media asset, real Motion-powered animation when `motion` exists,
+  reduced-motion support, and enough crawlable copy to read like a complete
+  client-ready page.
 
 ## Style Recipes
 
@@ -109,6 +122,11 @@ visual language across generations.
 - Tests should assert evidence-sensitive SEO behavior: no unvalidated `sameAs`,
   no placeholder copy, hardened external links, and generated media referenced
   with the real file extension.
+- Tests should assert that Motion is actually wired when the dependency exists,
+  not merely that CSS includes `transition` or `@keyframes`.
+- Tests should assert Instagram/WhatsApp contact behavior when those channels
+  are present in the source data, while preserving "pending validation" language
+  for unverified channels.
 
 ## Output Rules
 
