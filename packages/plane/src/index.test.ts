@@ -227,4 +227,65 @@ describe('createPlaneGateway', () => {
       'http://plane.local/api/v1/workspaces/attodev/projects/project-1/work-items/work-5/comments/?per_page=100&cursor=cursor-2',
     );
   });
+
+  it('lists project labels and states across paginated responses', async () => {
+    const calls: Array<{ url: string; init: RequestInit }> = [];
+    globalThis.fetch = vi.fn().mockImplementation(async (url: string, init: RequestInit) => {
+      calls.push({ url, init });
+      const responseByUrl = new Map<string, unknown>([
+        [
+          'http://plane.local/api/v1/workspaces/attodev/projects/project-1/labels/?per_page=100',
+          {
+            next_cursor: 'label-cursor-2',
+            results: [{ id: 'label-1', name: 'ai-ready' }],
+          },
+        ],
+        [
+          'http://plane.local/api/v1/workspaces/attodev/projects/project-1/labels/?per_page=100&cursor=label-cursor-2',
+          {
+            next_cursor: null,
+            results: [{ id: 'label-2', name: 'Customer Escalation' }],
+          },
+        ],
+        [
+          'http://plane.local/api/v1/workspaces/attodev/projects/project-1/states/?per_page=100',
+          {
+            next_cursor: 'state-cursor-2',
+            results: [{ id: 'state-1', name: 'Backlog' }],
+          },
+        ],
+        [
+          'http://plane.local/api/v1/workspaces/attodev/projects/project-1/states/?per_page=100&cursor=state-cursor-2',
+          {
+            next_cursor: null,
+            results: [{ id: 'state-2', name: 'Unstarted' }],
+          },
+        ],
+      ]);
+      const payload = responseByUrl.get(url);
+      if (!payload) {
+        throw new Error(`Unexpected request: ${url}`);
+      }
+      return new Response(JSON.stringify(payload), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    });
+
+    const gateway = createPlaneGateway({
+      baseUrl: 'http://plane.local',
+      apiKey: 'key',
+      workspaceSlug: 'attodev',
+      projectId: 'project-1',
+    });
+
+    await expect(gateway.listLabels()).resolves.toEqual([
+      { id: 'label-1', name: 'ai-ready' },
+      { id: 'label-2', name: 'Customer Escalation' },
+    ]);
+    await expect(gateway.listStates()).resolves.toEqual([
+      { id: 'state-1', name: 'Backlog' },
+      { id: 'state-2', name: 'Unstarted' },
+    ]);
+  });
 });

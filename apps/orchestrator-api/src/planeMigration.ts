@@ -7,14 +7,15 @@ export interface LinearCardSnapshot {
   description: string;
   labels: string[];
   priority: 'urgent' | 'high' | 'medium' | 'low' | 'none';
+  state: string;
   url: string;
 }
 
 export interface PlaneMigrationInput {
-  plane: Pick<PlaneGateway, 'listCardsByExternal' | 'createCard' | 'comment'> &
-    Partial<Pick<PlaneGateway, 'listComments'>>;
+  plane: Pick<PlaneGateway, 'listCardsByExternal' | 'createCard' | 'comment' | 'listComments'>;
   linearCards: LinearCardSnapshot[];
   labelIds: Record<string, string>;
+  stateIdsByName: Record<string, string>;
 }
 
 export interface PlaneMigrationResult {
@@ -28,21 +29,34 @@ function buildProvenanceComment(card: LinearCardSnapshot): string {
   return `Migrated from Linear: [${card.id}](${card.url}).`;
 }
 
+const LINEAR_STATE_NAME_CANDIDATES: Record<string, string[]> = {
+  Backlog: ['Backlog'],
+  Todo: ['Todo', 'Unstarted'],
+  'In Progress': ['In Progress', 'Started'],
+};
+
+function resolvePlaneStateId(
+  linearStateName: string,
+  stateIdsByName: Record<string, string>,
+): string | undefined {
+  const candidates = LINEAR_STATE_NAME_CANDIDATES[linearStateName] ?? [linearStateName];
+  for (const candidate of candidates) {
+    const stateId = stateIdsByName[candidate];
+    if (stateId) {
+      return stateId;
+    }
+  }
+  return undefined;
+}
+
 async function ensureProvenanceComment(input: {
   plane: PlaneMigrationInput['plane'];
   cardId: string;
   commentBody: string;
 }): Promise<boolean> {
   const expectedHtml = markdownToPlaneHtml(input.commentBody);
-  const existingComments = input.plane.listComments
-    ? await input.plane.listComments(input.cardId)
-    : null;
-
-  if (existingComments?.includes(expectedHtml)) {
-    return false;
-  }
-
-  if (existingComments === null && input.plane.listComments === undefined) {
+  const existingComments = await input.plane.listComments(input.cardId);
+  if (existingComments.includes(expectedHtml)) {
     return false;
   }
 
@@ -80,6 +94,7 @@ export async function migrateLinearCardsToPlane(
         continue;
       }
 
+      const stateId = resolvePlaneStateId(card.state, input.stateIdsByName);
       const createdCard = await input.plane.createCard({
         title: card.title,
         description: card.description,
@@ -87,6 +102,7 @@ export async function migrateLinearCardsToPlane(
         labelIds: card.labels
           .map((label) => input.labelIds[label])
           .filter((labelId): labelId is string => Boolean(labelId)),
+        stateId,
         externalSource: 'linear',
         externalId: card.id,
       });

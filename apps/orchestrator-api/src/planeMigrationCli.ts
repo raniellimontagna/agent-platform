@@ -20,6 +20,9 @@ const LIST_LINEAR_ISSUES_QUERY = `
         description
         priority
         url
+        state {
+          name
+        }
         labels(first: 100) {
           nodes {
             name
@@ -36,6 +39,9 @@ interface LinearIssueNode {
   description?: string | null;
   priority: number;
   url: string;
+  state?: {
+    name: string;
+  } | null;
   labels?: {
     nodes: Array<{ name: string }>;
   };
@@ -84,6 +90,10 @@ function toPlanePriority(priority: number): LinearCardSnapshot['priority'] {
     default:
       return 'none';
   }
+}
+
+function toNameIdMap(items: Array<{ id: string; name: string }>): Record<string, string> {
+  return Object.fromEntries(items.map((item) => [item.name, item.id]));
 }
 
 async function listActiveLinearCards(
@@ -139,6 +149,7 @@ async function listActiveLinearCards(
     description: issue.description ?? '',
     labels: issue.labels?.nodes.map((label) => label.name) ?? [],
     priority: toPlanePriority(issue.priority),
+    state: issue.state?.name ?? '',
     url: issue.url,
   }));
 }
@@ -156,12 +167,20 @@ export async function main() {
     workspaceSlug: env.PLANE_WORKSPACE_SLUG,
     projectId: bootstrap.projectId,
   });
-  const linearCards = await listActiveLinearCards(config.linearApiKey, config.linearTeamId);
+  const [projectLabels, projectStates, linearCards] = await Promise.all([
+    plane.listLabels(),
+    plane.listStates(),
+    listActiveLinearCards(config.linearApiKey, config.linearTeamId),
+  ]);
 
   return migrateLinearCardsToPlane({
     plane,
     linearCards,
-    labelIds: bootstrap.labelIds,
+    labelIds: {
+      ...toNameIdMap(projectLabels),
+      ...bootstrap.labelIds,
+    },
+    stateIdsByName: toNameIdMap(projectStates),
   });
 }
 
