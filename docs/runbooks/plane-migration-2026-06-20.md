@@ -9,6 +9,7 @@ Plane project ID: `<uuid>`
 - `ai-ready`: `<uuid>`
 - `approved`: `<uuid>`
 - `auto-merge`: `<uuid>`
+- `scheduled`: `<uuid>`
 - `repo:create`: `<uuid>`
 - `workflow:landing-page`: `<uuid>`
 - `agent:reviewer`: `<uuid>`
