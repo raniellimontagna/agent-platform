@@ -69,20 +69,20 @@ function verifySignature(rawBody: string, signature: string | undefined, secret:
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-function issueLabelNames(d: IssueData | undefined): string[] {
-  return d?.labels?.map((l) => l.name) ?? [];
+function issueLabelNames(d: IssueData | undefined): string[] | undefined {
+  return d?.labels?.map((l) => l.name);
 }
 
-function issueLabelIds(d: IssueData | undefined): string[] {
-  return d?.labelIds ?? [];
+function issueLabelIds(d: IssueData | undefined): string[] | undefined {
+  return d?.labelIds;
 }
 
-function planeLabelNames(labels: PlaneLabel[] | undefined): string[] {
-  return (labels ?? []).map((label) => label.name ?? '').filter(Boolean);
+function planeLabelNames(labels: PlaneLabel[] | undefined): string[] | undefined {
+  return labels?.map((label) => label.name ?? '').filter(Boolean);
 }
 
-function planeLabelIds(labels: PlaneLabel[] | undefined): string[] {
-  return (labels ?? []).map((label) => label.id ?? '').filter(Boolean);
+function planeLabelIds(labels: PlaneLabel[] | undefined): string[] | undefined {
+  return labels?.map((label) => label.id ?? '').filter(Boolean);
 }
 
 function hasLabel(input: { names: string[]; ids: string[]; name: string; id?: string }): boolean {
@@ -200,10 +200,10 @@ webhooks.post('/webhooks/linear', async (c) => {
     return c.json({ ok: true, skipped: true, reason: 'no issue id' });
   }
   const identifier = payload.data?.identifier ?? issueId;
-  const currentNames = issueLabelNames(payload.data);
-  const currentIds = issueLabelIds(payload.data);
+  const currentNames = issueLabelNames(payload.data) ?? [];
+  const currentIds = issueLabelIds(payload.data) ?? [];
   const previousNames = issueLabelNames(payload.updatedFrom);
-  const previousIds = payload.updatedFrom?.labelIds ?? [];
+  const previousIds = issueLabelIds(payload.updatedFrom);
 
   // Approve via Linear (MAC-22): label `approved` adicionada → retoma o run pausado.
   if (
@@ -286,10 +286,36 @@ webhooks.post('/webhooks/plane', async (c) => {
     return c.json({ ok: true, skipped: true, reason: 'no work item id' });
   }
 
-  const currentNames = planeLabelNames(item.labels);
-  const currentIds = planeLabelIds(item.labels);
+  const currentNames = planeLabelNames(item.labels) ?? [];
+  const currentIds = planeLabelIds(item.labels) ?? [];
   const previousNames = planeLabelNames(payload.updated_from?.labels);
   const previousIds = planeLabelIds(payload.updated_from?.labels);
+
+  if (
+    labelJustAdded({
+      currentNames,
+      currentIds,
+      previousNames,
+      previousIds,
+      action: payload.action,
+      name: APPROVED_LABEL,
+      id: env.PLANE_APPROVED_LABEL_ID,
+    })
+  ) {
+    const run = await findAwaitingApprovalRunForCard('plane', cardId);
+    if (!run) {
+      return c.json({ ok: true, skipped: true, reason: 'nenhum run aguardando aprovação' });
+    }
+    await resolveApproval(run.id, 'approved', 'plane');
+    await updateRunStatus(run.id, 'executing');
+    await agentQueue.add(
+      'resume',
+      { kind: 'resume', runId: run.id },
+      { priority: JOB_PRIORITY.resume },
+    );
+    logger.info({ runId: run.id, issue: planeCardIdentifier(item) }, 'run approved via Plane, resuming');
+    return c.json({ ok: true, resumed: true, runId: run.id });
+  }
 
   if (
     !labelJustAdded({

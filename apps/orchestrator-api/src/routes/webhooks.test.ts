@@ -2,8 +2,14 @@ import { createHmac } from 'node:crypto';
 import { Hono } from 'hono';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { resolveAgentByKey } from '../agents.js';
+import { env } from '../env.js';
 import { agentQueue } from '../queue.js';
-import { createRun } from '../runs.js';
+import {
+  createRun,
+  findAwaitingApprovalRunForCard,
+  resolveApproval,
+  updateRunStatus,
+} from '../runs.js';
 import { webhooks } from './webhooks.js';
 
 vi.mock('../env.js', () => ({
@@ -51,7 +57,11 @@ function signed(body: string) {
   return createHmac('sha256', 'secret').update(body).digest('hex');
 }
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  env.NODE_ENV = 'test';
+  env.PLANE_WEBHOOK_SECRET = 'secret';
+});
 
 describe('POST /webhooks/linear', () => {
   it('seleciona reviewer-agent quando a issue tem label agent:reviewer', async () => {
@@ -264,5 +274,149 @@ describe('POST /webhooks/linear', () => {
       { kind: 'plan', runId: 'run-plane', cardProvider: 'plane', cardId: 'plane-work-1' },
       { priority: 10 },
     );
+  });
+
+  it('POST /webhooks/plane resumes awaiting approval when approved was newly added', async () => {
+    vi.mocked(findAwaitingApprovalRunForCard).mockResolvedValue({ id: 'run-plane-approval' } as never);
+    const body = JSON.stringify({
+      action: 'update',
+      type: 'work_item',
+      data: {
+        id: 'plane-work-2',
+        sequence_id: 2,
+        name: 'Plane approval card',
+        labels: [{ id: 'plane-approved-id', name: 'approved' }],
+        project_id: 'plane-project',
+        project_detail: { identifier: 'AGP' },
+      },
+      updated_from: { labels: [] },
+    });
+
+    const res = await app.request('/webhooks/plane', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-plane-signature': signed(body) },
+      body,
+    });
+
+    expect(res.status).toBe(200);
+    expect(findAwaitingApprovalRunForCard).toHaveBeenCalledWith('plane', 'plane-work-2');
+    expect(resolveApproval).toHaveBeenCalledWith('run-plane-approval', 'approved', 'plane');
+    expect(updateRunStatus).toHaveBeenCalledWith('run-plane-approval', 'executing');
+    expect(agentQueue.add).toHaveBeenCalledWith(
+      'resume',
+      { kind: 'resume', runId: 'run-plane-approval' },
+      { priority: 20 },
+    );
+  });
+
+  it('POST /webhooks/plane skips updates when ai-ready was already present', async () => {
+    const body = JSON.stringify({
+      action: 'update',
+      type: 'work_item',
+      data: {
+        id: 'plane-work-3',
+        sequence_id: 3,
+        name: 'Plane unchanged card',
+        labels: [{ id: 'plane-ai-ready-id', name: 'ai-ready' }],
+        project_id: 'plane-project',
+        project_detail: { identifier: 'AGP' },
+      },
+      updated_from: { labels: [{ id: 'plane-ai-ready-id', name: 'ai-ready' }] },
+    });
+
+    const res = await app.request('/webhooks/plane', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-plane-signature': signed(body) },
+      body,
+    });
+
+    expect(res.status).toBe(200);
+    expect(createRun).not.toHaveBeenCalled();
+    expect(agentQueue.add).not.toHaveBeenCalled();
+  });
+
+  it('POST /webhooks/plane skips updates when previous labels are absent', async () => {
+    const body = JSON.stringify({
+      action: 'update',
+      type: 'work_item',
+      data: {
+        id: 'plane-work-4',
+        sequence_id: 4,
+        name: 'Plane missing prior labels card',
+        labels: [{ id: 'plane-ai-ready-id', name: 'ai-ready' }],
+        project_id: 'plane-project',
+        project_detail: { identifier: 'AGP' },
+      },
+    });
+
+    const res = await app.request('/webhooks/plane', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-plane-signature': signed(body) },
+      body,
+    });
+
+    expect(res.status).toBe(200);
+    expect(createRun).not.toHaveBeenCalled();
+    expect(agentQueue.add).not.toHaveBeenCalled();
+  });
+
+  it('POST /webhooks/plane accepts unsigned payloads without a secret outside production', async () => {
+    vi.mocked(resolveAgentByKey).mockResolvedValue({ id: 'agent-id' } as never);
+    vi.mocked(createRun).mockResolvedValue('run-plane-no-secret');
+    env.PLANE_WEBHOOK_SECRET = undefined as never;
+
+    const body = JSON.stringify({
+      action: 'create',
+      type: 'work_item',
+      data: {
+        id: 'plane-work-5',
+        sequence_id: 5,
+        name: 'Plane unsigned card',
+        labels: [{ id: 'plane-ai-ready-id', name: 'ai-ready' }],
+        project_id: 'plane-project',
+        project_detail: { identifier: 'AGP' },
+      },
+    });
+
+    const res = await app.request('/webhooks/plane', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body,
+    });
+
+    expect(res.status).toBe(200);
+    expect(createRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cardProvider: 'plane',
+        cardId: 'plane-work-5',
+      }),
+    );
+  });
+
+  it('POST /webhooks/plane rejects unsigned payloads in production when secret is absent', async () => {
+    env.NODE_ENV = 'production';
+    env.PLANE_WEBHOOK_SECRET = undefined as never;
+
+    const body = JSON.stringify({
+      action: 'create',
+      type: 'work_item',
+      data: {
+        id: 'plane-work-6',
+        sequence_id: 6,
+        name: 'Plane rejected unsigned card',
+        labels: [{ id: 'plane-ai-ready-id', name: 'ai-ready' }],
+        project_id: 'plane-project',
+        project_detail: { identifier: 'AGP' },
+      },
+    });
+
+    const res = await app.request('/webhooks/plane', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body,
+    });
+
+    expect(res.status).toBe(401);
+    expect(createRun).not.toHaveBeenCalled();
   });
 });
