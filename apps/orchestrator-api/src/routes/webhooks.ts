@@ -56,9 +56,16 @@ interface PlaneWorkItemData {
 
 interface PlanePayload {
   action: string;
-  type: string;
+  type?: string;
+  event?: string;
   data?: PlaneWorkItemData;
   updated_from?: { labels?: PlaneLabel[] };
+  updatedFrom?: { labels?: PlaneLabel[] };
+}
+
+function isPlaneWorkItemWebhook(payload: PlanePayload, eventHeader: string | undefined): boolean {
+  const event = eventHeader ?? payload.event ?? payload.type;
+  return event === 'work_item' || event === 'issue';
 }
 
 function verifySignature(rawBody: string, signature: string | undefined, secret: string): boolean {
@@ -141,8 +148,9 @@ async function handleAiReadyCard(input: {
   let runId: string;
   try {
     runId = await createRun({
-      linearIssueId: input.cardId,
-      linearIssueIdentifier: input.cardIdentifier,
+      ...(input.provider === 'linear'
+        ? { linearIssueId: input.cardId, linearIssueIdentifier: input.cardIdentifier }
+        : {}),
       cardProvider: input.provider,
       cardId: input.cardId,
       cardIdentifier: input.cardIdentifier,
@@ -187,6 +195,10 @@ webhooks.post('/webhooks/linear', async (c) => {
   const rawBody = await c.req.text();
   const signature = c.req.header('linear-signature');
 
+  if (!env.LINEAR_WEBHOOK_SECRET) {
+    logger.warn('Linear webhook received but Linear provider is not configured');
+    return c.json({ error: 'linear provider is not configured' }, 503);
+  }
   if (!verifySignature(rawBody, signature, env.LINEAR_WEBHOOK_SECRET)) {
     logger.warn('Linear webhook with invalid signature rejected');
     return c.json({ error: 'invalid signature' }, 401);
@@ -271,6 +283,7 @@ webhooks.post('/webhooks/linear', async (c) => {
 webhooks.post('/webhooks/plane', async (c) => {
   const rawBody = await c.req.text();
   const signature = c.req.header('x-plane-signature');
+  const eventHeader = c.req.header('x-plane-event');
 
   if (!verifyPlaneSignature(rawBody, signature)) {
     logger.warn('Plane webhook with invalid signature rejected');
@@ -279,7 +292,7 @@ webhooks.post('/webhooks/plane', async (c) => {
 
   const payload = JSON.parse(rawBody) as PlanePayload;
 
-  if (payload.type !== 'work_item') {
+  if (!isPlaneWorkItemWebhook(payload, eventHeader)) {
     return c.json({ ok: true, skipped: true });
   }
 
@@ -291,8 +304,9 @@ webhooks.post('/webhooks/plane', async (c) => {
 
   const currentNames = planeLabelNames(item.labels) ?? [];
   const currentIds = planeLabelIds(item.labels) ?? [];
-  const previousNames = planeLabelNames(payload.updated_from?.labels);
-  const previousIds = planeLabelIds(payload.updated_from?.labels);
+  const previousLabels = payload.updated_from?.labels ?? payload.updatedFrom?.labels;
+  const previousNames = planeLabelNames(previousLabels);
+  const previousIds = planeLabelIds(previousLabels);
 
   if (
     labelJustAdded({

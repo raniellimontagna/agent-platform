@@ -67,8 +67,9 @@ export async function startScheduleWorker(): Promise<Worker<ScheduleFireData, un
       });
 
       const runId = await createRun({
-        linearIssueId: card.id,
-        linearIssueIdentifier: card.identifier,
+        ...(card.provider === 'linear'
+          ? { linearIssueId: card.id, linearIssueIdentifier: card.identifier }
+          : {}),
         cardProvider: card.provider,
         cardId: card.id,
         cardIdentifier: card.identifier,
