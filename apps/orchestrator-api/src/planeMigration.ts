@@ -1,4 +1,3 @@
-import { markdownToPlaneHtml } from '@agent-platform/cards';
 import type { PlaneGateway } from '@agent-platform/plane';
 
 export interface LinearCardSnapshot {
@@ -29,6 +28,27 @@ function buildProvenanceComment(card: LinearCardSnapshot): string {
   return `Migrated from Linear: [${card.id}](${card.url}).`;
 }
 
+function extractProvenanceComment(commentHtml: string): { id: string; url: string } | null {
+  const prefix = '<p>Migrated from Linear: ';
+  const suffix = '.</p>';
+  if (!commentHtml.startsWith(prefix) || !commentHtml.endsWith(suffix)) {
+    return null;
+  }
+
+  const provenanceBody = commentHtml.slice(prefix.length, -suffix.length);
+  const anchorMatch = provenanceBody.match(/^<a href="([^"]+)">([^<]+)<\/a>$/);
+  if (anchorMatch?.[1] && anchorMatch?.[2]) {
+    return { url: anchorMatch[1], id: anchorMatch[2] };
+  }
+
+  const markdownMatch = provenanceBody.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+  if (markdownMatch?.[1] && markdownMatch?.[2]) {
+    return { id: markdownMatch[1], url: markdownMatch[2] };
+  }
+
+  return null;
+}
+
 const LINEAR_STATE_NAME_CANDIDATES: Record<string, string[]> = {
   Backlog: ['Backlog'],
   Todo: ['Todo', 'Unstarted'],
@@ -52,11 +72,16 @@ function resolvePlaneStateId(
 async function ensureProvenanceComment(input: {
   plane: PlaneMigrationInput['plane'];
   cardId: string;
+  card: LinearCardSnapshot;
   commentBody: string;
 }): Promise<boolean> {
-  const expectedHtml = markdownToPlaneHtml(input.commentBody);
   const existingComments = await input.plane.listComments(input.cardId);
-  if (existingComments.includes(expectedHtml)) {
+  if (
+    existingComments.some((commentHtml) => {
+      const provenance = extractProvenanceComment(commentHtml);
+      return provenance?.id === input.card.id && provenance?.url === input.card.url;
+    })
+  ) {
     return false;
   }
 
@@ -86,6 +111,7 @@ export async function migrateLinearCardsToPlane(
           await ensureProvenanceComment({
             plane: input.plane,
             cardId: existingCard.id,
+            card,
             commentBody: provenanceComment,
           })
         ) {
