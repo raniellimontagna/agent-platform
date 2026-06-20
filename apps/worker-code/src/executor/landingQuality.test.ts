@@ -26,6 +26,18 @@ describe('evaluateLandingQuality', () => {
     expect(evaluateLandingQuality(richLanding)).toEqual([]);
   });
 
+  it('exige Motion real quando o projeto tem a dependência motion', () => {
+    expect(evaluateLandingQuality(richLanding, { requiresMotionDev: true })).toEqual(
+      expect.arrayContaining([expect.stringContaining('use real Motion APIs')]),
+    );
+
+    expect(
+      evaluateLandingQuality(`${richLanding}\nimport { animate, inView } from "motion";\n`, {
+        requiresMotionDev: true,
+      }),
+    ).toEqual([]);
+  });
+
   it('reprova landing rasa e genérica', () => {
     const failures = evaluateLandingQuality(`
       <section id="hero"><a href="#contato">Começar</a></section>
@@ -76,5 +88,24 @@ describe('runLandingQualityGate', () => {
 
     expect(result.passed).toBe(false);
     expect(result.failureTail).toContain('landing-quality-gate');
+  });
+
+  it('detecta dependência motion no package.json e exige uso real da biblioteca', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'landing-quality-'));
+    await writeFile(
+      join(dir, 'package.json'),
+      JSON.stringify({ dependencies: { motion: '12.40.0' } }),
+      'utf8',
+    );
+    await writeFile(join(dir, 'src-page.astro'), richLanding, 'utf8');
+
+    const result = await runLandingQualityGate({
+      dir,
+      filesChanged: ['src-page.astro'],
+      agentKey: 'landing-page-agent',
+    });
+
+    expect(result.passed).toBe(false);
+    expect(result.failureTail).toContain('use real Motion APIs');
   });
 });

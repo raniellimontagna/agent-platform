@@ -12,6 +12,10 @@ stateful UI, forms, calculators, carousels, dashboards, and reusable components.
 
 - Prefer `.astro` routes, layouts, and static content for the landing page shell.
 - Prefer React components only where interactivity or component state is useful.
+- If the repository includes `motion`, add a small React island or component for
+  Motion-powered choreography instead of leaving an unused hook/component. Use
+  `client:load` or `client:visible` intentionally, keep static copy crawlable in
+  Astro, and let the island progressively enhance existing DOM sections.
 - Keep static sections server-rendered by Astro when possible.
 - Choose one rendered source of truth for the landing page. Do not maintain a
   full Astro implementation and a full React implementation in parallel.
@@ -40,3 +44,6 @@ stateful UI, forms, calculators, carousels, dashboards, and reusable components.
 - Prefer static generation for landing pages unless the product needs request-time data.
 - Keep above-the-fold content fast, semantic, and crawlable.
 - Ensure forms and CTAs remain usable without fragile animation timing.
+- Do not count CSS-only `transition`, `animation`, or `@keyframes` as the Motion
+  implementation when `motion` is installed. There must be a real import from
+  `motion` or `motion/react` and rendered/hydrated behavior.
