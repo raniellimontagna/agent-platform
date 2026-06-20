@@ -3,6 +3,7 @@
   "agentSkills": {
     "landing-page-agent": [
       "landing-page-production",
+      "landing-page-style-recipes",
       "frontend-design",
       "ui-ux-pro-max",
       "accessibility-wcag",
@@ -19,6 +20,11 @@
       "name": "landing-page-production",
       "path": "agent-skills/landing-page-production/SKILL.md",
       "description": "Build complete, conversion-focused landing pages quickly inside the existing app."
+    },
+    {
+      "name": "landing-page-style-recipes",
+      "path": "agent-skills/landing-page-production/references/style-recipes.md",
+      "description": "Creative direction recipes for visually distinct, complete landing pages."
     },
     {
       "name": "frontend-design",

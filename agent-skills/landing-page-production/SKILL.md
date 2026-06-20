@@ -12,16 +12,20 @@ the landing-page skill bundle.
 ## Workflow
 
 1. Identify the audience, offer, primary CTA, and expected conversion.
-2. Define the page's visual direction before writing code: product category,
-   mood, palette, typography, imagery, motion/media level, and proof style.
+2. Define a named creative direction before writing code. It must include:
+   concept name, audience feeling, layout signature, palette, typography,
+   imagery/media plan, motion language, proof style, and one thing this page
+   will intentionally avoid so it does not look like a generic template.
 3. Inspect the existing app stack and components before adding new structure.
 4. For new landing pages, prefer Astro for the page shell and React only for
    useful interactive islands.
 5. Build the page with a clear conversion path:
-   - hero with specific promise and visible CTA;
-   - credibility/proof or concrete product evidence;
-   - benefits tied to outcomes, not generic feature labels;
-   - friction reducers such as FAQ, guarantee, comparison, or social proof when useful;
+   - cinematic/editorial hero with specific promise, visible CTA, and concrete media;
+   - trust/proof or factual context near the first viewport;
+   - services/offers or use cases with business-specific copy;
+   - process, timeline, or "how it works" section;
+   - differentiators, comparison, objections, or proof details;
+   - FAQ with real concerns from the audience;
    - final CTA section.
 6. Make the page responsive across mobile and desktop without overlapping text,
    controls, or media.
@@ -59,6 +63,9 @@ the landing-page skill bundle.
 ## Quality Bar
 
 - Show the product, place, state, or workflow as a first-viewport signal.
+- Every generation must feel visually different from a default SaaS/card
+  template. Use a fresh layout rhythm, section geometry, media treatment, color
+  relationship, motion cue, or editorial metaphor that fits the business.
 - Prefer high-signal generated media over decorative placeholders when a media
   generation tool is available and the issue scope allows it.
 - Use precise copy. Avoid "transform your business", "unlock potential", and other filler.
@@ -78,12 +85,22 @@ the landing-page skill bundle.
 
 - Above the fold: clear promise, concrete supporting copy, primary CTA, visual
   signal, and trust/proof hint.
-- Middle: benefits with evidence, product/service mechanics, comparison or
-  differentiator, and objections handled.
+- Middle: at least four purposeful sections covering benefits with evidence,
+  product/service mechanics, process, differentiator/comparison, proof, and
+  objections handled.
 - Bottom: final CTA, concise reassurance, and SEO-friendly supporting details.
 - Technical: Astro/React fit, SEO metadata/schema, WCAG basics, Biome formatting,
   generated-media fallback, CTA anchor integrity, evidence-safe schema, and
   build validation.
+- Visual: named creative direction, non-repetitive section layouts, at least one
+  meaningful media asset, tasteful motion/reduced-motion support, and enough
+  crawlable copy to read like a complete client-ready page.
+
+## Style Recipes
+
+The `landing-page-style-recipes` skill/reference is part of this agent. Use one
+recipe as inspiration, adapt it to the business, and avoid repeating the same
+visual language across generations.
 
 ## Test Expectations
 
