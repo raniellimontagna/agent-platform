@@ -42,17 +42,12 @@ describe('migrateLinearCardsToPlane', () => {
 
     expect(result.skipped).toBe(1);
     expect(result.created).toBe(1);
-    expect(result.commented).toBe(2);
+    expect(result.commented).toBe(1);
     expect(result.failed).toEqual([]);
     expect(plane.createCard).toHaveBeenCalledWith(expect.objectContaining({ externalId: 'MAC-2' }));
-    expect(plane.comment).toHaveBeenCalledTimes(2);
+    expect(plane.comment).toHaveBeenCalledTimes(1);
     expect(plane.comment).toHaveBeenNthCalledWith(
       1,
-      'existing',
-      'Migrated from Linear: [MAC-1](https://linear/MAC-1).',
-    );
-    expect(plane.comment).toHaveBeenNthCalledWith(
-      2,
       'created',
       'Migrated from Linear: [MAC-2](https://linear/MAC-2).',
     );
@@ -101,9 +96,46 @@ describe('migrateLinearCardsToPlane', () => {
     expect(plane.comment).toHaveBeenCalledWith('created-2', 'Migrated from Linear: [MAC-4](https://linear/MAC-4).');
   });
 
-  it('retries the provenance comment for cards that already exist by external id', async () => {
+  it('does not append duplicate provenance comments for cards that already have one', async () => {
     const plane = {
       listCardsByExternal: vi.fn().mockResolvedValue([{ id: 'existing-card', identifier: 'AGP-1' }]),
+      listComments: vi
+        .fn()
+        .mockResolvedValue(['<p>Migrated from Linear: [MAC-5](https://linear/MAC-5).</p>']),
+      createCard: vi.fn(),
+      comment: vi.fn(),
+    };
+
+    const result = await migrateLinearCardsToPlane({
+      plane: plane as never,
+      linearCards: [
+        {
+          id: 'MAC-5',
+          title: 'Existing',
+          description: 'A',
+          labels: ['Feature'],
+          priority: 'medium',
+          url: 'https://linear/MAC-5',
+        },
+      ],
+      labelIds: { Feature: 'label-feature' },
+    });
+
+    expect(result).toEqual({
+      created: 0,
+      commented: 0,
+      skipped: 1,
+      failed: [],
+    });
+    expect(plane.listComments).toHaveBeenCalledWith('existing-card');
+    expect(plane.createCard).not.toHaveBeenCalled();
+    expect(plane.comment).not.toHaveBeenCalled();
+  });
+
+  it('backfills a missing provenance comment once for cards that already exist by external id', async () => {
+    const plane = {
+      listCardsByExternal: vi.fn().mockResolvedValue([{ id: 'existing-card', identifier: 'AGP-1' }]),
+      listComments: vi.fn().mockResolvedValue(['<p>Already discussed elsewhere.</p>']),
       createCard: vi.fn(),
       comment: vi.fn().mockResolvedValue(undefined),
     };

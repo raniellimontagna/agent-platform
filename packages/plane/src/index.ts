@@ -18,6 +18,7 @@ export interface PlaneGateway extends CardGateway {
   provider: 'plane';
   projectId: string;
   listCardsByExternal(input: { externalSource: string; externalId: string }): Promise<CardContext[]>;
+  listComments(cardId: string): Promise<string[]>;
 }
 
 interface PlaneWorkItem {
@@ -30,6 +31,16 @@ interface PlaneWorkItem {
   labels?: Array<{ name?: string } | string>;
   project_detail?: { identifier?: string };
   project_identifier?: string;
+}
+
+interface PlaneComment {
+  id: string;
+  comment_html?: string | null;
+}
+
+interface PlanePaginatedResponse<T> {
+  next_cursor?: string | null;
+  results?: T[];
 }
 
 export function createPlaneGateway(config: PlaneConfig): PlaneGateway {
@@ -111,6 +122,30 @@ export function createPlaneGateway(config: PlaneConfig): PlaneGateway {
       );
       const rows = Array.isArray(data) ? data : (data.results ?? []);
       return rows.map((item) => toCardContext(item, config.projectId));
+    },
+
+    async listComments(cardId) {
+      const comments: string[] = [];
+      let cursor: string | null | undefined;
+
+      do {
+        const query = new URLSearchParams({ per_page: '100' });
+        if (cursor) {
+          query.set('cursor', cursor);
+        }
+
+        const data = await request<PlanePaginatedResponse<PlaneComment>>(
+          `/projects/${config.projectId}/work-items/${cardId}/comments/?${query.toString()}`,
+        );
+        for (const comment of data.results ?? []) {
+          if (comment.comment_html) {
+            comments.push(comment.comment_html);
+          }
+        }
+        cursor = data.next_cursor;
+      } while (cursor);
+
+      return comments;
     },
   };
 
