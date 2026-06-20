@@ -14,6 +14,20 @@ Política e procedimento de rotação dos segredos do agent-platform.
 - **Acesso.** `.env` mora em `/opt/agent-platform/.../​.env` (LXC) e
   `/home/runner/agent-platform/repo/.../.env` (VM runner), nunca versionado.
 
+## Configuração de cards
+
+- `CARD_PRIMARY_PROVIDER=plane`
+- `CARD_EXTRA_PROVIDERS=linear`
+- `PLANE_BASE_URL=http://10.10.0.14:8080`
+- `PLANE_WORKSPACE_SLUG=attodev`
+- `PLANE_PROJECT_ID=change-me`
+- `PLANE_AI_READY_LABEL_ID=change-me`
+- `PLANE_APPROVED_LABEL_ID=change-me`
+- `PLANE_AUTO_MERGE_LABEL_ID=change-me`
+- `PLANE_SCHEDULED_LABEL_ID=change-me`
+- `PLANE_DONE_STATE_ID=change-me`
+- Linear continua como provider legado opcional; mantenha os envs dele só quando houver cards históricos ou suporte explícito.
+
 ## Inventário
 
 | Secret | Onde | Serviço | Origem |
@@ -22,8 +36,10 @@ Política e procedimento de rotação dos segredos do agent-platform.
 | `OMNIROUTE_API_KEY` | gateway `.env` | OmniRoute | painel OmniRoute (OAuth) |
 | `VERBOO_API_KEY` | gateway `.env` | Verboo | painel Verboo |
 | `LITELLM_API_KEY` | orchestrator + runner `.env` | chamadas LLM | virtual key dedicada do LiteLLM (`key_alias=agent-platform`), gerada com a master (MAC-15) — **não** é a master key |
-| `LINEAR_API_KEY` | orchestrator `.env` | Linear SDK | Linear → Settings → API |
-| `LINEAR_WEBHOOK_SECRET` | orchestrator `.env` | HMAC do webhook | Linear → Webhooks |
+| `PLANE_API_KEY` | orchestrator `.env` | Plane SDK / API | Plane → Settings → API |
+| `PLANE_WEBHOOK_SECRET` | orchestrator `.env` | HMAC do webhook | Plane → Webhooks |
+| `LINEAR_API_KEY` | orchestrator `.env` (legado opcional) | Linear SDK | Linear → Settings → API |
+| `LINEAR_WEBHOOK_SECRET` | orchestrator `.env` (legado opcional) | HMAC do webhook | Linear → Webhooks |
 | `GITHUB_TOKEN` | orchestrator `.env` | clone/push/PR | GitHub PAT (escopo `repo`) |
 | `RUNNER_AUTH_TOKEN` | orchestrator + runner `.env` | auth orchestrator↔runner + `/admin` | gerado (`openssl rand -hex 24`) |
 | `FIRECRAWL_API_KEY` | runner `.env` | research packs do `data-collector-agent` | Firecrawl dashboard |
@@ -42,7 +58,7 @@ Geral: editar o `.env` do serviço, salvar, redeployar/reiniciar o container.
    `LITELLM_API_KEY` ficam no orchestrator E no runner — trocar nos dois).
 4. **Reiniciar**: `bash infra/deploy/deploy.sh <serviço>` ou
    `docker compose up -d` no dir do compose.
-5. **Revogar o valor antigo** na origem (GitHub PAT, Linear key, etc.).
+5. **Revogar o valor antigo** na origem (GitHub PAT, Linear key legado, etc.).
 
 ### Casos especiais
 
@@ -55,6 +71,9 @@ Geral: editar o `.env` do serviço, salvar, redeployar/reiniciar o container.
   dois `.env` e revogar a antiga (`POST :4000/key/delete`). Rotacionar a
   `LITELLM_MASTER_KEY` (gateway) **não** exige mais mexer no orchestrator/runner —
   só re-emitir as virtual keys se quiser.
+- **`PLANE_API_KEY` / `PLANE_WEBHOOK_SECRET`**: ficam no orchestrator `.env`.
+  Rotacionar o API key exige atualizar o valor no painel/REST do Plane e depois
+  reexecutar o deploy do orchestrator.
 - **`GITHUB_TOKEN`**: PAT com escopo `repo`. Após rotacionar, revogar o antigo no
   GitHub → Settings → Developer settings → Tokens.
 - **`FIRECRAWL_API_KEY`**: só o runner precisa. Sem ela o serviço sobe, mas jobs
@@ -64,5 +83,6 @@ Geral: editar o `.env` do serviço, salvar, redeployar/reiniciar o container.
 
 - Serviço sobe sem erro de secret placeholder (guard do `env.ts`).
 - Runner→gateway: `curl` no LiteLLM com o novo `LITELLM_API_KEY` responde.
-- Webhook: `infra/deploy/test-webhook.sh` com o novo `LINEAR_WEBHOOK_SECRET`.
+- Webhook: `infra/deploy/test-webhook.sh` com o `PLANE_WEBHOOK_SECRET` ou
+  `LINEAR_WEBHOOK_SECRET` correspondente ao provider testado.
 - `/admin/status` responde com o novo `RUNNER_AUTH_TOKEN`.

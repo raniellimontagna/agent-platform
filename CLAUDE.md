@@ -19,10 +19,12 @@ Padrão Conventional Commits:
 [corpo opcional]
 ```
 
-## Sync Linear
+## Sync Cards
 
-- Ao concluir issue → atualizar status no Linear + comentar progresso
-- Novas cards/milestones criadas via MCP quando necessário
+- Provedor principal deste projeto: Plane workspace `attodev`, projeto `Agent Platform` (`AGP`).
+- Ao concluir card → atualizar status no provedor de origem + comentar progresso.
+- Linear permanece opcional/legado; use somente quando o card original estiver no Linear.
+- Novos cards/milestones devem ser criados no Plane, salvo instrução explícita em contrário.
 
 ---
 
