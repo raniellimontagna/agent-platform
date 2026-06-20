@@ -467,6 +467,51 @@ $ tsc
 
 Exit code: `0`
 
+## Review Fix: Legacy Raw-Markdown Provenance Dedupe
+
+### What Changed
+
+- Updated `ensureProvenanceComment()` in `apps/orchestrator-api/src/planeMigration.ts` to parse provenance comments by Linear card id and url instead of comparing rendered HTML strings directly.
+- Added support for both Plane comment forms:
+  - rendered anchor HTML: `<p>Migrated from Linear: <a href="https://linear/MAC-5">MAC-5</a>.</p>`
+  - legacy raw Markdown HTML: `<p>Migrated from Linear: [MAC-5](https://linear/MAC-5).</p>`
+- Added a regression test proving the legacy raw-Markdown form is treated as already migrated and does not get duplicated.
+
+### Commands Run and Outputs
+
+#### Focused migration tests
+
+Command:
+
+```bash
+rtk corepack pnpm exec vitest run apps/orchestrator-api/src/planeMigration.test.ts
+```
+
+Result:
+
+```text
+✓ apps/orchestrator-api/src/planeMigration.test.ts (7 tests) 38ms
+
+Test Files  1 passed (1)
+Tests       7 passed (7)
+```
+
+#### Orchestrator API build
+
+Command:
+
+```bash
+rtk corepack pnpm --filter @agent-platform/orchestrator-api build
+```
+
+Result:
+
+```text
+$ tsc
+```
+
+Exit code: `0`
+
 #### Orchestrator API build
 
 Command:

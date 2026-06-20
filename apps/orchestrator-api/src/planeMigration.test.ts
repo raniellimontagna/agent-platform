@@ -144,6 +144,44 @@ describe('migrateLinearCardsToPlane', () => {
     expect(plane.comment).not.toHaveBeenCalled();
   });
 
+  it('treats legacy raw-Markdown provenance comments as already migrated', async () => {
+    const plane = {
+      listCardsByExternal: vi.fn().mockResolvedValue([{ id: 'existing-card', identifier: 'AGP-1' }]),
+      listComments: vi
+        .fn()
+        .mockResolvedValue(['<p>Migrated from Linear: [MAC-5](https://linear/MAC-5).</p>']),
+      createCard: vi.fn(),
+      comment: vi.fn(),
+    };
+
+    const result = await migrateLinearCardsToPlane({
+      plane: plane as never,
+      linearCards: [
+        {
+          id: 'MAC-5',
+          title: 'Existing',
+          description: 'A',
+          labels: ['Feature'],
+          priority: 'medium',
+          state: 'Todo',
+          url: 'https://linear/MAC-5',
+        },
+      ],
+      labelIds: { Feature: 'label-feature' },
+      stateIdsByName: { Todo: 'state-todo' },
+    });
+
+    expect(result).toEqual({
+      created: 0,
+      commented: 0,
+      skipped: 1,
+      failed: [],
+    });
+    expect(plane.listComments).toHaveBeenCalledWith('existing-card');
+    expect(plane.createCard).not.toHaveBeenCalled();
+    expect(plane.comment).not.toHaveBeenCalled();
+  });
+
   it('backfills a missing provenance comment once for cards that already exist by external id', async () => {
     const plane = {
       listCardsByExternal: vi.fn().mockResolvedValue([{ id: 'existing-card', identifier: 'AGP-1' }]),
