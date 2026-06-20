@@ -87,9 +87,23 @@ export function markdownToPlaneHtml(markdown: string): string {
 }
 
 function inlineMarkdown(value: string): string {
-  return escapeHtml(value)
-    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/`([^`]+)`/g, '<code>$1</code>');
+  const codeChunk = /`([^`]+)`/g;
+  const chunks: string[] = [];
+  let cursor = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = codeChunk.exec(value)) !== null) {
+    chunks.push(formatInlineMarkdown(value.slice(cursor, match.index)));
+    chunks.push(`<code>${escapeHtml(match[1])}</code>`);
+    cursor = match.index + match[0].length;
+  }
+
+  chunks.push(formatInlineMarkdown(value.slice(cursor)));
+  return chunks.join('');
+}
+
+function formatInlineMarkdown(value: string): string {
+  return escapeHtml(value).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 }
 
 function escapeHtml(value: string): string {
