@@ -41,6 +41,7 @@ const run = {
   id: 'run-1',
   linearIssueId: 'issue-1',
   linearIssueIdentifier: 'MAC-90',
+  cardIdentifier: 'AGP-90',
   title: 'Visualizar agentes',
   status: 'completed',
   agentId: 'agent-1',
@@ -61,7 +62,7 @@ describe('renderRegistryPage', () => {
 
     expect(html).toContain('reviewer-agent');
     expect(html).toContain('node');
-    expect(html).toContain('MAC-90');
+    expect(html).toContain('AGP-90');
     expect(html).toContain('reviewer-agent v1');
   });
 

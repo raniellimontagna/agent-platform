@@ -87,6 +87,10 @@ export const runs = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     linearIssueId: text('linear_issue_id').notNull(),
     linearIssueIdentifier: text('linear_issue_identifier').notNull(),
+    cardProvider: text('card_provider').notNull().default('linear'),
+    cardId: text('card_id'),
+    cardIdentifier: text('card_identifier'),
+    cardProjectId: text('card_project_id'),
     title: text('title').notNull(),
     status: runStatus('status').notNull().default('pending'),
     branch: text('branch'),
@@ -128,6 +132,11 @@ export const runs = pgTable(
       .on(t.linearIssueId)
       .where(
         sql`${t.status} in ('pending','planning','awaiting_approval','executing','reviewing')`,
+      ),
+    uniqueIndex('runs_active_card_uq')
+      .on(t.cardProvider, t.cardId)
+      .where(
+        sql`${t.status} in ('pending','planning','awaiting_approval','executing','reviewing') and ${t.cardId} is not null`,
       ),
   ],
 );

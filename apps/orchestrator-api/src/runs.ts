@@ -1,4 +1,5 @@
 import { and, desc, eq, inArray, sql } from 'drizzle-orm';
+import type { CardProvider } from '@agent-platform/cards';
 import { resolveDefaultAgent } from './agents.js';
 import { db, schema } from './db/client.js';
 
@@ -40,6 +41,10 @@ export async function countRunsByStatus(): Promise<Partial<Record<RunStatus, num
 export interface NewRunInput {
   linearIssueId: string;
   linearIssueIdentifier: string;
+  cardProvider?: CardProvider;
+  cardId?: string;
+  cardIdentifier?: string;
+  cardProjectId?: string;
   title: string;
   /** Agendamento que originou o run (MAC-38). */
   scheduleId?: string;
@@ -68,6 +73,10 @@ export async function createRun(input: NewRunInput): Promise<string> {
     .values({
       linearIssueId: input.linearIssueId,
       linearIssueIdentifier: input.linearIssueIdentifier,
+      cardProvider: input.cardProvider ?? 'linear',
+      cardId: input.cardId ?? input.linearIssueId,
+      cardIdentifier: input.cardIdentifier ?? input.linearIssueIdentifier,
+      ...(input.cardProjectId ? { cardProjectId: input.cardProjectId } : {}),
       title: input.title,
       status: 'pending',
       ...(input.scheduleId ? { scheduleId: input.scheduleId } : {}),
@@ -85,12 +94,20 @@ export async function createRun(input: NewRunInput): Promise<string> {
 
 /** Já existe um run ativo (não-terminal) para esta issue? Dedup do webhook. */
 export async function hasActiveRunForIssue(linearIssueId: string): Promise<boolean> {
+  return hasActiveRunForCard('linear', linearIssueId);
+}
+
+export async function hasActiveRunForCard(
+  cardProvider: CardProvider,
+  cardId: string,
+): Promise<boolean> {
   const rows = await db
     .select({ id: schema.runs.id })
     .from(schema.runs)
     .where(
       and(
-        eq(schema.runs.linearIssueId, linearIssueId),
+        eq(schema.runs.cardProvider, cardProvider),
+        eq(schema.runs.cardId, cardId),
         inArray(schema.runs.status, ACTIVE_STATUSES),
       ),
     )
@@ -102,12 +119,20 @@ export async function hasActiveRunForIssue(linearIssueId: string): Promise<boole
 export async function findAwaitingApprovalRun(
   linearIssueId: string,
 ): Promise<{ id: string } | null> {
+  return findAwaitingApprovalRunForCard('linear', linearIssueId);
+}
+
+export async function findAwaitingApprovalRunForCard(
+  cardProvider: CardProvider,
+  cardId: string,
+): Promise<{ id: string } | null> {
   const [row] = await db
     .select({ id: schema.runs.id })
     .from(schema.runs)
     .where(
       and(
-        eq(schema.runs.linearIssueId, linearIssueId),
+        eq(schema.runs.cardProvider, cardProvider),
+        eq(schema.runs.cardId, cardId),
         eq(schema.runs.status, 'awaiting_approval'),
       ),
     )
