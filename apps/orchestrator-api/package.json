@@ -15,9 +15,11 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@agent-platform/cards": "workspace:*",
     "@agent-platform/github": "workspace:*",
     "@agent-platform/graph": "workspace:*",
     "@agent-platform/linear": "workspace:*",
+    "@agent-platform/plane": "workspace:*",
     "@agent-platform/llm": "workspace:*",
     "@agent-platform/memory": "workspace:*",
     "@agent-platform/policy": "workspace:*",
