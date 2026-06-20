@@ -1,7 +1,7 @@
 import { parseRepoRef } from '@agent-platform/github';
 import { verdictOf } from '@agent-platform/graph';
 import { distillLesson } from '@agent-platform/memory';
-import type { CardProvider } from '@agent-platform/cards';
+import type { CardGatewayRegistry, CardProvider } from '@agent-platform/cards';
 import { Worker } from 'bullmq';
 import type { Logger } from 'pino';
 import { getAgent as getRuntimeAgent } from './agent.js';
@@ -51,7 +51,7 @@ import {
  * - kind `resume`: retoma após aprovação → roda coding (MAC-17) → fim.
  */
 export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, string>> {
-  const { graph, linear, llm, github } = await getRuntimeAgent();
+  const { graph, cards, llm, github } = await getRuntimeAgent();
 
   // MAC-42/MAC-90: garante os agentes built-in no catálogo (idempotente). Não-fatal.
   try {
@@ -112,9 +112,11 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
         };
       };
       if (job.data.kind === 'plan') {
-        const { cardProvider, cardId } = planCard!;
-        const issue = await linear.getIssue(cardId);
         const run = await getRun(runId);
+        const cardProvider = toCardProvider(run?.cardProvider) ?? planCard!.cardProvider;
+        const cardId = run?.cardId ?? planCard!.cardId;
+        const cardGateway = cards.forProvider(cardProvider);
+        const issue = await cardGateway.getCard(cardId);
         const selectedAgent = run?.agentId ? await getCatalogAgent(run.agentId) : null;
         const description = job.data.context
           ? `${issue.description}\n\n---\n\n${job.data.context}`
@@ -164,8 +166,9 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
         if (run?.autoApprove) {
           if (hasCriticalReason(reasons)) {
             const critical = reasons.filter(isCriticalReason);
-            await linear.comment(
-              run.linearIssueId,
+            const runCardRef = resolveRunCardRef(run);
+            await cards.forProvider(runCardRef.cardProvider).comment(
+              runCardRef.cardId,
               `## ⏸️ Agendado pausado — aprovação humana necessária\nMotivo(s): ${critical.join(', ')}. Adicione a label \`approved\` para liberar.`,
             );
             log.warn({ runId, critical }, 'agendado retido — motivo crítico');
@@ -199,14 +202,15 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
       });
       log.info({ status, costUsd }, 'graph step finished');
 
-      // Cost Guard (MAC-40): run estourou o limite por task → alerta no Linear.
+      // Cost Guard (MAC-40): run estourou o limite por task → alerta na card.
       const total = await runCostUsd(runId);
       if (total > env.AGENT_MAX_COST_PER_RUN_USD) {
         log.warn({ total, limit: env.AGENT_MAX_COST_PER_RUN_USD }, 'run estourou o orçamento');
         const run = await getRun(runId);
         if (run) {
-          await linear.comment(
-            run.linearIssueId,
+          const runCardRef = resolveRunCardRef(run);
+          await cards.forProvider(runCardRef.cardProvider).comment(
+            runCardRef.cardId,
             `## 💸 Alerta de custo\nRun excedeu o limite por task: ~$${total.toFixed(4)} > $${env.AGENT_MAX_COST_PER_RUN_USD}.`,
           );
         }
@@ -258,7 +262,7 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
           runId,
           status,
           result,
-          linear,
+          cards,
           github,
           log,
         });
@@ -296,11 +300,20 @@ function toCardProvider(value: string | null | undefined): CardProvider | undefi
   return value === 'plane' || value === 'linear' ? value : undefined;
 }
 
+function resolveRunCardRef(
+  run: NonNullable<Awaited<ReturnType<typeof getRun>>>,
+): { cardProvider: CardProvider; cardId: string } {
+  return {
+    cardProvider: toCardProvider(run.cardProvider) ?? 'linear',
+    cardId: run.cardId ?? run.linearIssueId,
+  };
+}
+
 async function maybeStartResearchToLandingWorkflow(args: {
   runId: string;
   status: RunStatus;
   result: { research?: string };
-  linear: Awaited<ReturnType<typeof getRuntimeAgent>>['linear'];
+  cards: CardGatewayRegistry;
   github: Awaited<ReturnType<typeof getRuntimeAgent>>['github'];
   log: Logger;
 }) {
@@ -317,9 +330,10 @@ async function maybeStartResearchToLandingWorkflow(args: {
   }
 
   const landingAgent = await resolveAgentByKey(LANDING_PAGE_AGENT_KEY);
-  const issue = await args.linear.getIssue(sourceRun.linearIssueId);
   const sourceCardProvider = toCardProvider(sourceRun.cardProvider) ?? 'linear';
   const sourceCardId = sourceRun.cardId ?? sourceRun.linearIssueId;
+  const sourceGateway = args.cards.forProvider(sourceCardProvider);
+  const issue = await sourceGateway.getCard(sourceCardId);
   const target = resolveGeneratedRepoTarget({
     title: sourceRun.title,
     description: issue.description,
@@ -334,7 +348,7 @@ async function maybeStartResearchToLandingWorkflow(args: {
     ? await ensureGeneratedRepository({
         github: args.github,
         target,
-        description: `Landing page gerada pelo agent-platform para ${sourceRun.linearIssueIdentifier}`,
+        description: `Landing page gerada pelo agent-platform para ${sourceRun.cardIdentifier ?? sourceRun.linearIssueIdentifier}`,
         config: {
           owner: env.GENERATED_REPOS_OWNER,
           allowCreate: env.GENERATED_REPOS_ALLOW_CREATE,
@@ -347,7 +361,7 @@ async function maybeStartResearchToLandingWorkflow(args: {
     linearIssueIdentifier: sourceRun.linearIssueIdentifier,
     cardProvider: sourceCardProvider,
     cardId: sourceCardId,
-    cardIdentifier: sourceRun.cardIdentifier ?? undefined,
+    cardIdentifier: sourceRun.cardIdentifier ?? sourceRun.linearIssueIdentifier,
     cardProjectId: sourceRun.cardProjectId ?? undefined,
     title: `${sourceRun.title} — landing page`,
     agentId: landingAgent?.id,
@@ -361,7 +375,6 @@ async function maybeStartResearchToLandingWorkflow(args: {
     {
       kind: 'plan',
       runId: landingRunId,
-      issueId: sourceCardId,
       cardProvider: sourceCardProvider,
       cardId: sourceCardId,
       context: formatResearchToLandingContext(args.result.research ?? '', args.runId),
@@ -372,8 +385,8 @@ async function maybeStartResearchToLandingWorkflow(args: {
   const targetLine = target
     ? `Repo alvo: \`${target.fullName}\`${createdRepo ? ` (${createdRepo.created ? 'criado' : 'já existia'})` : ''}.`
     : undefined;
-  await args.linear.comment(
-    sourceRun.linearIssueId,
+  await sourceGateway.comment(
+    sourceCardId,
     [
       '## 🔁 Workflow composto',
       'Coleta concluída. Iniciando etapa de landing page com o `landing-page-agent`.',
