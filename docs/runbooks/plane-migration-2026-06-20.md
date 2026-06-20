@@ -9,6 +9,7 @@ Plane project ID: `4c671d1f-0836-4423-b50e-d60ed1d02162`
 - `ai-ready`: `70b19241-dcbb-4808-8029-de3620b1d5e3`
 - `approved`: `4cb58637-b838-4907-b300-2e2a12b75dd4`
 - `auto-merge`: `48a164d7-8150-4a4c-bb6d-ddc62ccd03ef`
+- `scheduled`: `eb08beb7-a1ea-4e5b-8510-4b6c03e9862d`
 - `repo:create`: `8a9924dd-528a-414a-8d0e-225df3b4f543`
 - `workflow:landing-page`: `252a53aa-c940-4a1d-a981-cc0ac41c92d6`
 - `agent:reviewer`: `7fb4b1d8-91cd-4865-b751-8bfb1b04591d`
