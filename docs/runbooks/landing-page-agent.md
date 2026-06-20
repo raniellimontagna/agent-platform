@@ -7,13 +7,14 @@ tempo.
 
 ## Como selecionar
 
-Em uma issue Linear:
+Em um card Plane:
 
 - adicione `ai-ready`;
 - adicione `agent:landing-page`;
 - aprove normalmente com `approved` quando o plano estiver bom.
 
 Sem `agent:landing-page`, o fluxo continua usando `coder-agent`.
+Cards Linear ainda são aceitos apenas no provider legado/opcional.
 
 ## Skills atuais
 
@@ -69,7 +70,7 @@ Veja também `docs/runbooks/agent-skills.md`.
 
 - Criar eval específico para landing pages verificando estrutura mínima de LP.
 - Adicionar critic especializado de UX/conversão.
-- Permitir geração de asset visual quando a issue pedir explicitamente.
+- Permitir geração de asset visual quando o card pedir explicitamente.
 - Criar integração runtime para Higgsfield: autenticação OAuth persistida no
   runner, comandos/MCP controlados por policy, artifact store para mídia gerada
   e possível `media-generation-agent` dedicado para imagens/vídeos/animações.
