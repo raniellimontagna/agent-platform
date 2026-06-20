@@ -14,7 +14,7 @@ describe('migrateLinearCardsToPlane', () => {
       listCardsByExternal: vi.fn().mockResolvedValueOnce([{ id: 'existing' }]).mockResolvedValueOnce([]),
       listComments: vi
         .fn()
-        .mockResolvedValueOnce(['<p>Migrated from Linear: [MAC-1](https://linear/MAC-1).</p>']),
+        .mockResolvedValueOnce(['<p>Migrated from Linear: <a href="https://linear/MAC-1">MAC-1</a>.</p>']),
       createCard: vi.fn().mockResolvedValue({ id: 'created', identifier: 'AGP-2' }),
       comment: vi.fn(),
     };
@@ -111,7 +111,7 @@ describe('migrateLinearCardsToPlane', () => {
       listCardsByExternal: vi.fn().mockResolvedValue([{ id: 'existing-card', identifier: 'AGP-1' }]),
       listComments: vi
         .fn()
-        .mockResolvedValue(['<p>Migrated from Linear: [MAC-5](https://linear/MAC-5).</p>']),
+        .mockResolvedValue(['<p>Migrated from Linear: <a href="https://linear/MAC-5">MAC-5</a>.</p>']),
       createCard: vi.fn(),
       comment: vi.fn(),
     };

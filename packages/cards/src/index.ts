@@ -94,7 +94,7 @@ function inlineMarkdown(value: string): string {
 
   while ((match = codeChunk.exec(value)) !== null) {
     chunks.push(formatInlineMarkdown(value.slice(cursor, match.index)));
-    chunks.push(`<code>${escapeHtml(match[1])}</code>`);
+    chunks.push(`<code>${escapeHtml(match[1]!)}</code>`);
     cursor = match.index + match[0].length;
   }
 
@@ -103,7 +103,43 @@ function inlineMarkdown(value: string): string {
 }
 
 function formatInlineMarkdown(value: string): string {
-  return escapeHtml(value).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  const linkChunk = /\[([^\]\n]+)\]\(([^)\s]+)\)/g;
+  const chunks: string[] = [];
+  let cursor = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = linkChunk.exec(value)) !== null) {
+    chunks.push(formatBold(escapeHtml(value.slice(cursor, match.index))));
+
+    const href = normalizePlaneHref(match[2]!);
+    if (href) {
+      chunks.push(`<a href="${escapeHtml(href)}">${escapeHtml(match[1]!)}</a>`);
+    } else {
+      chunks.push(escapeHtml(match[0]));
+    }
+
+    cursor = match.index + match[0].length;
+  }
+
+  chunks.push(formatBold(escapeHtml(value.slice(cursor))));
+  return chunks.join('');
+}
+
+function formatBold(value: string): string {
+  return value.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+}
+
+function normalizePlaneHref(value: string): string | undefined {
+  try {
+    const url = new URL(value);
+    if (url.protocol === 'http:' || url.protocol === 'https:') {
+      return url.toString();
+    }
+  } catch {
+    return undefined;
+  }
+
+  return undefined;
 }
 
 function escapeHtml(value: string): string {
