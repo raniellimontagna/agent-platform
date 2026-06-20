@@ -1,8 +1,8 @@
-import type { LinearGateway } from '@agent-platform/linear';
+import type { CardGateway } from '@agent-platform/cards';
 import type { AgentStateType } from '../state.js';
 
 export interface ReportDeps {
-  linear: LinearGateway;
+  cards: CardGateway;
 }
 
 /** Extrai a linha do veredito do parecer do critic (MAC-18). Exportado p/ teste. */
@@ -100,7 +100,7 @@ export function makeReportNode(deps: ReportDeps) {
     if (state.summary) lines.push(`\n${state.summary}`);
     if (!ok && state.error) lines.push(`\n\`\`\`\n${state.error}\n\`\`\``);
 
-    await deps.linear.comment(state.issueId, lines.join('\n'));
+    await deps.cards.comment(state.issueId, lines.join('\n'));
     return {};
   };
 }

@@ -1,8 +1,8 @@
-import type { LinearGateway } from '@agent-platform/linear';
+import type { CardGateway } from '@agent-platform/cards';
 import type { AgentStateType } from '../state.js';
 
 export interface CoderDeps {
-  linear: LinearGateway;
+  cards: CardGateway;
   /** URL de clone do repo alvo (vai no body do job). */
   repoUrl: string;
   /** Resolve a URL de clone com credencial para um repo alvo dinâmico. */
@@ -154,7 +154,7 @@ export function makeCoderNode(deps: CoderDeps, opts: { revise?: boolean } = {}) 
             ? ''
             : `\n\n**Coleta:** ${ok ? '✅ concluída' : '❌ falhou'}\n${testSummary}`;
 
-        await deps.linear.comment(
+        await deps.cards.comment(
           state.issueId,
           `## 🔎 Coleta de dados\nRunner: **${result.status}**.` +
             `${result.summary ? `\n\n${result.summary}` : ''}${testsBlock}${errorBlock}`,
@@ -188,7 +188,7 @@ export function makeCoderNode(deps: CoderDeps, opts: { revise?: boolean } = {}) 
           ? `\n\n🔧 Auto-correção: ${result.fixAttempts} tentativa(s) antes da validação final.`
           : '';
 
-      await deps.linear.comment(
+      await deps.cards.comment(
         state.issueId,
         `## 🤖 Execução${opts.revise ? ` (revisão ${state.reviewRounds ?? 1})` : ''}\nBranch \`${branch}\` — runner: **${result.status}**.` +
           `${result.summary ? `\n\n${result.summary}` : ''}${files}${testsBlock}${fixBlock}${errorBlock}`,
@@ -213,7 +213,7 @@ export function makeCoderNode(deps: CoderDeps, opts: { revise?: boolean } = {}) 
       return update;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      await deps.linear.comment(
+      await deps.cards.comment(
         state.issueId,
         `## ⚠️ Execução falhou\n\n\`\`\`\n${message}\n\`\`\``,
       );

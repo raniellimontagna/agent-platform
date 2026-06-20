@@ -1,5 +1,5 @@
+import type { CardGateway } from '@agent-platform/cards';
 import type { GithubGateway } from '@agent-platform/github';
-import type { LinearGateway } from '@agent-platform/linear';
 import type { LlmClient } from '@agent-platform/llm';
 import { END, START, StateGraph } from '@langchain/langgraph';
 import { PostgresSaver } from '@langchain/langgraph-checkpoint-postgres';
@@ -14,7 +14,7 @@ import { AgentState } from './state.js';
 
 export interface GraphDeps {
   llm: LlmClient;
-  linear: LinearGateway;
+  cards: CardGateway;
   /** URL de clone do repo alvo (vai no body do job — MAC-39). */
   runnerRepoUrl: string;
   /** Resolve clone URL com credencial para repo alvo opcional. */
@@ -65,7 +65,7 @@ export async function createCheckpointer(connectionString: string): Promise<Post
 export function buildAgentGraph(deps: GraphDeps, checkpointer: PostgresSaver) {
   const planning = makePlannerNode(deps);
   const coderDeps = {
-    linear: deps.linear,
+    cards: deps.cards,
     repoUrl: deps.runnerRepoUrl,
     resolveRepoUrl: deps.resolveRunnerRepoUrl,
     baseBranch: deps.baseBranch ?? 'main',
@@ -77,22 +77,22 @@ export function buildAgentGraph(deps: GraphDeps, checkpointer: PostgresSaver) {
   const revising = makeCoderNode(coderDeps, { revise: true });
   const review = makeReviewNode({
     llm: deps.llm,
-    linear: deps.linear,
+    cards: deps.cards,
     maxReviewRounds: deps.maxReviewRounds ?? 1,
     maxCostPerRunUsd: deps.maxCostPerRunUsd ?? 2,
   });
   const pr = makePrNode({
     github: deps.github,
-    linear: deps.linear,
+    cards: deps.cards,
     baseBranch: deps.baseBranch ?? 'main',
   });
   const merging = makeMergingNode({
     github: deps.github,
-    linear: deps.linear,
+    cards: deps.cards,
     doneStateId: deps.doneStateId,
   });
   const cloudflareDeploy = makeCloudflareDeployNode({
-    linear: deps.linear,
+    cards: deps.cards,
     dispatch: deps.dispatch,
     repoUrl: deps.runnerRepoUrl,
     resolveRepoUrl: deps.resolveRunnerRepoUrl,
@@ -101,7 +101,7 @@ export function buildAgentGraph(deps: GraphDeps, checkpointer: PostgresSaver) {
     generatedReposOwner: deps.generatedReposOwner ?? '',
     deployCommands: deps.cloudflareDeployCommands ?? [],
   });
-  const report = makeReportNode({ linear: deps.linear });
+  const report = makeReportNode({ cards: deps.cards });
 
   return (
     new StateGraph(AgentState)
