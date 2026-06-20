@@ -1,6 +1,7 @@
 import { createPlaneGateway } from '@agent-platform/plane';
 import { pathToFileURL } from 'node:url';
 import { env } from './env.js';
+import { ensurePlaneProjectAndLabels } from './planeBootstrap.js';
 import { migrateLinearCardsToPlane, type LinearCardSnapshot } from './planeMigration.js';
 
 const ACTIVE_LINEAR_STATES = ['Todo', 'Backlog', 'In Progress'] as const;
@@ -56,8 +57,8 @@ interface LinearGraphQlResponse<T> {
 }
 
 function getRequiredPlaneConfig() {
-  if (!env.PLANE_API_KEY || !env.PLANE_PROJECT_ID) {
-    throw new Error('PLANE_API_KEY and PLANE_PROJECT_ID are required for plane:migrate-linear');
+  if (!env.PLANE_API_KEY) {
+    throw new Error('PLANE_API_KEY is required for plane:migrate-linear');
   }
   if (!env.LINEAR_API_KEY || !env.LINEAR_TEAM_ID) {
     throw new Error('LINEAR_API_KEY and LINEAR_TEAM_ID are required for plane:migrate-linear');
@@ -65,7 +66,6 @@ function getRequiredPlaneConfig() {
 
   return {
     planeApiKey: env.PLANE_API_KEY,
-    planeProjectId: env.PLANE_PROJECT_ID,
     linearApiKey: env.LINEAR_API_KEY,
     linearTeamId: env.LINEAR_TEAM_ID,
   };
@@ -143,30 +143,25 @@ async function listActiveLinearCards(
   }));
 }
 
-function getPlaneLabelIds(): Record<string, string> {
-  return Object.fromEntries(
-    [
-      ['ai-ready', env.PLANE_AI_READY_LABEL_ID],
-      ['approved', env.PLANE_APPROVED_LABEL_ID],
-      ['auto-merge', env.PLANE_AUTO_MERGE_LABEL_ID],
-    ].filter((entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1].length > 0),
-  );
-}
-
 export async function main() {
   const config = getRequiredPlaneConfig();
+  const bootstrap = await ensurePlaneProjectAndLabels({
+    baseUrl: env.PLANE_BASE_URL,
+    apiKey: config.planeApiKey,
+    workspaceSlug: env.PLANE_WORKSPACE_SLUG,
+  });
   const plane = createPlaneGateway({
     baseUrl: env.PLANE_BASE_URL,
     apiKey: config.planeApiKey,
     workspaceSlug: env.PLANE_WORKSPACE_SLUG,
-    projectId: config.planeProjectId,
+    projectId: bootstrap.projectId,
   });
   const linearCards = await listActiveLinearCards(config.linearApiKey, config.linearTeamId);
 
   return migrateLinearCardsToPlane({
     plane,
     linearCards,
-    labelIds: getPlaneLabelIds(),
+    labelIds: bootstrap.labelIds,
   });
 }
 
