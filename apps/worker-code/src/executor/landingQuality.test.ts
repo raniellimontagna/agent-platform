@@ -56,6 +56,16 @@ describe('evaluateLandingQuality', () => {
       ]),
     );
   });
+
+  it('reprova metacopy sobre a criação da landing', () => {
+    const failures = evaluateLandingQuality(
+      `${richLanding}\nEsta landing foi redesenhada a partir do briefing informado.`,
+    );
+
+    expect(failures).toEqual(
+      expect.arrayContaining([expect.stringContaining('meta-copy about the page-generation')]),
+    );
+  });
 });
 
 describe('runLandingQualityGate', () => {

@@ -27,6 +27,14 @@ const GENERIC_COPY_PATTERNS = [
   /\btodo\b/i,
 ];
 
+const META_COPY_PATTERNS = [
+  /\besta\s+(?:landing|p[áa]gina|estrutura)\b/i,
+  /\bproposta\s+(?:editorial\s+)?de\s+landing\b/i,
+  /\bexperi[eê]ncia\s+foi\s+redesenhada\b/i,
+  /\bbriefing\s+(?:menciona|cita|informa|fornece)\b/i,
+  /\bconte[úu]do\s+com\s+foco\s+em\s+posicionamento\b/i,
+];
+
 export interface LandingQualityGateInput {
   dir: string;
   filesChanged: string[];
@@ -121,6 +129,12 @@ export function evaluateLandingQuality(
   for (const pattern of GENERIC_COPY_PATTERNS) {
     if (pattern.test(source)) {
       failures.push(`landing contains generic or placeholder copy matching ${pattern}`);
+    }
+  }
+
+  for (const pattern of META_COPY_PATTERNS) {
+    if (pattern.test(source)) {
+      failures.push(`landing contains meta-copy about the page-generation process: ${pattern}`);
     }
   }
 

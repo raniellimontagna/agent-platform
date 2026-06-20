@@ -74,6 +74,11 @@ the landing-page skill bundle.
 
 ## Quality Bar
 
+- Write as the business speaking to its audience, not as an agent describing the
+  landing page. Never use meta-copy like "esta página", "esta landing",
+  "proposta editorial de landing", "a experiência foi redesenhada", "o briefing
+  menciona", or "esta estrutura". Copy must feel final, client-facing, and
+  natural for the page category.
 - Show the product, place, state, or workflow as a first-viewport signal.
 - Every generation must feel visually different from a default SaaS/card
   template. Use a fresh layout rhythm, section geometry, media treatment, color
@@ -81,6 +86,10 @@ the landing-page skill bundle.
 - Prefer high-signal generated media over decorative placeholders when a media
   generation tool is available and the issue scope allows it.
 - Use precise copy. Avoid "transform your business", "unlock potential", and other filler.
+- Match copy to the business. A travel page talks about destinations, planning,
+  timing, comfort, routes, support, and traveler concerns; a clinic page talks
+  about care, trust, symptoms, protocols, team, and patient questions; a SaaS
+  page talks about workflows, outcomes, integrations, risk, adoption, and proof.
 - Prefer one memorable composition over many decorative cards.
 - Avoid one-hue palettes, generic gradients, decorative blobs, and stock-like empty visuals.
 - Give repeated sections stable responsive dimensions so hover, loading, and long text states do not shift layout.
@@ -122,6 +131,9 @@ visual language across generations.
 - Tests should assert evidence-sensitive SEO behavior: no unvalidated `sameAs`,
   no placeholder copy, hardened external links, and generated media referenced
   with the real file extension.
+- Tests should assert no meta-copy about the page-generation process. The
+  finished page must not mention "landing", "briefing", "esta página", or
+  "proposta" unless those are genuinely part of the customer's offer.
 - Tests should assert that Motion is actually wired when the dependency exists,
   not merely that CSS includes `transition` or `@keyframes`.
 - Tests should assert Instagram/WhatsApp contact behavior when those channels
