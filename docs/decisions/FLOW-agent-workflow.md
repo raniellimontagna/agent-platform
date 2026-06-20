@@ -2,8 +2,8 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                          LINEAR                                 │
-│  Issue + label [ai-ready]                                       │
+│                           PLANE                                 │
+│  Card + label [ai-ready]                                        │
 └───────────────────────────┬─────────────────────────────────────┘
                             │ webhook
                             ▼
@@ -11,9 +11,9 @@
 │                     ORCHESTRATOR API                            │
 │  (agent-orchestrator / Hono + LangGraph)                        │
 │                                                                 │
-│  1. Lê issue + contexto do Linear                               │
+│  1. Lê card + contexto do Plane                                 │
 │  2. Chama LiteLLM [research] → gera plano                       │
-│  3. Comenta plano no Linear                                     │
+│  3. Comenta plano no Plane                                      │
 │  4. ⏸ PAUSE — aguarda aprovação humana                          │
 │  5. Cria branch: agent/{issue-id}-{slug}                        │
 │  6. Envia tarefa para agent-runners                             │
@@ -47,7 +47,7 @@
 │      validação/summary do run                                   │
 │  18. Memory (MAC-23/45): se critic REPROVA / validação ❌ →     │
 │      destila lição [cheap_fast], embeda e guarda por repo       │
-│  19. Report: comenta resultado consolidado + custo no Linear    │
+│  19. Report: comenta resultado consolidado + custo no Plane     │
 │  20. Persiste qualidade no run (validação/veredito/fixAttempts) │
 └─────────────────────────────────────────────────────────────────┘
 
@@ -61,12 +61,15 @@ graph-level (nó `revising`, fora do `interruptBefore` p/ não re-pedir aprovaç
 Checkpointer Postgres persiste e retoma após restart (MAC-34).
 
 **Disparo e escala.** Além do webhook `ai-ready`, um **scheduler cron** (MAC-38)
-cria issues + runs (auto-aprovados se sem motivo crítico). O run grava `agent_id`
+cria cards + runs (auto-aprovados se sem motivo crítico). O run grava `agent_id`
 do **Agent Registry** (MAC-42); ferramentas e suas permissões vivem no **Tool
 Registry** (MAC-43). O worker processa **N runs em paralelo**
-(`AGENT_MAX_CONCURRENCY`, MAC-47) com dedup de issue ativa por índice único; o
+(`AGENT_MAX_CONCURRENCY`, MAC-47) com dedup de card ativo por índice único; o
 dispatch faz **failover** entre runners (MAC-39). Concorrência observável em
 `GET /admin/concurrency`.
+
+Linear continua suportado como provider legado/opcional para cards migrados ou
+integrações antigas, mas o fluxo operacional novo usa Plane por padrão.
 
 ## VMs e DNS interno
 

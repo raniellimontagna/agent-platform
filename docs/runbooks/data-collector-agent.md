@@ -5,7 +5,7 @@ públicos que alimentam outros agentes, especialmente o `landing-page-agent`.
 
 ## Como selecionar
 
-Em uma issue Linear:
+Em um card Plane:
 
 - adicione `ai-ready`;
 - adicione `agent:data-collector`;
@@ -38,7 +38,7 @@ login, captcha, rate limits, permissões da Graph API ou termos da plataforma.
 
 MAC-94 integra o Firecrawl no runner para o primeiro fluxo real de coleta:
 
-- extrai até 5 URLs explícitas do título, descrição e plano da issue;
+- extrai até 5 URLs explícitas do título, descrição e plano do card;
 - chama `POST /v2/scrape` com `formats: ["markdown", "summary"]`;
 - gera um `Research Pack` em Markdown com fontes, método, status, resumo,
   extrato e limitações;
@@ -72,6 +72,8 @@ As tools foram adicionadas ao Tool Registry como metadado:
 Nesta etapa, Firecrawl roda via integração controlada no worker. As demais tools
 ainda não entram no `AGENT_COMMAND_ALLOWLIST` do runner. Isso evita habilitar
 execução ampla antes de termos política e sandbox específicos para coleta.
+
+Cards Linear ainda podem ser usados apenas no provider legado/opcional.
 
 ## Política
 
