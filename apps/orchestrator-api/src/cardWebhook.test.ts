@@ -15,4 +15,32 @@ describe('labelJustAdded', () => {
       }),
     ).toBe(true);
   });
+
+  it('returns false on update when previous label state is absent', () => {
+    expect(
+      labelJustAdded({
+        currentNames: ['ai-ready'],
+        currentIds: ['ai-ready-id'],
+        previousNames: undefined,
+        previousIds: undefined,
+        action: 'update',
+        name: 'ai-ready',
+        id: 'ai-ready-id',
+      }),
+    ).toBe(false);
+  });
+
+  it('returns false on update when the label was already present', () => {
+    expect(
+      labelJustAdded({
+        currentNames: ['ai-ready'],
+        currentIds: ['ai-ready-id'],
+        previousNames: ['ai-ready'],
+        previousIds: ['ai-ready-id'],
+        action: 'update',
+        name: 'ai-ready',
+        id: 'ai-ready-id',
+      }),
+    ).toBe(false);
+  });
 });
