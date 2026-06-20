@@ -90,12 +90,18 @@ function inlineMarkdown(value: string): string {
   const codeChunk = /`([^`]+)`/g;
   const chunks: string[] = [];
   let cursor = 0;
-  let match: RegExpExecArray | null;
+  let match = codeChunk.exec(value);
 
-  while ((match = codeChunk.exec(value)) !== null) {
+  while (match !== null) {
+    const code = match[1];
     chunks.push(formatInlineMarkdown(value.slice(cursor, match.index)));
-    chunks.push(`<code>${escapeHtml(match[1]!)}</code>`);
+    if (code !== undefined) {
+      chunks.push(`<code>${escapeHtml(code)}</code>`);
+    } else {
+      chunks.push(escapeHtml(match[0]));
+    }
     cursor = match.index + match[0].length;
+    match = codeChunk.exec(value);
   }
 
   chunks.push(formatInlineMarkdown(value.slice(cursor)));
@@ -106,19 +112,22 @@ function formatInlineMarkdown(value: string): string {
   const linkChunk = /\[([^\]\n]+)\]\(([^)\s]+)\)/g;
   const chunks: string[] = [];
   let cursor = 0;
-  let match: RegExpExecArray | null;
+  let match = linkChunk.exec(value);
 
-  while ((match = linkChunk.exec(value)) !== null) {
+  while (match !== null) {
+    const label = match[1];
+    const url = match[2];
     chunks.push(formatBold(escapeHtml(value.slice(cursor, match.index))));
 
-    const href = normalizePlaneHref(match[2]!);
-    if (href) {
-      chunks.push(`<a href="${escapeHtml(href)}">${escapeHtml(match[1]!)}</a>`);
+    const href = url ? normalizePlaneHref(url) : null;
+    if (href && label !== undefined) {
+      chunks.push(`<a href="${escapeHtml(href)}">${escapeHtml(label)}</a>`);
     } else {
       chunks.push(escapeHtml(match[0]));
     }
 
     cursor = match.index + match[0].length;
+    match = linkChunk.exec(value);
   }
 
   chunks.push(formatBold(escapeHtml(value.slice(cursor))));

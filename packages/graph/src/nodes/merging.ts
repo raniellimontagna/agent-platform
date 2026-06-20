@@ -1,5 +1,5 @@
-import { type GithubGateway, parseRepoFullName } from '@agent-platform/github';
 import type { CardGateway } from '@agent-platform/cards';
+import { type GithubGateway, parseRepoFullName } from '@agent-platform/github';
 import type { AgentStateType } from '../state.js';
 import { shouldAutoMerge } from './report.js';
 

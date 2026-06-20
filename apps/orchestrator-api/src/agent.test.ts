@@ -39,7 +39,10 @@ describe('resolveGraphBinding', () => {
 
     const cards = {
       primary: { provider: 'plane', id: 'primary-plane' },
-      forProvider: vi.fn((provider: 'plane' | 'linear') => ({ provider, id: `${provider}-gateway` })),
+      forProvider: vi.fn((provider: 'plane' | 'linear') => ({
+        provider,
+        id: `${provider}-gateway`,
+      })),
     };
 
     expect(

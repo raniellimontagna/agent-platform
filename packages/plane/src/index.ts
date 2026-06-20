@@ -1,8 +1,8 @@
 import {
-  markdownToPlaneHtml,
   type CardContext,
   type CardGateway,
   type CreateCardInput,
+  markdownToPlaneHtml,
 } from '@agent-platform/cards';
 
 export interface PlaneConfig {
@@ -17,7 +17,9 @@ export type PlaneLabelIds = Record<string, string>;
 export interface PlaneGateway extends CardGateway {
   provider: 'plane';
   projectId: string;
-  listCardsByExternal(input: { externalSource: string; externalId: string }): Promise<CardContext[]>;
+  listCardsByExternal(input: { externalSource: string; externalId: string }): Promise<
+    CardContext[]
+  >;
   listComments(cardId: string): Promise<string[]>;
   listLabels(): Promise<Array<{ id: string; name: string }>>;
   listStates(): Promise<Array<{ id: string; name: string }>>;
@@ -153,9 +155,7 @@ export function createPlaneGateway(config: PlaneConfig): PlaneGateway {
       const comments = await listPaginated<PlaneComment>(
         `/projects/${config.projectId}/work-items/${cardId}/comments/`,
       );
-      return comments.flatMap((comment) =>
-        comment.comment_html ? [comment.comment_html] : [],
-      );
+      return comments.flatMap((comment) => (comment.comment_html ? [comment.comment_html] : []));
     },
 
     async listLabels() {
@@ -171,8 +171,7 @@ export function createPlaneGateway(config: PlaneConfig): PlaneGateway {
 }
 
 function toCardContext(item: PlaneWorkItem, projectId: string): CardContext {
-  const projectIdentifier =
-    item.project_detail?.identifier ?? item.project_identifier ?? 'AGP';
+  const projectIdentifier = item.project_detail?.identifier ?? item.project_identifier ?? 'AGP';
   const sequence = item.sequence_id ?? item.sequenceId;
   return {
     provider: 'plane',

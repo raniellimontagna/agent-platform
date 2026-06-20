@@ -213,10 +213,7 @@ export function makeCoderNode(deps: CoderDeps, opts: { revise?: boolean } = {}) 
       return update;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      await deps.cards.comment(
-        state.issueId,
-        `## ⚠️ Execução falhou\n\n\`\`\`\n${message}\n\`\`\``,
-      );
+      await deps.cards.comment(state.issueId, `## ⚠️ Execução falhou\n\n\`\`\`\n${message}\n\`\`\``);
       return { branch, status: 'failed', error: message };
     }
   };

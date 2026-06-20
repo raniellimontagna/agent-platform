@@ -1,7 +1,7 @@
+import type { CardGatewayRegistry, CardProvider } from '@agent-platform/cards';
 import { parseRepoRef } from '@agent-platform/github';
 import { verdictOf } from '@agent-platform/graph';
 import { distillLesson } from '@agent-platform/memory';
-import type { CardGatewayRegistry, CardProvider } from '@agent-platform/cards';
 import { Worker } from 'bullmq';
 import type { Logger } from 'pino';
 import { getAgent as getRuntimeAgent, resolveAgentGraph } from './agent.js';
@@ -115,11 +115,11 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
       const run = await getRun(runId);
       const graphProvider =
         job.data.kind === 'plan'
-          ? toCardProvider(run?.cardProvider) ?? planCard!.cardProvider
-          : toCardProvider(run?.cardProvider) ?? 'linear';
+          ? (toCardProvider(run?.cardProvider) ?? planCard.cardProvider)
+          : (toCardProvider(run?.cardProvider) ?? 'linear');
       const graph = resolveAgentGraph(agent, graphProvider);
       if (job.data.kind === 'plan') {
-        const cardId = run?.cardId ?? planCard!.cardId;
+        const cardId = run?.cardId ?? planCard.cardId;
         const cardGateway = cards.forProvider(graphProvider);
         const issue = await cardGateway.getCard(cardId);
         const selectedAgent = run?.agentId ? await getCatalogAgent(run.agentId) : null;
@@ -172,10 +172,12 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
           if (hasCriticalReason(reasons)) {
             const critical = reasons.filter(isCriticalReason);
             const runCardRef = resolveRunCardRef(run);
-            await cards.forProvider(runCardRef.cardProvider).comment(
-              runCardRef.cardId,
-              `## ⏸️ Agendado pausado — aprovação humana necessária\nMotivo(s): ${critical.join(', ')}. Adicione a label \`approved\` para liberar.`,
-            );
+            await cards
+              .forProvider(runCardRef.cardProvider)
+              .comment(
+                runCardRef.cardId,
+                `## ⏸️ Agendado pausado — aprovação humana necessária\nMotivo(s): ${critical.join(', ')}. Adicione a label \`approved\` para liberar.`,
+              );
             log.warn({ runId, critical }, 'agendado retido — motivo crítico');
           } else {
             await resolveApproval(runId, 'approved', 'scheduler');
@@ -213,10 +215,12 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
         log.warn({ total, limit: env.AGENT_MAX_COST_PER_RUN_USD }, 'run estourou o orçamento');
         if (run) {
           const runCardRef = resolveRunCardRef(run);
-          await cards.forProvider(runCardRef.cardProvider).comment(
-            runCardRef.cardId,
-            `## 💸 Alerta de custo\nRun excedeu o limite por task: ~$${total.toFixed(4)} > $${env.AGENT_MAX_COST_PER_RUN_USD}.`,
-          );
+          await cards
+            .forProvider(runCardRef.cardProvider)
+            .comment(
+              runCardRef.cardId,
+              `## 💸 Alerta de custo\nRun excedeu o limite por task: ~$${total.toFixed(4)} > $${env.AGENT_MAX_COST_PER_RUN_USD}.`,
+            );
         }
       }
 
@@ -304,9 +308,10 @@ function toCardProvider(value: string | null | undefined): CardProvider | undefi
   return value === 'plane' || value === 'linear' ? value : undefined;
 }
 
-function resolveRunCardRef(
-  run: NonNullable<Awaited<ReturnType<typeof getRun>>>,
-): { cardProvider: CardProvider; cardId: string } {
+function resolveRunCardRef(run: NonNullable<Awaited<ReturnType<typeof getRun>>>): {
+  cardProvider: CardProvider;
+  cardId: string;
+} {
   return {
     cardProvider: toCardProvider(run.cardProvider) ?? 'linear',
     cardId: run.cardId ?? run.linearIssueId,
