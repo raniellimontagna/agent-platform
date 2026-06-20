@@ -1,4 +1,4 @@
-import type { LinearGateway } from '@agent-platform/linear';
+import type { CardGateway } from '@agent-platform/cards';
 import { type LlmClient, type TokenUsage, estimateCostUsd } from '@agent-platform/llm';
 import {
   criticalReasons,
@@ -41,7 +41,7 @@ Inclua um valor SÓ se a tarefa de fato mexe nisso — não liste por precauçã
 
 export interface PlannerDeps {
   llm: LlmClient;
-  linear: LinearGateway;
+  cards: CardGateway;
 }
 
 /**
@@ -74,7 +74,7 @@ export function makePlannerNode(deps: PlannerDeps) {
       ? `\n\n**⚠️ Aprovação obrigatória — mudanças sensíveis:** ${critical.map(reasonLabel).join(', ')}.`
       : '';
 
-    await deps.linear.comment(
+    await deps.cards.comment(
       state.issueId,
       `## 🤖 Plano do agente\n\n${cleanPlan}${criticalBlock}\n\n---\n_Aguardando aprovação humana para executar._`,
     );

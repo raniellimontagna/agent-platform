@@ -1,7 +1,7 @@
 # Research to Landing Page Workflow
 
 O workflow composto cria uma landing page a partir de pesquisa pública da empresa.
-Ele encadeia dois agentes na mesma issue Linear:
+Ele encadeia dois agentes no mesmo card Plane:
 
 1. `data-collector-agent` coleta dados públicos e salva artifact `research`.
 2. O orchestrator cria automaticamente um segundo run com `landing-page-agent`.
@@ -10,7 +10,7 @@ Ele encadeia dois agentes na mesma issue Linear:
 
 ## Como disparar
 
-Na issue Linear:
+No card Plane:
 
 - inclua `ai-ready`;
 - inclua `workflow:landing-page`;
@@ -23,6 +23,7 @@ Na issue Linear:
 
 Não adicione `agent:landing-page` nem `agent:data-collector`; a label de workflow
 já seleciona o coletor na primeira etapa e o landing-page-agent na continuação.
+Cards Linear continuam aceitos apenas no provider legado/opcional.
 
 ## Comportamento esperado
 

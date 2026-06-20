@@ -1,11 +1,11 @@
+import type { CardGateway } from '@agent-platform/cards';
 import { type GithubGateway, parseRepoFullName } from '@agent-platform/github';
-import type { LinearGateway } from '@agent-platform/linear';
 import type { AgentStateType } from '../state.js';
 import { shouldAutoMerge } from './report.js';
 
 export interface MergingDeps {
   github: GithubGateway;
-  linear: LinearGateway;
+  cards: CardGateway;
   /** Estado "Done" do time no Linear (move a issue ao mergear). */
   doneStateId: string;
 }
@@ -27,7 +27,7 @@ export function makeMergingNode(deps: MergingDeps) {
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      await deps.linear.comment(
+      await deps.cards.comment(
         state.issueId,
         `## ⚠️ Auto-merge falhou — merge manual\n\n\`\`\`\n${msg}\n\`\`\``,
       );
@@ -39,14 +39,14 @@ export function makeMergingNode(deps: MergingDeps) {
         if (targetRepo) await deps.github.deleteBranch(state.branch, targetRepo);
         else await deps.github.deleteBranch(state.branch);
       }
-      await deps.linear.setIssueState(state.issueId, deps.doneStateId);
-      await deps.linear.comment(
+      await deps.cards.setCardState(state.issueId, deps.doneStateId);
+      await deps.cards.comment(
         state.issueId,
         `## ✅ Auto-merge na main\nPR #${state.prNumber} mergeado (squash) e branch \`${state.branch}\` removida.`,
       );
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      await deps.linear.comment(state.issueId, `## ⚠️ Pós-merge parcial\n\`\`\`\n${msg}\n\`\`\``);
+      await deps.cards.comment(state.issueId, `## ⚠️ Pós-merge parcial\n\`\`\`\n${msg}\n\`\`\``);
     }
     return { autoMerged: true };
   };

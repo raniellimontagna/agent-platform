@@ -41,6 +41,7 @@ const run = {
   id: 'run-1',
   linearIssueId: 'issue-1',
   linearIssueIdentifier: 'MAC-90',
+  cardIdentifier: 'AGP-90',
   title: 'Visualizar agentes',
   status: 'completed',
   agentId: 'agent-1',
@@ -61,7 +62,7 @@ describe('renderRegistryPage', () => {
 
     expect(html).toContain('reviewer-agent');
     expect(html).toContain('node');
-    expect(html).toContain('MAC-90');
+    expect(html).toContain('AGP-90');
     expect(html).toContain('reviewer-agent v1');
   });
 
@@ -74,6 +75,16 @@ describe('renderRegistryPage', () => {
 
     expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
     expect(html).not.toContain('<script>alert(1)</script>');
+  });
+
+  it('cai de volta para linearIssueIdentifier quando cardIdentifier não existe', () => {
+    const html = renderRegistryPage({
+      agents: [agent] as never,
+      tools: [tool] as never,
+      runs: [{ ...run, cardIdentifier: undefined }] as never,
+    });
+
+    expect(html).toContain('MAC-90');
   });
 });
 
