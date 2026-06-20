@@ -276,6 +276,53 @@ describe('POST /webhooks/linear', () => {
     );
   });
 
+  it('POST /webhooks/plane accepts documented issue event payloads', async () => {
+    vi.mocked(resolveAgentByKey).mockResolvedValue({ id: 'agent-id' } as never);
+    vi.mocked(createRun).mockResolvedValue('run-plane-issue-event');
+    const body = JSON.stringify({
+      action: 'update',
+      event: 'issue',
+      data: {
+        id: 'plane-issue-1',
+        sequence_id: 33,
+        name: 'Plane documented payload',
+        labels: [{ id: 'plane-ai-ready-id', name: 'ai-ready' }],
+        project_id: 'plane-project',
+        project_detail: { identifier: 'AGP' },
+      },
+      updatedFrom: { labels: [] },
+    });
+
+    const res = await app.request('/webhooks/plane', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-plane-signature': signed(body),
+        'x-plane-event': 'issue',
+      },
+      body,
+    });
+
+    expect(res.status).toBe(200);
+    expect(createRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cardProvider: 'plane',
+        cardId: 'plane-issue-1',
+        cardIdentifier: 'AGP-33',
+      }),
+    );
+    expect(agentQueue.add).toHaveBeenCalledWith(
+      'plan',
+      {
+        kind: 'plan',
+        runId: 'run-plane-issue-event',
+        cardProvider: 'plane',
+        cardId: 'plane-issue-1',
+      },
+      { priority: 10 },
+    );
+  });
+
   it('POST /webhooks/plane resumes awaiting approval when approved was newly added', async () => {
     vi.mocked(findAwaitingApprovalRunForCard).mockResolvedValue({
       id: 'run-plane-approval',

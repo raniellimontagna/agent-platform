@@ -127,12 +127,6 @@ export const runs = pgTable(
       .where(
         sql`${t.status} in ('pending','planning','awaiting_approval','executing','reviewing')`,
       ),
-    // MAC-47: no máx. 1 run ativo por issue (fecha a race de webhooks simultâneos).
-    uniqueIndex('runs_active_issue_uq')
-      .on(t.linearIssueId)
-      .where(
-        sql`${t.status} in ('pending','planning','awaiting_approval','executing','reviewing')`,
-      ),
     uniqueIndex('runs_active_card_uq')
       .on(t.cardProvider, t.cardId)
       .where(

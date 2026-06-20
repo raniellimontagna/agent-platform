@@ -39,8 +39,8 @@ export async function countRunsByStatus(): Promise<Partial<Record<RunStatus, num
 }
 
 export interface NewRunInput {
-  linearIssueId: string;
-  linearIssueIdentifier: string;
+  linearIssueId?: string;
+  linearIssueIdentifier?: string;
   cardProvider?: CardProvider;
   cardId?: string;
   cardIdentifier?: string;
@@ -74,8 +74,8 @@ export function resolveRunCardFields(
 } {
   return {
     cardProvider: input.cardProvider ?? 'linear',
-    cardId: input.cardId ?? input.linearIssueId,
-    cardIdentifier: input.cardIdentifier ?? input.linearIssueIdentifier,
+    cardId: input.cardId ?? input.linearIssueId ?? '',
+    cardIdentifier: input.cardIdentifier ?? input.linearIssueIdentifier ?? '',
   };
 }
 
@@ -86,11 +86,14 @@ export async function createRun(input: NewRunInput): Promise<string> {
   // não bloqueia o run.
   const agentId = input.agentId ?? (await resolveDefaultAgent())?.id;
   const { cardProvider, cardId, cardIdentifier } = resolveRunCardFields(input);
+  if (!cardId || !cardIdentifier) {
+    throw new Error('createRun requires cardId/cardIdentifier or legacy Linear issue fields');
+  }
   const [row] = await db
     .insert(schema.runs)
     .values({
-      linearIssueId: input.linearIssueId,
-      linearIssueIdentifier: input.linearIssueIdentifier,
+      linearIssueId: input.linearIssueId ?? cardId,
+      linearIssueIdentifier: input.linearIssueIdentifier ?? cardIdentifier,
       cardProvider,
       cardId,
       cardIdentifier,

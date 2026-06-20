@@ -14,15 +14,15 @@ const envSchema = z.object({
   LLM_TIMEOUT_MS: z.coerce.number().default(750_000),
   LLM_MAX_RETRIES: z.coerce.number().default(0),
 
-  LINEAR_API_KEY: z.string().min(1),
-  LINEAR_WEBHOOK_SECRET: z.string().min(1),
+  LINEAR_API_KEY: z.string().min(1).optional(),
+  LINEAR_WEBHOOK_SECRET: z.string().min(1).optional(),
   // ID da label ai-ready no Linear — usado quando o webhook manda labelIds (não nomes).
   LINEAR_AI_READY_LABEL_ID: z.string().default('ea322be4-50bb-4703-af1c-35636ac2f9dc'),
   // ID da label `approved` — aprova o run pausado pela própria UI do Linear (MAC-22).
   LINEAR_APPROVED_LABEL_ID: z.string().default('c574cf55-fb4d-4e19-8898-b5423bb55eff'),
 
   CARD_PRIMARY_PROVIDER: z.enum(['plane', 'linear']).default('plane'),
-  CARD_EXTRA_PROVIDERS: z.string().default('linear'),
+  CARD_EXTRA_PROVIDERS: z.string().default(''),
 
   PLANE_BASE_URL: z.string().url().default('http://10.10.0.14:8080'),
   PLANE_API_KEY: z.string().optional(),
@@ -71,7 +71,7 @@ const envSchema = z.object({
   // Loop de revisão pelo critic (MAC-59): máximo de voltas de re-revisão.
   AGENT_MAX_REVIEW_ROUNDS: z.coerce.number().default(3),
   // Scheduler (MAC-38): time onde as issues agendadas são criadas (obrigatório).
-  LINEAR_TEAM_ID: z.string().min(1),
+  LINEAR_TEAM_ID: z.string().min(1).optional(),
   // Timezone default dos agendamentos (cada schedule pode sobrescrever).
   SCHEDULER_TZ: z.string().default('UTC'),
   // Label opcional aplicada às issues criadas por agendamento.
@@ -114,6 +114,30 @@ function loadEnv(): Env {
   });
   if (placeholders.length > 0) {
     throw new Error(`Secrets com placeholder (preencha o .env): ${placeholders.join(', ')}`);
+  }
+
+  const cardProviders = new Set([
+    parsed.data.CARD_PRIMARY_PROVIDER,
+    ...parsed.data.CARD_EXTRA_PROVIDERS.split(',').map((provider) => provider.trim()),
+  ]);
+  if (cardProviders.has('linear')) {
+    const missing = [
+      !parsed.data.LINEAR_API_KEY ? 'LINEAR_API_KEY' : null,
+      !parsed.data.LINEAR_WEBHOOK_SECRET ? 'LINEAR_WEBHOOK_SECRET' : null,
+    ].filter(Boolean);
+    if (parsed.data.CARD_PRIMARY_PROVIDER === 'linear' && !parsed.data.LINEAR_TEAM_ID) {
+      missing.push('LINEAR_TEAM_ID');
+    }
+    if (missing.length > 0) {
+      throw new Error(`Linear provider habilitado sem env obrigatório: ${missing.join(', ')}`);
+    }
+  }
+  if (
+    parsed.data.CARD_PRIMARY_PROVIDER === 'plane' &&
+    parsed.data.NODE_ENV === 'production' &&
+    !parsed.data.PLANE_WEBHOOK_SECRET
+  ) {
+    throw new Error('PLANE_WEBHOOK_SECRET is required when Plane is the primary provider');
   }
   return parsed.data;
 }
