@@ -17,14 +17,20 @@ export interface PlaneMigrationInput {
 
 export interface PlaneMigrationResult {
   created: number;
+  commented: number;
   skipped: number;
   failed: Array<{ id: string; error: string }>;
+}
+
+function buildProvenanceComment(card: LinearCardSnapshot): string {
+  return `Migrated from Linear: [${card.id}](${card.url}).`;
 }
 
 export async function migrateLinearCardsToPlane(
   input: PlaneMigrationInput,
 ): Promise<PlaneMigrationResult> {
   let created = 0;
+  let commented = 0;
   let skipped = 0;
   const failed: Array<{ id: string; error: string }> = [];
 
@@ -34,8 +40,11 @@ export async function migrateLinearCardsToPlane(
         externalSource: 'linear',
         externalId: card.id,
       });
-      if (existing.length > 0) {
+      const existingCard = existing[0];
+      if (existingCard) {
         skipped++;
+        await input.plane.comment(existingCard.id, buildProvenanceComment(card));
+        commented++;
         continue;
       }
 
@@ -50,7 +59,8 @@ export async function migrateLinearCardsToPlane(
         externalId: card.id,
       });
 
-      await input.plane.comment(createdCard.id, `Migrated from Linear: [${card.id}](${card.url}).`);
+      await input.plane.comment(createdCard.id, buildProvenanceComment(card));
+      commented++;
       created++;
     } catch (err) {
       failed.push({
@@ -60,5 +70,5 @@ export async function migrateLinearCardsToPlane(
     }
   }
 
-  return { created, skipped, failed };
+  return { created, commented, skipped, failed };
 }

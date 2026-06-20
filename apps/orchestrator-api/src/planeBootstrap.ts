@@ -33,6 +33,12 @@ interface PlaneLabel {
   name: string;
 }
 
+interface PlanePage<T> {
+  results?: T[];
+  next_cursor?: string | null;
+  next_page_results?: boolean;
+}
+
 export async function ensurePlaneProjectAndLabels(
   config: PlaneBootstrapConfig,
 ): Promise<PlaneBootstrapResult> {
@@ -58,8 +64,25 @@ export async function ensurePlaneProjectAndLabels(
     return (await res.json()) as T;
   };
 
-  const projects = await request<{ results?: PlaneProject[] }>('/projects/?per_page=100');
-  let project = projects.results?.find((candidate) => candidate.identifier === 'AGP');
+  const listAll = async <T>(path: string): Promise<T[]> => {
+    const items: T[] = [];
+    let cursor: string | null | undefined;
+
+    do {
+      const searchParams = new URLSearchParams({ per_page: '100' });
+      if (cursor) {
+        searchParams.set('cursor', cursor);
+      }
+      const page = await request<PlanePage<T>>(`${path}?${searchParams.toString()}`);
+      items.push(...(page.results ?? []));
+      cursor = page.next_cursor ?? null;
+    } while (cursor);
+
+    return items;
+  };
+
+  const projects = await listAll<PlaneProject>('/projects/');
+  let project = projects.find((candidate) => candidate.identifier === 'AGP');
 
   if (!project) {
     project = await request<PlaneProject>('/projects/', {
@@ -79,8 +102,8 @@ export async function ensurePlaneProjectAndLabels(
     });
   }
 
-  const labels = await request<{ results?: PlaneLabel[] }>(`/projects/${project.id}/labels/`);
-  const byName = new Map((labels.results ?? []).map((label) => [label.name, label.id]));
+  const labels = await listAll<PlaneLabel>(`/projects/${project.id}/labels/`);
+  const byName = new Map(labels.map((label) => [label.name, label.id]));
   const labelIds: Record<string, string> = {};
 
   for (const name of REQUIRED_PLANE_LABELS) {
