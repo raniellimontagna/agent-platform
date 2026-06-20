@@ -4,7 +4,7 @@ import { distillLesson } from '@agent-platform/memory';
 import type { CardGatewayRegistry, CardProvider } from '@agent-platform/cards';
 import { Worker } from 'bullmq';
 import type { Logger } from 'pino';
-import { getAgent as getRuntimeAgent } from './agent.js';
+import { getAgent as getRuntimeAgent, resolveAgentGraph } from './agent.js';
 import {
   LANDING_PAGE_AGENT_KEY,
   ensureDefaultAgents,
@@ -51,7 +51,8 @@ import {
  * - kind `resume`: retoma após aprovação → roda coding (MAC-17) → fim.
  */
 export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, string>> {
-  const { graph, cards, llm, github } = await getRuntimeAgent();
+  const agent = await getRuntimeAgent();
+  const { cards, llm, github } = agent;
 
   // MAC-42/MAC-90: garante os agentes built-in no catálogo (idempotente). Não-fatal.
   try {
@@ -111,11 +112,15 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
           failedCommand?: string;
         };
       };
+      const run = await getRun(runId);
+      const graphProvider =
+        job.data.kind === 'plan'
+          ? toCardProvider(run?.cardProvider) ?? planCard!.cardProvider
+          : toCardProvider(run?.cardProvider) ?? 'linear';
+      const graph = resolveAgentGraph(agent, graphProvider);
       if (job.data.kind === 'plan') {
-        const run = await getRun(runId);
-        const cardProvider = toCardProvider(run?.cardProvider) ?? planCard!.cardProvider;
         const cardId = run?.cardId ?? planCard!.cardId;
-        const cardGateway = cards.forProvider(cardProvider);
+        const cardGateway = cards.forProvider(graphProvider);
         const issue = await cardGateway.getCard(cardId);
         const selectedAgent = run?.agentId ? await getCatalogAgent(run.agentId) : null;
         const description = job.data.context
@@ -206,7 +211,6 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
       const total = await runCostUsd(runId);
       if (total > env.AGENT_MAX_COST_PER_RUN_USD) {
         log.warn({ total, limit: env.AGENT_MAX_COST_PER_RUN_USD }, 'run estourou o orçamento');
-        const run = await getRun(runId);
         if (run) {
           const runCardRef = resolveRunCardRef(run);
           await cards.forProvider(runCardRef.cardProvider).comment(
