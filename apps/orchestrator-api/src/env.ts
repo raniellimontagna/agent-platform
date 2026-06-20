@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+const optionalNonEmptyString = z.preprocess(
+  (value) => (value === '' ? undefined : value),
+  z.string().min(1).optional(),
+);
+
 const envSchema = z.object({
   PORT: z.coerce.number().default(3000),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
@@ -14,8 +19,8 @@ const envSchema = z.object({
   LLM_TIMEOUT_MS: z.coerce.number().default(750_000),
   LLM_MAX_RETRIES: z.coerce.number().default(0),
 
-  LINEAR_API_KEY: z.string().min(1).optional(),
-  LINEAR_WEBHOOK_SECRET: z.string().min(1).optional(),
+  LINEAR_API_KEY: optionalNonEmptyString,
+  LINEAR_WEBHOOK_SECRET: optionalNonEmptyString,
   // ID da label ai-ready no Linear — usado quando o webhook manda labelIds (não nomes).
   LINEAR_AI_READY_LABEL_ID: z.string().default('ea322be4-50bb-4703-af1c-35636ac2f9dc'),
   // ID da label `approved` — aprova o run pausado pela própria UI do Linear (MAC-22).
@@ -25,22 +30,22 @@ const envSchema = z.object({
   CARD_EXTRA_PROVIDERS: z.string().default(''),
 
   PLANE_BASE_URL: z.string().url().default('http://10.10.0.14:8080'),
-  PLANE_API_KEY: z.string().optional(),
+  PLANE_API_KEY: optionalNonEmptyString,
   PLANE_WORKSPACE_SLUG: z.string().default('attodev'),
-  PLANE_PROJECT_ID: z.string().optional(),
-  PLANE_WEBHOOK_SECRET: z.string().optional(),
-  PLANE_AI_READY_LABEL_ID: z.string().optional(),
-  PLANE_APPROVED_LABEL_ID: z.string().optional(),
-  PLANE_AUTO_MERGE_LABEL_ID: z.string().optional(),
-  PLANE_SCHEDULED_LABEL_ID: z.string().optional(),
-  PLANE_DONE_STATE_ID: z.string().optional(),
+  PLANE_PROJECT_ID: optionalNonEmptyString,
+  PLANE_WEBHOOK_SECRET: optionalNonEmptyString,
+  PLANE_AI_READY_LABEL_ID: optionalNonEmptyString,
+  PLANE_APPROVED_LABEL_ID: optionalNonEmptyString,
+  PLANE_AUTO_MERGE_LABEL_ID: optionalNonEmptyString,
+  PLANE_SCHEDULED_LABEL_ID: optionalNonEmptyString,
+  PLANE_DONE_STATE_ID: optionalNonEmptyString,
 
   GITHUB_TOKEN: z.string().min(1),
 
   RUNNER_BASE_URL: z.string().url(),
   // Worker Manager (MAC-39): lista de runners separada por vírgula (failover).
   // Ausente → usa só RUNNER_BASE_URL.
-  RUNNER_BASE_URLS: z.string().optional(),
+  RUNNER_BASE_URLS: optionalNonEmptyString,
   RUNNER_AUTH_TOKEN: z.string().min(1),
   // Jobs de código podem gastar LLM + validação + review/recode; a chamada
   // síncrona precisa cobrir o pior caso enquanto o runner não for assíncrono.
@@ -50,8 +55,8 @@ const envSchema = z.object({
   REPO_URL: z.string().min(1).default('https://github.com/raniellimontagna/agent-platform.git'),
   // Repositórios gerados para entregas finais (landing pages, sites, etc.).
   GENERATED_REPOS_OWNER: z.string().default('attodevlabs'),
-  GENERATED_REPOS_TOKEN: z.string().optional(),
-  GENERATED_REPOS_TEMPLATE: z.string().optional(),
+  GENERATED_REPOS_TOKEN: optionalNonEmptyString,
+  GENERATED_REPOS_TEMPLATE: optionalNonEmptyString,
   GENERATED_REPOS_ALLOW_CREATE: z.coerce.boolean().default(false),
 
   // Cloudflare Workers deploy automático para landing pages geradas após auto-merge.
@@ -71,13 +76,13 @@ const envSchema = z.object({
   // Loop de revisão pelo critic (MAC-59): máximo de voltas de re-revisão.
   AGENT_MAX_REVIEW_ROUNDS: z.coerce.number().default(3),
   // Scheduler (MAC-38): time onde as issues agendadas são criadas (obrigatório).
-  LINEAR_TEAM_ID: z.string().min(1).optional(),
+  LINEAR_TEAM_ID: optionalNonEmptyString,
   // Timezone default dos agendamentos (cada schedule pode sobrescrever).
   SCHEDULER_TZ: z.string().default('UTC'),
   // Label opcional aplicada às issues criadas por agendamento.
-  LINEAR_SCHEDULED_LABEL_ID: z.string().optional(),
+  LINEAR_SCHEDULED_LABEL_ID: optionalNonEmptyString,
   // Auto-merge (MAC-67): label de opt-in + estado "Done" do time p/ fechar a issue.
-  LINEAR_AUTO_MERGE_LABEL_ID: z.string().optional(),
+  LINEAR_AUTO_MERGE_LABEL_ID: optionalNonEmptyString,
   LINEAR_DONE_STATE_ID: z.string().default('79e3b949-6f1f-469d-902d-71d135d18cae'),
 
   // Agent Registry (MAC-42): key do agente default (catálogo/seed/resolução).
