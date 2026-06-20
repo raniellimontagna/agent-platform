@@ -1,4 +1,4 @@
-import type { LinearGateway } from '@agent-platform/linear';
+import type { CardGateway } from '@agent-platform/cards';
 import { type LlmClient, type TokenUsage, estimateCostUsd } from '@agent-platform/llm';
 import type { AgentStateType } from '../state.js';
 import { hasOnlyOperationalCaveats, verdictOf } from './report.js';
@@ -49,7 +49,7 @@ export function decideAfterReview(
 
 export interface ReviewDeps {
   llm: LlmClient;
-  linear: LinearGateway;
+  cards: CardGateway;
   /** Teto de voltas de revisão (MAC-59). */
   maxReviewRounds: number;
   /** Teto de custo por run em USD — corta o loop (MAC-40/59). */
@@ -113,7 +113,7 @@ export function makeReviewNode(deps: ReviewDeps) {
         next === 'coding'
           ? `\n\n_O agente vai tentar endereçar o parecer (revisão ${(state.reviewRounds ?? 0) + 1})._`
           : '';
-      await deps.linear.comment(
+      await deps.cards.comment(
         state.issueId,
         `## 🔎 Revisão do agente (critic)\n\n${review}${roundNote}`,
       );
@@ -132,7 +132,7 @@ export function makeReviewNode(deps: ReviewDeps) {
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       // Falha na revisão não derruba o run: segue para o PR sem parecer.
-      await deps.linear.comment(
+      await deps.cards.comment(
         state.issueId,
         `## ⚠️ Revisão automática falhou (seguindo sem parecer)\n\n\`\`\`\n${message}\n\`\`\``,
       );

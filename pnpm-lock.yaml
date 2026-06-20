@@ -164,12 +164,12 @@ importers:
 
   packages/graph:
     dependencies:
+      '@agent-platform/cards':
+        specifier: workspace:*
+        version: link:../cards
       '@agent-platform/github':
         specifier: workspace:*
         version: link:../github
-      '@agent-platform/linear':
-        specifier: workspace:*
-        version: link:../linear
       '@agent-platform/llm':
         specifier: workspace:*
         version: link:../llm
