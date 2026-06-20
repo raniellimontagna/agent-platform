@@ -1,8 +1,8 @@
-import { createPlaneGateway } from '@agent-platform/plane';
 import { pathToFileURL } from 'node:url';
+import { createPlaneGateway } from '@agent-platform/plane';
 import { env } from './env.js';
 import { ensurePlaneProjectAndLabels } from './planeBootstrap.js';
-import { migrateLinearCardsToPlane, type LinearCardSnapshot } from './planeMigration.js';
+import { type LinearCardSnapshot, migrateLinearCardsToPlane } from './planeMigration.js';
 
 const ACTIVE_LINEAR_STATES = ['Todo', 'Backlog', 'In Progress'] as const;
 const LINEAR_GRAPHQL_URL = 'https://api.linear.app/graphql';
@@ -130,7 +130,9 @@ async function listActiveLinearCards(
 
     const payload = (await response.json()) as LinearGraphQlResponse<LinearIssuesResponse>;
     if (payload.errors?.length) {
-      const message = payload.errors.map((error) => error.message ?? 'Unknown Linear error').join('; ');
+      const message = payload.errors
+        .map((error) => error.message ?? 'Unknown Linear error')
+        .join('; ');
       throw new Error(`Linear migration query failed: ${message}`);
     }
     if (!payload.data) {
@@ -139,7 +141,7 @@ async function listActiveLinearCards(
 
     issues.push(...payload.data.issues.nodes);
     after = payload.data.issues.pageInfo.hasNextPage
-      ? payload.data.issues.pageInfo.endCursor ?? null
+      ? (payload.data.issues.pageInfo.endCursor ?? null)
       : null;
   } while (after);
 
@@ -191,11 +193,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     })
     .catch((error) => {
       console.error(
-        JSON.stringify(
-          { error: error instanceof Error ? error.message : String(error) },
-          null,
-          2,
-        ),
+        JSON.stringify({ error: error instanceof Error ? error.message : String(error) }, null, 2),
       );
       process.exitCode = 1;
     });

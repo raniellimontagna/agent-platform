@@ -21,11 +21,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     })
     .catch((error) => {
       console.error(
-        JSON.stringify(
-          { error: error instanceof Error ? error.message : String(error) },
-          null,
-          2,
-        ),
+        JSON.stringify({ error: error instanceof Error ? error.message : String(error) }, null, 2),
       );
       process.exitCode = 1;
     });

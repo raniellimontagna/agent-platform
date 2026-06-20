@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ensurePlaneProjectAndLabels, REQUIRED_PLANE_LABELS } from './planeBootstrap.js';
+import { REQUIRED_PLANE_LABELS, ensurePlaneProjectAndLabels } from './planeBootstrap.js';
 
 describe('ensurePlaneProjectAndLabels', () => {
   it('creates Agent Platform when AGP is missing', async () => {
@@ -173,9 +173,7 @@ describe('ensurePlaneProjectAndLabels', () => {
     });
 
     expect(result.labelIds).toEqual(
-      Object.fromEntries(
-        REQUIRED_PLANE_LABELS.map((name, index) => [name, `label-${index + 1}`]),
-      ),
+      Object.fromEntries(REQUIRED_PLANE_LABELS.map((name, index) => [name, `label-${index + 1}`])),
     );
     expect(calls).toContain(
       'GET http://plane.local/api/v1/workspaces/attodev/projects/project-9/labels/?per_page=100&cursor=100%3A1%3A0',

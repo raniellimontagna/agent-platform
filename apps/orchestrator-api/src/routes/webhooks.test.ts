@@ -277,7 +277,9 @@ describe('POST /webhooks/linear', () => {
   });
 
   it('POST /webhooks/plane resumes awaiting approval when approved was newly added', async () => {
-    vi.mocked(findAwaitingApprovalRunForCard).mockResolvedValue({ id: 'run-plane-approval' } as never);
+    vi.mocked(findAwaitingApprovalRunForCard).mockResolvedValue({
+      id: 'run-plane-approval',
+    } as never);
     const body = JSON.stringify({
       action: 'update',
       type: 'work_item',

@@ -1,5 +1,5 @@
-import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import type { CardProvider } from '@agent-platform/cards';
+import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import { resolveDefaultAgent } from './agents.js';
 import { db, schema } from './db/client.js';
 
@@ -62,10 +62,12 @@ export interface NewRunInput {
   targetRepoCreate?: boolean;
 }
 
-export function resolveRunCardFields(input: Pick<
-  NewRunInput,
-  'linearIssueId' | 'linearIssueIdentifier' | 'cardProvider' | 'cardId' | 'cardIdentifier'
->): {
+export function resolveRunCardFields(
+  input: Pick<
+    NewRunInput,
+    'linearIssueId' | 'linearIssueIdentifier' | 'cardProvider' | 'cardId' | 'cardIdentifier'
+  >,
+): {
   cardProvider: CardProvider;
   cardId: string;
   cardIdentifier: string;

@@ -1,3 +1,4 @@
+import type { CardGateway, CardGatewayRegistry, CardProvider } from '@agent-platform/cards';
 import {
   type GithubGateway,
   type RepoRef,
@@ -5,7 +6,6 @@ import {
   parseRepoFullName,
   parseRepoRef,
 } from '@agent-platform/github';
-import type { CardGateway, CardGatewayRegistry, CardProvider } from '@agent-platform/cards';
 import { type AgentGraph, buildAgentGraph, createCheckpointer } from '@agent-platform/graph';
 import { type LlmClient, createLlmClient } from '@agent-platform/llm';
 import { createRuntimeCards } from './cards.js';
@@ -54,7 +54,7 @@ export function resolveGraphBinding(
     cardGateway: input.cards.forProvider(provider),
     doneStateId:
       provider === 'plane'
-        ? input.planeDoneStateId ?? input.linearDoneStateId
+        ? (input.planeDoneStateId ?? input.linearDoneStateId)
         : input.linearDoneStateId,
   };
 }
@@ -153,7 +153,9 @@ async function init(): Promise<Agent> {
       env.CARD_PRIMARY_PROVIDER,
       ...env.CARD_EXTRA_PROVIDERS.split(',')
         .map((provider) => provider.trim())
-        .filter((provider): provider is CardProvider => provider === 'plane' || provider === 'linear'),
+        .filter(
+          (provider): provider is CardProvider => provider === 'plane' || provider === 'linear',
+        ),
     ]),
   );
   const baseGraphDeps = {

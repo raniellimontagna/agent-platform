@@ -1,8 +1,8 @@
 import {
-  createCardGatewayRegistry,
   type CardGateway,
   type CardGatewayRegistry,
   type CardProvider,
+  createCardGatewayRegistry,
 } from '@agent-platform/cards';
 import { createLinearGateway } from '@agent-platform/linear';
 import { createPlaneGateway } from '@agent-platform/plane';

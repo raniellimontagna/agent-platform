@@ -88,7 +88,13 @@ describe('createPlaneGateway', () => {
       new Response(null, { status: 204, statusText: 'No Content' }),
       new Response(null, { status: 204, statusText: 'No Content' }),
     ];
-    const fetchMock = vi.fn().mockImplementation(async () => responses.shift()!);
+    const fetchMock = vi.fn().mockImplementation(async () => {
+      const response = responses.shift();
+      if (!response) {
+        throw new Error('Unexpected fetch call');
+      }
+      return response;
+    });
     globalThis.fetch = fetchMock as typeof fetch;
 
     const gateway = createPlaneGateway({
@@ -138,9 +144,11 @@ describe('createPlaneGateway', () => {
   });
 
   it('surfaces Plane API errors with response details', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue(
-      new Response('boom', { status: 500, statusText: 'Internal Server Error' }),
-    ) as typeof fetch;
+    globalThis.fetch = vi
+      .fn()
+      .mockResolvedValue(
+        new Response('boom', { status: 500, statusText: 'Internal Server Error' }),
+      ) as typeof fetch;
 
     const gateway = createPlaneGateway({
       baseUrl: 'http://plane.local',

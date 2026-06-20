@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  createCardGatewayRegistry,
-  markdownToPlaneHtml,
-  type CardGateway,
-} from './index.js';
+import { type CardGateway, createCardGatewayRegistry, markdownToPlaneHtml } from './index.js';
 
 const plane: CardGateway = {
   provider: 'plane',

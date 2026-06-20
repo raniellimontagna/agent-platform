@@ -9,8 +9,7 @@ export function labelJustAdded(input: {
 }): boolean {
   const currentNames = input.currentNames ?? [];
   const currentIds = input.currentIds ?? [];
-  const hasNow =
-    currentNames.includes(input.name) || (!!input.id && currentIds.includes(input.id));
+  const hasNow = currentNames.includes(input.name) || (!!input.id && currentIds.includes(input.id));
   if (!hasNow) return false;
   if (input.action !== 'update') return true;
   if (input.previousNames === undefined && input.previousIds === undefined) {

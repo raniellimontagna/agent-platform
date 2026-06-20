@@ -1,5 +1,5 @@
-import { LinearClient } from '@linear/sdk';
 import type { CardContext, CardGateway, CreateCardInput } from '@agent-platform/cards';
+import { LinearClient } from '@linear/sdk';
 
 async function withRetry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
   let lastErr: unknown;

@@ -1,5 +1,5 @@
-import { type ConnectionOptions, Queue } from 'bullmq';
 import type { CardProvider } from '@agent-platform/cards';
+import { type ConnectionOptions, Queue } from 'bullmq';
 import { env } from './env.js';
 
 /**
@@ -24,9 +24,7 @@ export type PlanJobData = {
   context?: string;
 };
 
-export type AgentJobData =
-  | PlanJobData
-  | { kind: 'resume'; runId: string };
+export type AgentJobData = PlanJobData | { kind: 'resume'; runId: string };
 
 export const AGENT_QUEUE = 'agent-runs';
 

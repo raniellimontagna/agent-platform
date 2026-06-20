@@ -121,7 +121,10 @@ async function handleAiReadyCard(input: {
   }
 
   if (await isPaused()) {
-    logger.warn({ provider: input.provider, card: input.cardIdentifier }, 'agents paused; ai-ready ignorado');
+    logger.warn(
+      { provider: input.provider, card: input.cardIdentifier },
+      'agents paused; ai-ready ignorado',
+    );
     return { skipped: true, reason: 'agents paused' } as const;
   }
 
@@ -313,7 +316,10 @@ webhooks.post('/webhooks/plane', async (c) => {
       { kind: 'resume', runId: run.id },
       { priority: JOB_PRIORITY.resume },
     );
-    logger.info({ runId: run.id, issue: planeCardIdentifier(item) }, 'run approved via Plane, resuming');
+    logger.info(
+      { runId: run.id, issue: planeCardIdentifier(item) },
+      'run approved via Plane, resuming',
+    );
     return c.json({ ok: true, resumed: true, runId: run.id });
   }
 
