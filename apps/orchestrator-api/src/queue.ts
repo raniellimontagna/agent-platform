@@ -1,4 +1,5 @@
 import { type ConnectionOptions, Queue } from 'bullmq';
+import type { CardProvider } from '@agent-platform/cards';
 import { env } from './env.js';
 
 /**
@@ -15,7 +16,14 @@ export const connection: ConnectionOptions = {
 
 /** `plan`: roda planning e pausa na aprovação. `resume`: retoma após aprovado. */
 export type AgentJobData =
-  | { kind: 'plan'; runId: string; issueId: string; context?: string }
+  | {
+      kind: 'plan';
+      runId: string;
+      issueId: string;
+      cardProvider?: CardProvider;
+      cardId?: string;
+      context?: string;
+    }
   | { kind: 'resume'; runId: string };
 
 export const AGENT_QUEUE = 'agent-runs';
