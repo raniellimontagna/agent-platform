@@ -56,4 +56,8 @@ describe('markdownToPlaneHtml', () => {
       '<h2>Title</h2><p><strong>Status:</strong> <code>ok</code></p><ul><li>item</li></ul>',
     );
   });
+
+  it('leaves markdown inside code spans untouched', () => {
+    expect(markdownToPlaneHtml('`**ok**`')).toBe('<p><code>**ok**</code></p>');
+  });
 });
