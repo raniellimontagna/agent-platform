@@ -10,6 +10,7 @@ describe('agentSkills', () => {
 
     expect(registry?.agentSkills['landing-page-agent']).toEqual([
       'landing-page-production',
+      'landing-page-style-recipes',
       'frontend-design',
       'ui-ux-pro-max',
       'accessibility-wcag',
@@ -26,6 +27,7 @@ describe('agentSkills', () => {
 
     expect(instructions).toContain('Agente selecionado: landing-page-agent');
     expect(instructions).toContain('## Skill: landing-page-production');
+    expect(instructions).toContain('## Skill: landing-page-style-recipes');
     expect(instructions).toContain('## Skill: frontend-design');
     expect(instructions).toContain('## Skill: ui-ux-pro-max');
     expect(instructions).toContain('## Skill: accessibility-wcag');
@@ -35,6 +37,8 @@ describe('agentSkills', () => {
     expect(instructions).toContain('## Skill: gsap-motion');
     expect(instructions).toContain('## Skill: higgsfield-media-generation');
     expect(instructions).toContain('Treat this skill as the orchestrator');
+    expect(instructions).toContain('Editorial Travel Magazine');
+    expect(instructions).toContain('Boutique Concierge');
     expect(instructions).toContain('Make the interface perceivable, operable');
     expect(instructions).toContain('Use product-level design judgment');
     expect(instructions).toContain('Use Astro as the page and content framework');

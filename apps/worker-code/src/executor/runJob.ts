@@ -10,6 +10,7 @@ import { checkCommand } from './commandPolicy.js';
 import { DATA_COLLECTOR_AGENT_KEY, runFirecrawlResearchJob } from './firecrawlResearch.js';
 import { commitAll, diffAgainst, pushBranch } from './git.js';
 import { generateHiggsfieldImage, parsePreferredModels } from './higgsfieldTool.js';
+import { runLandingQualityGate } from './landingQuality.js';
 import { runSandboxedCommand } from './sandbox.js';
 import { summarizeFailureTail } from './validation.js';
 import { cleanupWorktree, prepareWorktree } from './worktree.js';
@@ -126,6 +127,24 @@ async function runValidation(
   }
   const passed = results.length === cmds.length && results.every((c) => c.exitCode === 0);
   return { passed, results, failureTail: summarizeFailureTail(results) };
+}
+
+async function runLandingAwareValidation(
+  job: Job,
+  dir: string,
+  filesChanged: string[],
+  log: Logger,
+): Promise<{ passed: boolean; results: CommandResult[]; failureTail: string }> {
+  const quality = await runLandingQualityGate({
+    dir,
+    filesChanged,
+    agentKey: job.agentKey,
+  });
+  if (!quality.passed) {
+    log.warn({ failureTail: quality.failureTail }, 'landing quality gate failed');
+    return quality;
+  }
+  return runValidation(job.commands, dir, job.runId, log);
 }
 
 type CommitAttempt =
@@ -250,7 +269,7 @@ export async function runJob(job: Job): Promise<JobResult> {
       // revalida até passar ou esgotar AGENT_MAX_FIX_ATTEMPTS. O mesmo orçamento
       // cobre falhas de hook/pre-commit no `git commit`: nesse caso o erro também
       // vira feedback para o modelo antes de desistir.
-      let validation = await runValidation(job.commands, dir, job.runId, log);
+      let validation = await runLandingAwareValidation(job, dir, base.filesChanged, log);
       let fixAttempts = 0;
       // Acumula os arquivos tocados ao longo das tentativas — um fix pode criar um
       // arquivo novo cujo erro só aparece na revalidação seguinte; sem isso a próxima
@@ -287,7 +306,7 @@ export async function runJob(job: Job): Promise<JobResult> {
         while (!validation.passed && fixAttempts < env.AGENT_MAX_FIX_ATTEMPTS) {
           const fixed = await applySelfCorrection(validation.failureTail, 'validation failed');
           if (!fixed) break;
-          validation = await runValidation(job.commands, dir, job.runId, log);
+          validation = await runLandingAwareValidation(job, dir, touched, log);
         }
       };
 
@@ -315,7 +334,7 @@ export async function runJob(job: Job): Promise<JobResult> {
           'git commit failed',
         );
         if (!fixed) break;
-        validation = await runValidation(job.commands, dir, job.runId, log);
+        validation = await runLandingAwareValidation(job, dir, touched, log);
         await fixValidationFailures();
         base.fixAttempts = fixAttempts;
         base.filesChanged = touched;
