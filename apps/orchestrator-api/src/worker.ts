@@ -113,13 +113,11 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
         };
       };
       const run = await getRun(runId);
-      const graphProvider =
-        job.data.kind === 'plan'
-          ? (toCardProvider(run?.cardProvider) ?? planCard.cardProvider)
-          : (toCardProvider(run?.cardProvider) ?? 'linear');
-      const graph = resolveAgentGraph(agent, graphProvider);
       if (job.data.kind === 'plan') {
-        const cardId = run?.cardId ?? planCard.cardId;
+        const planJobCard = resolvePlanJobCardRef(job.data);
+        const graphProvider = toCardProvider(run?.cardProvider) ?? planJobCard.cardProvider;
+        const graph = resolveAgentGraph(agent, graphProvider);
+        const cardId = run?.cardId ?? planJobCard.cardId;
         const cardGateway = cards.forProvider(graphProvider);
         const issue = await cardGateway.getCard(cardId);
         const selectedAgent = run?.agentId ? await getCatalogAgent(run.agentId) : null;
@@ -143,6 +141,8 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
           config,
         );
       } else {
+        const graphProvider = toCardProvider(run?.cardProvider) ?? 'linear';
+        const graph = resolveAgentGraph(agent, graphProvider);
         // Retoma a partir do checkpoint (passa null para continuar do interrupt).
         await updateRunStatus(runId, 'executing');
         result = await graph.invoke(null, config);
