@@ -74,7 +74,7 @@ export async function startScheduleWorker(): Promise<Worker<ScheduleFireData, un
 
       await agentQueue.add(
         'plan',
-        { kind: 'plan', runId, issueId: issue.id },
+        { kind: 'plan', runId, issueId: issue.id, cardProvider: 'linear', cardId: issue.id },
         { priority: JOB_PRIORITY.plan },
       );
 
