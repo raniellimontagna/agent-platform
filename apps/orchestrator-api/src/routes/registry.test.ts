@@ -76,6 +76,16 @@ describe('renderRegistryPage', () => {
     expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
     expect(html).not.toContain('<script>alert(1)</script>');
   });
+
+  it('cai de volta para linearIssueIdentifier quando cardIdentifier não existe', () => {
+    const html = renderRegistryPage({
+      agents: [agent] as never,
+      tools: [tool] as never,
+      runs: [{ ...run, cardIdentifier: undefined }] as never,
+    });
+
+    expect(html).toContain('MAC-90');
+  });
 });
 
 describe('GET /registry', () => {

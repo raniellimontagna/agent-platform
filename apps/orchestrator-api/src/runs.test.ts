@@ -1,18 +1,33 @@
 import { describe, expect, it } from 'vitest';
-import type { NewRunInput } from './runs.js';
+import { resolveRunCardFields } from './runs.js';
 
-describe('NewRunInput', () => {
-  it('accepts generic card fields while preserving linear fields', () => {
-    const input: NewRunInput = {
+describe('resolveRunCardFields', () => {
+  it('defaults generic card fields from the legacy linear inputs', () => {
+    expect(
+      resolveRunCardFields({
+        linearIssueId: 'issue-1',
+        linearIssueIdentifier: 'MAC-1',
+      }),
+    ).toEqual({
+      cardProvider: 'linear',
+      cardId: 'issue-1',
+      cardIdentifier: 'MAC-1',
+    });
+  });
+
+  it('preserves explicit generic card fields', () => {
+    expect(
+      resolveRunCardFields({
+        linearIssueId: 'issue-1',
+        linearIssueIdentifier: 'MAC-1',
+        cardProvider: 'plane',
+        cardId: 'plane-work-1',
+        cardIdentifier: 'AGP-1',
+      }),
+    ).toEqual({
       cardProvider: 'plane',
       cardId: 'plane-work-1',
       cardIdentifier: 'AGP-1',
-      cardProjectId: 'project-1',
-      linearIssueId: 'plane-work-1',
-      linearIssueIdentifier: 'AGP-1',
-      title: 'Plane card',
-    };
-
-    expect(input.cardProvider).toBe('plane');
+    });
   });
 });

@@ -1,6 +1,7 @@
 import { parseRepoRef } from '@agent-platform/github';
 import { verdictOf } from '@agent-platform/graph';
 import { distillLesson } from '@agent-platform/memory';
+import type { CardProvider } from '@agent-platform/cards';
 import { Worker } from 'bullmq';
 import type { Logger } from 'pino';
 import { getAgent as getRuntimeAgent } from './agent.js';
@@ -17,7 +18,14 @@ import { ensureGeneratedRepository, resolveGeneratedRepoTarget } from './generat
 import { isPaused } from './killswitch.js';
 import { saveLesson } from './lessons.js';
 import { logger } from './logger.js';
-import { AGENT_QUEUE, type AgentJobData, JOB_PRIORITY, agentQueue, connection } from './queue.js';
+import {
+  AGENT_QUEUE,
+  type AgentJobData,
+  JOB_PRIORITY,
+  agentQueue,
+  connection,
+  resolvePlanJobCardRef,
+} from './queue.js';
 import {
   type RunStatus,
   createRun,
@@ -63,7 +71,8 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
     AGENT_QUEUE,
     async (job) => {
       const { runId } = job.data;
-      const log = logger.child({ runId, kind: job.data.kind });
+      const planCard = job.data.kind === 'plan' ? resolvePlanJobCardRef(job.data) : null;
+      const log = logger.child({ runId, kind: job.data.kind, ...(planCard ?? {}) });
       const config = { configurable: { thread_id: runId } };
 
       // Kill switch (MAC-32): pausado → reenfileira com atraso e não processa.
@@ -103,7 +112,8 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
         };
       };
       if (job.data.kind === 'plan') {
-        const issue = await linear.getIssue(job.data.issueId);
+        const { cardProvider, cardId } = planCard!;
+        const issue = await linear.getIssue(cardId);
         const run = await getRun(runId);
         const selectedAgent = run?.agentId ? await getCatalogAgent(run.agentId) : null;
         const description = job.data.context
@@ -113,7 +123,7 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
         result = await graph.invoke(
           {
             runId,
-            issueId: job.data.issueId,
+            issueId: cardId,
             issueIdentifier: issue.identifier,
             title: issue.title,
             description,
@@ -282,6 +292,10 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
   return worker;
 }
 
+function toCardProvider(value: string | null | undefined): CardProvider | undefined {
+  return value === 'plane' || value === 'linear' ? value : undefined;
+}
+
 async function maybeStartResearchToLandingWorkflow(args: {
   runId: string;
   status: RunStatus;
@@ -304,6 +318,8 @@ async function maybeStartResearchToLandingWorkflow(args: {
 
   const landingAgent = await resolveAgentByKey(LANDING_PAGE_AGENT_KEY);
   const issue = await args.linear.getIssue(sourceRun.linearIssueId);
+  const sourceCardProvider = toCardProvider(sourceRun.cardProvider) ?? 'linear';
+  const sourceCardId = sourceRun.cardId ?? sourceRun.linearIssueId;
   const target = resolveGeneratedRepoTarget({
     title: sourceRun.title,
     description: issue.description,
@@ -329,6 +345,10 @@ async function maybeStartResearchToLandingWorkflow(args: {
   const landingRunId = await createRun({
     linearIssueId: sourceRun.linearIssueId,
     linearIssueIdentifier: sourceRun.linearIssueIdentifier,
+    cardProvider: sourceCardProvider,
+    cardId: sourceCardId,
+    cardIdentifier: sourceRun.cardIdentifier ?? undefined,
+    cardProjectId: sourceRun.cardProjectId ?? undefined,
     title: `${sourceRun.title} — landing page`,
     agentId: landingAgent?.id,
     autoApprove: true,
@@ -341,7 +361,9 @@ async function maybeStartResearchToLandingWorkflow(args: {
     {
       kind: 'plan',
       runId: landingRunId,
-      issueId: sourceRun.linearIssueId,
+      issueId: sourceCardId,
+      cardProvider: sourceCardProvider,
+      cardId: sourceCardId,
       context: formatResearchToLandingContext(args.result.research ?? '', args.runId),
     },
     { priority: JOB_PRIORITY.plan },

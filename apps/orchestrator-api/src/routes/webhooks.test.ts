@@ -80,7 +80,13 @@ describe('POST /webhooks/linear', () => {
     );
     expect(agentQueue.add).toHaveBeenCalledWith(
       'plan',
-      { kind: 'plan', runId: 'run-1', issueId: 'issue-1' },
+      {
+        kind: 'plan',
+        runId: 'run-1',
+        issueId: 'issue-1',
+        cardProvider: 'linear',
+        cardId: 'issue-1',
+      },
       { priority: 10 },
     );
   });

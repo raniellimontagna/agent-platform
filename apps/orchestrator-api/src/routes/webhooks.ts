@@ -156,7 +156,11 @@ webhooks.post('/webhooks/linear', async (c) => {
     }
     throw err;
   }
-  await agentQueue.add('plan', { kind: 'plan', runId, issueId }, { priority: JOB_PRIORITY.plan });
+  await agentQueue.add(
+    'plan',
+    { kind: 'plan', runId, issueId, cardProvider: 'linear', cardId: issueId },
+    { priority: JOB_PRIORITY.plan },
+  );
 
   logger.info(
     { runId, issue: payload.data?.identifier, action: payload.action },

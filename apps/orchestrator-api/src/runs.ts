@@ -62,20 +62,36 @@ export interface NewRunInput {
   targetRepoCreate?: boolean;
 }
 
+export function resolveRunCardFields(input: Pick<
+  NewRunInput,
+  'linearIssueId' | 'linearIssueIdentifier' | 'cardProvider' | 'cardId' | 'cardIdentifier'
+>): {
+  cardProvider: CardProvider;
+  cardId: string;
+  cardIdentifier: string;
+} {
+  return {
+    cardProvider: input.cardProvider ?? 'linear',
+    cardId: input.cardId ?? input.linearIssueId,
+    cardIdentifier: input.cardIdentifier ?? input.linearIssueIdentifier,
+  };
+}
+
 /** Cria o registro do run (MAC-36) e devolve o id. */
 export async function createRun(input: NewRunInput): Promise<string> {
   // MAC-42: grava a versão exata do agente que rodou. Resolve o default quando o
   // chamador não passa um. Sem agente active (não deve ocorrer pós-seed) → null,
   // não bloqueia o run.
   const agentId = input.agentId ?? (await resolveDefaultAgent())?.id;
+  const { cardProvider, cardId, cardIdentifier } = resolveRunCardFields(input);
   const [row] = await db
     .insert(schema.runs)
     .values({
       linearIssueId: input.linearIssueId,
       linearIssueIdentifier: input.linearIssueIdentifier,
-      cardProvider: input.cardProvider ?? 'linear',
-      cardId: input.cardId ?? input.linearIssueId,
-      cardIdentifier: input.cardIdentifier ?? input.linearIssueIdentifier,
+      cardProvider,
+      cardId,
+      cardIdentifier,
       ...(input.cardProjectId ? { cardProjectId: input.cardProjectId } : {}),
       title: input.title,
       status: 'pending',
