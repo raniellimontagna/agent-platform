@@ -39,6 +39,9 @@ importers:
 
   apps/orchestrator-api:
     dependencies:
+      '@agent-platform/cards':
+        specifier: workspace:*
+        version: link:../../packages/cards
       '@agent-platform/github':
         specifier: workspace:*
         version: link:../../packages/github
@@ -54,6 +57,9 @@ importers:
       '@agent-platform/memory':
         specifier: workspace:*
         version: link:../../packages/memory
+      '@agent-platform/plane':
+        specifier: workspace:*
+        version: link:../../packages/plane
       '@agent-platform/policy':
         specifier: workspace:*
         version: link:../../packages/policy

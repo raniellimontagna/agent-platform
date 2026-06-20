@@ -21,6 +21,20 @@ const envSchema = z.object({
   // ID da label `approved` — aprova o run pausado pela própria UI do Linear (MAC-22).
   LINEAR_APPROVED_LABEL_ID: z.string().default('c574cf55-fb4d-4e19-8898-b5423bb55eff'),
 
+  CARD_PRIMARY_PROVIDER: z.enum(['plane', 'linear']).default('plane'),
+  CARD_EXTRA_PROVIDERS: z.string().default('linear'),
+
+  PLANE_BASE_URL: z.string().url().default('http://10.10.0.14:8080'),
+  PLANE_API_KEY: z.string().optional(),
+  PLANE_WORKSPACE_SLUG: z.string().default('attodev'),
+  PLANE_PROJECT_ID: z.string().optional(),
+  PLANE_WEBHOOK_SECRET: z.string().optional(),
+  PLANE_AI_READY_LABEL_ID: z.string().optional(),
+  PLANE_APPROVED_LABEL_ID: z.string().optional(),
+  PLANE_AUTO_MERGE_LABEL_ID: z.string().optional(),
+  PLANE_SCHEDULED_LABEL_ID: z.string().optional(),
+  PLANE_DONE_STATE_ID: z.string().optional(),
+
   GITHUB_TOKEN: z.string().min(1),
 
   RUNNER_BASE_URL: z.string().url(),
@@ -79,6 +93,8 @@ const SECRET_KEYS = [
   'LITELLM_API_KEY',
   'LINEAR_API_KEY',
   'LINEAR_WEBHOOK_SECRET',
+  'PLANE_API_KEY',
+  'PLANE_WEBHOOK_SECRET',
   'GITHUB_TOKEN',
   'GENERATED_REPOS_TOKEN',
   'RUNNER_AUTH_TOKEN',
