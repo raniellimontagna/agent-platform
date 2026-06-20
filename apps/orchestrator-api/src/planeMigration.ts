@@ -1,3 +1,4 @@
+import { markdownToPlaneHtml } from '@agent-platform/cards';
 import type { PlaneGateway } from '@agent-platform/plane';
 
 export interface LinearCardSnapshot {
@@ -10,7 +11,8 @@ export interface LinearCardSnapshot {
 }
 
 export interface PlaneMigrationInput {
-  plane: Pick<PlaneGateway, 'listCardsByExternal' | 'createCard' | 'comment'>;
+  plane: Pick<PlaneGateway, 'listCardsByExternal' | 'createCard' | 'comment'> &
+    Partial<Pick<PlaneGateway, 'listComments'>>;
   linearCards: LinearCardSnapshot[];
   labelIds: Record<string, string>;
 }
@@ -26,6 +28,28 @@ function buildProvenanceComment(card: LinearCardSnapshot): string {
   return `Migrated from Linear: [${card.id}](${card.url}).`;
 }
 
+async function ensureProvenanceComment(input: {
+  plane: PlaneMigrationInput['plane'];
+  cardId: string;
+  commentBody: string;
+}): Promise<boolean> {
+  const expectedHtml = markdownToPlaneHtml(input.commentBody);
+  const existingComments = input.plane.listComments
+    ? await input.plane.listComments(input.cardId)
+    : null;
+
+  if (existingComments?.includes(expectedHtml)) {
+    return false;
+  }
+
+  if (existingComments === null && input.plane.listComments === undefined) {
+    return false;
+  }
+
+  await input.plane.comment(input.cardId, input.commentBody);
+  return true;
+}
+
 export async function migrateLinearCardsToPlane(
   input: PlaneMigrationInput,
 ): Promise<PlaneMigrationResult> {
@@ -36,6 +60,7 @@ export async function migrateLinearCardsToPlane(
 
   for (const card of input.linearCards) {
     try {
+      const provenanceComment = buildProvenanceComment(card);
       const existing = await input.plane.listCardsByExternal({
         externalSource: 'linear',
         externalId: card.id,
@@ -43,8 +68,15 @@ export async function migrateLinearCardsToPlane(
       const existingCard = existing[0];
       if (existingCard) {
         skipped++;
-        await input.plane.comment(existingCard.id, buildProvenanceComment(card));
-        commented++;
+        if (
+          await ensureProvenanceComment({
+            plane: input.plane,
+            cardId: existingCard.id,
+            commentBody: provenanceComment,
+          })
+        ) {
+          commented++;
+        }
         continue;
       }
 
@@ -59,7 +91,7 @@ export async function migrateLinearCardsToPlane(
         externalId: card.id,
       });
 
-      await input.plane.comment(createdCard.id, buildProvenanceComment(card));
+      await input.plane.comment(createdCard.id, provenanceComment);
       commented++;
       created++;
     } catch (err) {

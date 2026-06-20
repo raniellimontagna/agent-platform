@@ -182,4 +182,49 @@ describe('createPlaneGateway', () => {
       'http://plane.local/api/v1/workspaces/attodev/projects/project-1/work-items/?external_source=linear%20board&external_id=MAC%2F121',
     );
   });
+
+  it('lists existing work item comment html for provenance dedupe', async () => {
+    const calls: Array<{ url: string; init: RequestInit }> = [];
+    globalThis.fetch = vi.fn().mockImplementation(async (url: string, init: RequestInit) => {
+      calls.push({ url, init });
+      const page =
+        calls.length === 1
+          ? {
+              next_cursor: 'cursor-2',
+              results: [{ id: 'comment-1', comment_html: '<p>Earlier comment.</p>' }],
+            }
+          : {
+              next_cursor: null,
+              results: [
+                {
+                  id: 'comment-2',
+                  comment_html: '<p>Migrated from Linear: [MAC-5](https://linear/MAC-5).</p>',
+                },
+              ],
+            };
+      return new Response(JSON.stringify(page), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    });
+
+    const gateway = createPlaneGateway({
+      baseUrl: 'http://plane.local',
+      apiKey: 'key',
+      workspaceSlug: 'attodev',
+      projectId: 'project-1',
+    });
+
+    await expect(gateway.listComments('work-5')).resolves.toEqual([
+      '<p>Earlier comment.</p>',
+      '<p>Migrated from Linear: [MAC-5](https://linear/MAC-5).</p>',
+    ]);
+
+    expect(calls[0]?.url).toBe(
+      'http://plane.local/api/v1/workspaces/attodev/projects/project-1/work-items/work-5/comments/?per_page=100',
+    );
+    expect(calls[1]?.url).toBe(
+      'http://plane.local/api/v1/workspaces/attodev/projects/project-1/work-items/work-5/comments/?per_page=100&cursor=cursor-2',
+    );
+  });
 });
