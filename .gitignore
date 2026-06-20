@@ -19,6 +19,9 @@ logs/
 # Eval harness artifacts
 .eval-runs/
 
+# Local implementation worktrees
+.worktrees/
+
 # Drizzle
 drizzle/meta/_journal.json.bak
 
