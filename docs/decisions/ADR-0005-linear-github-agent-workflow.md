@@ -3,6 +3,8 @@
 **Status:** Accepted  
 **Date:** 2026-06-10
 
+> Nota de atualização (2026-06-20): este ADR documenta o fluxo histórico Linear + GitHub + Agent. O estado atual do projeto é Plane-first; Linear permanece opcional/legado para cards existentes e `/webhooks/linear`.
+
 ## Contexto
 
 Precisamos de um fluxo claro de ponta a ponta: como uma issue no Linear vira código no GitHub passando pelo orquestrador.
@@ -13,7 +15,7 @@ Precisamos de um fluxo claro de ponta a ponta: como uma issue no Linear vira có
 
 Issue com label `ai-ready` no Linear dispara o fluxo via webhook.
 
-### Fluxo principal
+### Fluxo principal (histórico)
 
 ```
 Linear (ai-ready)
@@ -38,7 +40,7 @@ Linear (ai-ready)
 
 PR inicial criado como **Draft** quando há incerteza ou revisão pendente.
 
-### Estados no Linear
+### Estados no Linear (histórico)
 
 | Estado | Quando |
 |---|---|
@@ -54,6 +56,6 @@ PR inicial criado como **Draft** quando há incerteza ou revisão pendente.
 
 ## Consequências
 
-- Linear é o painel de controle principal; GitHub é onde o código vive.
+- Linear foi o painel de controle principal neste fluxo histórico; hoje Plane é o provider primário e Linear segue opcional/legado.
 - Aprovação humana está no meio do fluxo — não no final.
 - Draft PR garante que nenhum merge acidental acontece antes da revisão.

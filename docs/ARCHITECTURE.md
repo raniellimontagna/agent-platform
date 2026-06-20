@@ -1,8 +1,9 @@
 # Arquitetura — visão completa
 
 Mapa único do sistema: o que está no ar, o fluxo ponta a ponta, e como cada
-card do Linear (projeto **Orquestrador de Agentes com LangGraph**, time `MAC`)
-se encaixa na estrutura. Serve para validar o todo antes de seguir.
+card do Plane (workspace `attodev`, projeto **Agent Platform** / `AGP`) se
+encaixa na estrutura. Linear fica como provider opcional legado e só entra no
+mapa quando existe card histórico ou suporte explícito em `/webhooks/linear`.
 
 > Estado em 2026-06-16. Legenda: ✅ feito · 🏗 no ar/parcial · ⏳ pendente.
 > **Fases 0–7 completas** — projeto deployado em prod; auto-merge opt-in,
@@ -26,19 +27,22 @@ flowchart TB
     OBS["agent-observability · .13 · LXC 203<br/>Grafana :3000 · Prometheus · Loki · Promtail"]
   end
 
-  LINEAR["Linear (cloud)"]
+  PLANE["Plane (primary card provider)"]
+  LINEAR["Linear (legacy optional provider)"]
   GH["GitHub"]
   SUBS["Claude Max / ChatGPT<br/>(assinaturas via OAuth)"]
   VERBOO["Verboo<br/>(API key, alto volume)"]
 
-  LINEAR -->|"webhook (label ai-ready)"| ORCH
+  PLANE -->|"webhook (label ai-ready / approved)"| ORCH
+  LINEAR -.legacy webhook.-> ORCH
   ORCH -->|"job HTTP"| RUN
   ORCH -->|"aliases LLM"| GW
   RUN -->|"aliases LLM"| GW
   GW -->|"OAuth combos (research/strong_coder/heavy_coder/critic)"| SUBS
   GW -->|"API key (cheap_fast)"| VERBOO
   ORCH -->|"branch · PR · comentários"| GH
-  ORCH -->|"status · comentários"| LINEAR
+  ORCH -->|"status · comentários"| PLANE
+  ORCH -.legacy status/comments.-> LINEAR
   ORCH -.métricas/logs.-> OBS
   RUN -.métricas/logs.-> OBS
   GW -.métricas/logs.-> OBS
@@ -46,7 +50,8 @@ flowchart TB
 
 **Estado da infra:** as 4 VMs provisionadas, no ar e deployadas. Gateway com OmniRoute
 (OAuth) + Verboo + virtual key dedicada (MAC-15); orchestrator com Postgres+pgvector
-(migrations 0000→0009) e embeddings locais; webhook real do Linear via Tailscale Funnel.
+(migrations 0000→0009) e embeddings locais; Plane é o provider primário e
+`/webhooks/linear` segue disponível como legado/optional via Tailscale Funnel.
 
 ---
 
@@ -54,12 +59,12 @@ flowchart TB
 
 ```mermaid
 flowchart TD
-  A["Issue recebe label <b>ai-ready</b>"] -->|webhook| B["Webhook Linear<br/>MAC-19 (dedup por issue ativa)"]
-  SCHED["Scheduler cron<br/>MAC-38"] -->|cria issue + run| C
+  A["Card recebe label <b>ai-ready</b>"] -->|webhook| B["Webhook Plane<br/>MAC-19 (dedup por card ativo)"]
+  SCHED["Scheduler cron<br/>MAC-38"] -->|cria card + run| C
   B --> C["Cria run (agent_id do registry)<br/>MAC-20/42"]
   C --> D["State Machine — fila BullMQ<br/>N runs em paralelo · MAC-14/47"]
   D --> E["Planner Agent gera plano<br/>MAC-16"]
-  E --> F["Reporter comenta plano no Linear<br/>MAC-21"]
+  E --> F["Reporter comenta plano no Plane<br/>MAC-21"]
   F --> G{"Human Approval Node<br/>MAC-22 (auto-aprova agendado)"}
   G -->|aprovado| H["Coder: branch única + worktree<br/>MAC-25/27"]
   G -->|reprovado| Z["Encerra / aguarda"]
@@ -74,7 +79,7 @@ flowchart TD
   M -->|"aprovado / ressalva operacional / teto"| N["PR Creator abre PR<br/>Draft sem auto-merge; pronto com opt-in<br/>MAC-26/67"]
   N --> AR["Artifact Store: plano/patch/review/...<br/>MAC-44"]
   AR --> Q["Memory: destila lição se falhou<br/>(embeda p/ busca futura) MAC-23/45"]
-  Q --> O["Reporter comenta resultado no Linear<br/>MAC-21"]
+  Q --> O["Reporter comenta resultado no Plane<br/>MAC-21"]
   O --> P["Merge automático opt-in<br/>label auto-merge + testes verdes + critic<br/>MAC-67"]
 ```
 
@@ -86,6 +91,9 @@ Engine** (MAC-33), **Workflow Persistence** (MAC-34), **Cost Guard** (MAC-40) e 
 gateway de modelos (Fase 2). Catálogos: **Agent/Tool Registry** (MAC-42/43, metadado +
 FK, não executam — o grafo segue em código). Concorrência: `AGENT_MAX_CONCURRENCY`
 runs simultâneos, observável em `GET /admin/concurrency` (MAC-47).
+
+Plane (primary card provider) -> Orchestrator API -> agent-runners -> GitHub PR -> Plane report
+Linear remains supported as an optional provider for legacy cards through `/webhooks/linear`.
 
 ---
 
@@ -99,7 +107,7 @@ runs simultâneos, observável em `GET /admin/concurrency` (MAC-47).
 | Provider Verboo (`cheap_fast`) | MAC-13 | `infra/compose/gateway/litellm-config.yaml` | config pronta; ⏳ key |
 | Provider OmniRoute/OAuth (`research`/`strong_coder`/`heavy_coder`/`critic`) | MAC-48 | `infra/compose/gateway/` + ADR-0006 | config pronta; ⏳ OAuth |
 | Budgets / Rate limits | MAC-15 | `litellm-config.yaml` + `docs/runbooks/litellm-guardrails.md` | config pronta; ⏳ aplicar chaves virtuais |
-| API + Webhook Linear | MAC-19 | `apps/orchestrator-api/src/routes/webhooks.ts` | ✅ |
+| API + Webhooks Plane/Linear (legacy optional) | MAC-19 | `apps/orchestrator-api/src/routes/webhooks.ts` | ✅ |
 | Fluxo ai-ready | MAC-20 | `apps/orchestrator-api` (enfileirar) | ✅ |
 | State Machine | MAC-14 | `packages/graph` + schema `runs/run_steps` | ✅ (planning→coding→reviewing→pr→report) |
 | Planner / Coder / Reviewer / Reporter | MAC-16/17/18/21 | `packages/graph/src/nodes`, `apps/worker-code` (code-gen) | ✅ |
@@ -112,7 +120,7 @@ runs simultâneos, observável em `GET /admin/concurrency` (MAC-47).
 | Observabilidade (painéis, registro) | MAC-35/36 | `infra/compose/observability/provisioning/`, `apps/orchestrator-api` (runs/steps) | ✅ dashboards com execuções, sandbox, custo, auto-merge e critic |
 | Segurança (vault, allowlist, kill switch) | MAC-30/31/32 | `killswitch.ts`, `routes/admin.ts`, `worker-code/.../commandPolicy.ts`, `docs/runbooks/secrets.md` | ✅ |
 | Loop de revisão (critic re-coda) | MAC-59 | `packages/graph` (nó `revising` + `decideAfterReview`) | ✅ até 3 voltas (`AGENT_MAX_REVIEW_ROUNDS=3`) |
-| Auto-merge opt-in | MAC-67 | `packages/graph/src/nodes/merging.ts`, `report.ts`, webhook Linear labels | ✅ prod E2E: `MAC-84`/`MAC-85`, branch deletada e issue `Done` |
+| Auto-merge opt-in | MAC-67 | `packages/graph/src/nodes/merging.ts`, `report.ts`, webhooks do provedor de cards | ✅ prod E2E: `MAC-84`/`MAC-85`, branch deletada e issue `Done` |
 | Runtime (queue, scheduler, workers, cost, approval) | MAC-37/38/39/40/41 | `apps/orchestrator-api` (BullMQ + cost guard + scheduler), `packages/policy` | ✅ (scheduler `/schedules`, worker manager `/admin/runners` com failover) |
 | Agent Registry / Tool Registry | MAC-42/43 | `apps/orchestrator-api` (`agents.ts`/`tools.ts`, `/agents`,`/tools`), migrations 0006/0007 | ✅ catálogos versionados (capabilities; risk+scopes) + seed + MCP read |
 | Artifact Store | MAC-44 | `apps/orchestrator-api` (`artifacts.ts`, `/runs/:id/artifacts`), migration 0004 | ✅ |
@@ -133,7 +141,7 @@ Provider LLM é híbrido: Verboo (MAC-13) + OmniRoute/OAuth (MAC-48) — ver §5
 | 1 | Infra Proxmox e rede | MAC-8/9/10/11 (+MAC-7¹) | 23/06 | 🏗 no ar; deploy parcial |
 | 2 | Gateway LiteLLM e provedores | MAC-12/13/48/15 | 30/06 | 🏗 no ar; OAuth feito |
 | 3 | Orquestrador LangGraph | MAC-14/16/17/18/21/22/23/24/33/34 | 10/07 | ✅ completa |
-| 4 | Linear, GitHub e Code Runner | MAC-19/20/25/26/27/28/29 | 20/07 | ✅ |
+| 4 | Cards, GitHub e Code Runner | MAC-19/20/25/26/27/28/29 | 20/07 | ✅ |
 | 5 | Segurança e Observabilidade | MAC-30/31/32/35/36 | 10/08 | ✅ |
 | 6 | Runtime e Governança | MAC-37/38/39/40/41 | 24/08 | ✅ |
 | 7 | Produção e Escala | MAC-42/43/44/45/46/47 | 07/09 | ✅ |
