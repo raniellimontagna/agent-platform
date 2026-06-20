@@ -12,6 +12,9 @@ describe('migrateLinearCardsToPlane', () => {
   it('skips cards already present by external id and creates missing cards', async () => {
     const plane = {
       listCardsByExternal: vi.fn().mockResolvedValueOnce([{ id: 'existing' }]).mockResolvedValueOnce([]),
+      listComments: vi
+        .fn()
+        .mockResolvedValueOnce(['<p>Migrated from Linear: [MAC-1](https://linear/MAC-1).</p>']),
       createCard: vi.fn().mockResolvedValue({ id: 'created', identifier: 'AGP-2' }),
       comment: vi.fn(),
     };
@@ -22,6 +25,7 @@ describe('migrateLinearCardsToPlane', () => {
         description: 'A',
         labels: [],
         priority: 'none' as const,
+        state: 'Todo',
         url: 'https://linear/MAC-1',
       },
       {
@@ -30,14 +34,16 @@ describe('migrateLinearCardsToPlane', () => {
         description: 'B',
         labels: ['ai-ready'],
         priority: 'medium' as const,
+        state: 'Todo',
         url: 'https://linear/MAC-2',
       },
     ];
 
     const result = await migrateLinearCardsToPlane({
-      plane: plane as never,
+      plane,
       linearCards,
       labelIds: { 'ai-ready': 'label-ai-ready' },
+      stateIdsByName: { Todo: 'state-todo' },
     });
 
     expect(result.skipped).toBe(1);
@@ -56,6 +62,7 @@ describe('migrateLinearCardsToPlane', () => {
   it('records failures and keeps migrating later cards', async () => {
     const plane = {
       listCardsByExternal: vi.fn().mockResolvedValue([]),
+      listComments: vi.fn().mockResolvedValue([]),
       createCard: vi
         .fn()
         .mockRejectedValueOnce(new Error('boom'))
@@ -72,6 +79,7 @@ describe('migrateLinearCardsToPlane', () => {
           description: 'A',
           labels: [],
           priority: 'high',
+          state: 'Backlog',
           url: 'https://linear/MAC-3',
         },
         {
@@ -80,10 +88,12 @@ describe('migrateLinearCardsToPlane', () => {
           description: 'B',
           labels: [],
           priority: 'low',
+          state: 'In Progress',
           url: 'https://linear/MAC-4',
         },
       ],
       labelIds: {},
+      stateIdsByName: {},
     });
 
     expect(result).toEqual({
@@ -115,10 +125,12 @@ describe('migrateLinearCardsToPlane', () => {
           description: 'A',
           labels: ['Feature'],
           priority: 'medium',
+          state: 'Todo',
           url: 'https://linear/MAC-5',
         },
       ],
       labelIds: { Feature: 'label-feature' },
+      stateIdsByName: { Todo: 'state-todo' },
     });
 
     expect(result).toEqual({
@@ -149,10 +161,12 @@ describe('migrateLinearCardsToPlane', () => {
           description: 'A',
           labels: ['Feature'],
           priority: 'medium',
+          state: 'Todo',
           url: 'https://linear/MAC-5',
         },
       ],
       labelIds: { Feature: 'label-feature' },
+      stateIdsByName: { Todo: 'state-todo' },
     });
 
     expect(result).toEqual({
@@ -167,6 +181,93 @@ describe('migrateLinearCardsToPlane', () => {
       'Migrated from Linear: [MAC-5](https://linear/MAC-5).',
     );
   });
+
+  it('maps Linear states to Plane states and preserves exact-name labels already present in Plane', async () => {
+    const plane = {
+      listCardsByExternal: vi.fn().mockResolvedValue([]),
+      listComments: vi.fn().mockResolvedValue([]),
+      createCard: vi
+        .fn()
+        .mockResolvedValueOnce({ id: 'created-1', identifier: 'AGP-11' })
+        .mockResolvedValueOnce({ id: 'created-2', identifier: 'AGP-12' })
+        .mockResolvedValueOnce({ id: 'created-3', identifier: 'AGP-13' }),
+      comment: vi.fn(),
+    };
+
+    const result = await migrateLinearCardsToPlane({
+      plane,
+      linearCards: [
+        {
+          id: 'MAC-11',
+          title: 'Backlog card',
+          description: 'A',
+          labels: ['ai-ready', 'Customer Escalation'],
+          priority: 'high',
+          state: 'Backlog',
+          url: 'https://linear/MAC-11',
+        },
+        {
+          id: 'MAC-12',
+          title: 'Todo card',
+          description: 'B',
+          labels: ['Feature'],
+          priority: 'medium',
+          state: 'Todo',
+          url: 'https://linear/MAC-12',
+        },
+        {
+          id: 'MAC-13',
+          title: 'In progress card',
+          description: 'C',
+          labels: [],
+          priority: 'low',
+          state: 'In Progress',
+          url: 'https://linear/MAC-13',
+        },
+      ],
+      labelIds: {
+        'ai-ready': 'label-ai-ready',
+        'Customer Escalation': 'label-customer-escalation',
+        Feature: 'label-feature',
+      },
+      stateIdsByName: {
+        Backlog: 'state-backlog',
+        Unstarted: 'state-unstarted',
+        Started: 'state-started',
+      },
+    });
+
+    expect(result).toEqual({
+      created: 3,
+      commented: 3,
+      skipped: 0,
+      failed: [],
+    });
+    expect(plane.createCard).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        externalId: 'MAC-11',
+        labelIds: ['label-ai-ready', 'label-customer-escalation'],
+        stateId: 'state-backlog',
+      }),
+    );
+    expect(plane.createCard).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        externalId: 'MAC-12',
+        labelIds: ['label-feature'],
+        stateId: 'state-unstarted',
+      }),
+    );
+    expect(plane.createCard).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({
+        externalId: 'MAC-13',
+        labelIds: [],
+        stateId: 'state-started',
+      }),
+    );
+  });
 });
 
 describe('planeMigrationCli main', () => {
@@ -174,7 +275,17 @@ describe('planeMigrationCli main', () => {
     const labelIds = Object.fromEntries(
       REQUIRED_PLANE_LABELS.map((name, index) => [name, `label-${index + 1}`]),
     );
-    const plane = { kind: 'plane-gateway' };
+    const plane = {
+      kind: 'plane-gateway',
+      listLabels: vi.fn().mockResolvedValue([
+        { id: 'label-customer-escalation', name: 'Customer Escalation' },
+      ]),
+      listStates: vi.fn().mockResolvedValue([
+        { id: 'state-backlog', name: 'Backlog' },
+        { id: 'state-unstarted', name: 'Unstarted' },
+        { id: 'state-started', name: 'Started' },
+      ]),
+    };
     const migrateLinearCardsToPlaneMock = vi.fn().mockResolvedValue({
       created: 1,
       skipped: 0,
@@ -221,8 +332,11 @@ describe('planeMigrationCli main', () => {
                   description: 'A',
                   priority: 3,
                   url: 'https://linear/MAC-6',
+                  state: {
+                    name: 'Todo',
+                  },
                   labels: {
-                    nodes: [{ name: 'repo:create' }, { name: 'Feature' }],
+                    nodes: [{ name: 'repo:create' }, { name: 'Customer Escalation' }],
                   },
                 },
               ],
@@ -253,12 +367,21 @@ describe('planeMigrationCli main', () => {
           id: 'MAC-6',
           title: 'Bootstrap labels',
           description: 'A',
-          labels: ['repo:create', 'Feature'],
+          labels: ['repo:create', 'Customer Escalation'],
           priority: 'medium',
+          state: 'Todo',
           url: 'https://linear/MAC-6',
         },
       ],
-      labelIds,
+      labelIds: {
+        ...labelIds,
+        'Customer Escalation': 'label-customer-escalation',
+      },
+      stateIdsByName: {
+        Backlog: 'state-backlog',
+        Unstarted: 'state-unstarted',
+        Started: 'state-started',
+      },
     });
   });
 });

@@ -19,6 +19,8 @@ export interface PlaneGateway extends CardGateway {
   projectId: string;
   listCardsByExternal(input: { externalSource: string; externalId: string }): Promise<CardContext[]>;
   listComments(cardId: string): Promise<string[]>;
+  listLabels(): Promise<Array<{ id: string; name: string }>>;
+  listStates(): Promise<Array<{ id: string; name: string }>>;
 }
 
 interface PlaneWorkItem {
@@ -36,6 +38,11 @@ interface PlaneWorkItem {
 interface PlaneComment {
   id: string;
   comment_html?: string | null;
+}
+
+interface PlaneNamedEntity {
+  id: string;
+  name: string;
 }
 
 interface PlanePaginatedResponse<T> {
@@ -67,6 +74,24 @@ export function createPlaneGateway(config: PlaneConfig): PlaneGateway {
       return undefined as T;
     }
     return (await res.json()) as T;
+  }
+
+  async function listPaginated<T>(path: string): Promise<T[]> {
+    const items: T[] = [];
+    let cursor: string | null | undefined;
+
+    do {
+      const query = new URLSearchParams({ per_page: '100' });
+      if (cursor) {
+        query.set('cursor', cursor);
+      }
+
+      const data = await request<PlanePaginatedResponse<T>>(`${path}?${query.toString()}`);
+      items.push(...(data.results ?? []));
+      cursor = data.next_cursor ?? null;
+    } while (cursor);
+
+    return items;
   }
 
   const gateway: PlaneGateway = {
@@ -125,27 +150,20 @@ export function createPlaneGateway(config: PlaneConfig): PlaneGateway {
     },
 
     async listComments(cardId) {
-      const comments: string[] = [];
-      let cursor: string | null | undefined;
+      const comments = await listPaginated<PlaneComment>(
+        `/projects/${config.projectId}/work-items/${cardId}/comments/`,
+      );
+      return comments.flatMap((comment) =>
+        comment.comment_html ? [comment.comment_html] : [],
+      );
+    },
 
-      do {
-        const query = new URLSearchParams({ per_page: '100' });
-        if (cursor) {
-          query.set('cursor', cursor);
-        }
+    async listLabels() {
+      return listPaginated<PlaneNamedEntity>(`/projects/${config.projectId}/labels/`);
+    },
 
-        const data = await request<PlanePaginatedResponse<PlaneComment>>(
-          `/projects/${config.projectId}/work-items/${cardId}/comments/?${query.toString()}`,
-        );
-        for (const comment of data.results ?? []) {
-          if (comment.comment_html) {
-            comments.push(comment.comment_html);
-          }
-        }
-        cursor = data.next_cursor;
-      } while (cursor);
-
-      return comments;
+    async listStates() {
+      return listPaginated<PlaneNamedEntity>(`/projects/${config.projectId}/states/`);
     },
   };
 

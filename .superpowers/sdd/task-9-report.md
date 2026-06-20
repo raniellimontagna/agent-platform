@@ -272,6 +272,107 @@ $ tsc
 
 Exit code: `0`
 
+## Review Fix: Preserve Linear State and Exact-Name Labels
+
+### What Changed
+
+- Extended `LinearCardSnapshot` with the source Linear state name and updated the Linear GraphQL query to fetch `state.name`.
+- Tightened `PlaneMigrationInput` so migration now always receives `listComments()`, making provenance-comment idempotency explicit.
+- Added state resolution in `migrateLinearCardsToPlane()` and passed `stateId` into `createCard()` when a Plane mapping exists.
+  - Exact-name matches are used first.
+  - Fallback aliases are supported for the required semantics:
+    - `Todo` -> `Todo` or `Unstarted`
+    - `In Progress` -> `In Progress` or `Started`
+    - `Backlog` -> `Backlog`
+- Extended the Plane gateway with `listLabels()` and `listStates()` so the migration CLI can load the full project label/state maps.
+- Updated `planeMigrationCli.ts` to merge bootstrap-required labels with the complete Plane label map, preserving exact-name labels that already exist in Plane even when they are outside `REQUIRED_PLANE_LABELS`.
+- Added focused tests proving:
+  - migrated cards pass `stateId` into `createCard()`,
+  - exact-name labels outside `REQUIRED_PLANE_LABELS` are preserved when present in Plane,
+  - the Plane gateway paginates label/state listing correctly.
+
+### Commands Run and Outputs
+
+#### RED: focused tests before the fix
+
+Command:
+
+```bash
+rtk corepack pnpm exec vitest run apps/orchestrator-api/src/planeMigration.test.ts
+rtk corepack pnpm exec vitest run packages/plane/src/index.test.ts
+```
+
+Result:
+
+```text
+❯ apps/orchestrator-api/src/planeMigration.test.ts (6 tests | 2 failed) 58ms
+  × migrateLinearCardsToPlane > maps Linear states to Plane states and preserves exact-name labels already present in Plane
+    → expected 1st "spy" call to have been called with [ ObjectContaining{…} ]
+  × planeMigrationCli main > reuses bootstrap label ids instead of a narrow hard-coded label map
+    → expected "spy" to be called with arguments: [ { plane: { …(3) }, …(3) } ]
+
+❯ packages/plane/src/index.test.ts (7 tests | 1 failed) 26ms
+  × createPlaneGateway > lists project labels and states across paginated responses
+    → gateway.listLabels is not a function
+```
+
+Why this was the correct red state:
+
+- Migration still dropped Linear state data before `createCard()`.
+- The CLI still passed only the bootstrap allowlist labels.
+- The Plane gateway still had no list method for full project labels/states.
+
+#### GREEN: focused tests after the fix
+
+Command:
+
+```bash
+rtk corepack pnpm exec vitest run apps/orchestrator-api/src/planeBootstrap.test.ts apps/orchestrator-api/src/planeMigration.test.ts packages/plane/src/index.test.ts
+```
+
+Result:
+
+```text
+✓ apps/orchestrator-api/src/planeBootstrap.test.ts (4 tests) 10ms
+✓ packages/plane/src/index.test.ts (7 tests) 24ms
+✓ apps/orchestrator-api/src/planeMigration.test.ts (6 tests) 39ms
+
+Test Files  3 passed (3)
+Tests       17 passed (17)
+```
+
+#### Plane package build
+
+Command:
+
+```bash
+rtk corepack pnpm --filter @agent-platform/plane build
+```
+
+Result:
+
+```text
+$ tsc
+```
+
+Exit code: `0`
+
+#### Orchestrator API build
+
+Command:
+
+```bash
+rtk corepack pnpm --filter @agent-platform/orchestrator-api build
+```
+
+Result:
+
+```text
+$ tsc
+```
+
+Exit code: `0`
+
 #### Orchestrator API build
 
 Command:
