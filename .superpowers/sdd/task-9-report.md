@@ -58,6 +58,100 @@ $ tsc
 
 Exit code: `0`
 
+## Review Fix: Provenance Links Render as Real Plane Anchors
+
+### What Changed
+
+- Extended `packages/cards/src/index.ts` so `markdownToPlaneHtml()` renders safe inline Markdown links as real `<a href="...">...</a>` anchors.
+- Kept code spans opaque so the inline-code protection from Task 1 remains intact.
+- Updated migration tests so provenance dedupe compares against rendered Plane HTML instead of raw Markdown.
+- Added a Plane gateway test that locks the comment payload to the rendered anchor HTML.
+
+### Commands Run and Outputs
+
+#### RED: focused tests before the renderer fix
+
+Command:
+
+```bash
+rtk corepack pnpm exec vitest run packages/cards/src/index.test.ts apps/orchestrator-api/src/planeMigration.test.ts packages/plane/src/index.test.ts
+```
+
+Result:
+
+```text
+FAIL  packages/cards/src/index.test.ts
+FAIL  apps/orchestrator-api/src/planeMigration.test.ts
+FAIL  packages/plane/src/index.test.ts
+```
+
+#### Build check before tightening the new parser
+
+Command:
+
+```bash
+rtk corepack pnpm --filter @agent-platform/cards build
+```
+
+Result:
+
+```text
+src/index.ts(97,37): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+src/index.ts(114,37): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+src/index.ts(116,63): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+```
+
+#### GREEN: cards build after fixing regex capture typing
+
+Command:
+
+```bash
+rtk corepack pnpm --filter @agent-platform/cards build
+```
+
+Result:
+
+```text
+$ tsc
+```
+
+Exit code: `0`
+
+#### Focused tests after rebuild
+
+Command:
+
+```bash
+rtk corepack pnpm exec vitest run packages/cards/src/index.test.ts apps/orchestrator-api/src/planeMigration.test.ts packages/plane/src/index.test.ts
+```
+
+Result:
+
+```text
+✓ packages/cards/src/index.test.ts (5 tests) 6ms
+✓ packages/plane/src/index.test.ts (8 tests) 25ms
+✓ apps/orchestrator-api/src/planeMigration.test.ts (6 tests) 34ms
+
+Test Files  3 passed (3)
+Tests       19 passed (19)
+```
+
+#### Affected package builds
+
+Commands:
+
+```bash
+rtk corepack pnpm --filter @agent-platform/plane build
+rtk corepack pnpm --filter @agent-platform/orchestrator-api build
+```
+
+Result:
+
+```text
+$ tsc
+Exit code: 0
+```
+
 ## TDD Evidence
 
 ### RED

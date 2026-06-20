@@ -113,6 +113,30 @@ describe('createPlaneGateway', () => {
     );
   });
 
+  it('renders markdown links into comment html payloads', async () => {
+    let capturedBody: string | undefined;
+    globalThis.fetch = vi.fn().mockImplementation(async (_url: string, init: RequestInit) => {
+      capturedBody = String(init.body ?? '');
+      return new Response(null, { status: 204, statusText: 'No Content' });
+    }) as typeof fetch;
+
+    const gateway = createPlaneGateway({
+      baseUrl: 'http://plane.local',
+      apiKey: 'key',
+      workspaceSlug: 'attodev',
+      projectId: 'project-1',
+    });
+
+    await expect(
+      gateway.comment('work-3', 'Migrated from Linear: [MAC-123](https://linear/MAC-123).'),
+    ).resolves.toBeUndefined();
+
+    expect(JSON.parse(String(capturedBody))).toEqual({
+      comment_html: '<p>Migrated from Linear: <a href="https://linear/MAC-123">MAC-123</a>.</p>',
+      access: 'EXTERNAL',
+    });
+  });
+
   it('surfaces Plane API errors with response details', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue(
       new Response('boom', { status: 500, statusText: 'Internal Server Error' }),

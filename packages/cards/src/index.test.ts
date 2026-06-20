@@ -57,6 +57,12 @@ describe('markdownToPlaneHtml', () => {
     );
   });
 
+  it('converts inline markdown links into Plane anchors', () => {
+    expect(markdownToPlaneHtml('Migrated from Linear: [MAC-123](https://linear/MAC-123).')).toBe(
+      '<p>Migrated from Linear: <a href="https://linear/MAC-123">MAC-123</a>.</p>',
+    );
+  });
+
   it('leaves markdown inside code spans untouched', () => {
     expect(markdownToPlaneHtml('`**ok**`')).toBe('<p><code>**ok**</code></p>');
   });
