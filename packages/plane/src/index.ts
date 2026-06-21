@@ -178,10 +178,46 @@ function toCardContext(item: PlaneWorkItem, projectId: string): CardContext {
     id: item.id,
     identifier: sequence ? `${projectIdentifier}-${sequence}` : item.id,
     title: item.name,
-    description: item.description_stripped ?? '',
+    description: item.description_stripped ?? htmlToText(item.description_html) ?? '',
     labels: (item.labels ?? [])
       .map((label) => (typeof label === 'string' ? label : (label.name ?? '')))
       .filter(Boolean),
     projectId,
   };
+}
+
+function htmlToText(html: string | null | undefined): string | undefined {
+  if (!html?.trim()) return undefined;
+
+  return html
+    .replace(/<a\b[^>]*\bhref=(["'])(.*?)\1[^>]*>(.*?)<\/a>/gis, (_match, _quote, href, text) => {
+      const label = decodeHtml(stripTags(text)).trim();
+      const url = decodeHtml(String(href)).trim();
+      return [label, url].filter(Boolean).join(' ');
+    })
+    .replace(/<\/(p|div|li|h[1-6]|br)>/gi, '\n')
+    .replace(/<li\b[^>]*>/gi, '- ')
+    .replace(/<[^>]+>/g, '')
+    .split(/\n+/)
+    .map((line) =>
+      decodeHtml(line)
+        .replace(/[ \t]+/g, ' ')
+        .trim(),
+    )
+    .filter(Boolean)
+    .join('\n\n');
+}
+
+function stripTags(value: string): string {
+  return value.replace(/<[^>]+>/g, '');
+}
+
+function decodeHtml(value: string): string {
+  return value
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
 }

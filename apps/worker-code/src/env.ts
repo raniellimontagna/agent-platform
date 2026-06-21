@@ -40,6 +40,10 @@ export const envSchema = z.object({
   FIRECRAWL_API_KEY: optionalNonEmpty,
   FIRECRAWL_BASE_URL: z.string().url().default('https://api.firecrawl.dev'),
   FIRECRAWL_TIMEOUT_MS: z.coerce.number().int().positive().default(60_000),
+  SCRAPING_MAX_PAGES: z.coerce.number().int().positive().default(5),
+  SCRAPING_MAX_OUTPUT_CHARS: z.coerce.number().int().positive().default(20_000),
+  SCRAPING_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(6),
+  PLAYWRIGHT_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
 
   // Higgsfield: wrapper governado para mídia gerada por landing/media agents.
   HIGGSFIELD_PREFERRED_IMAGE_MODELS: z
