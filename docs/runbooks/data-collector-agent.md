@@ -128,4 +128,6 @@ compliance com termos do site.
 
 ## Próximas etapas
 
-- Conectar research packs ao `landing-page-agent`.
+- Validar um E2E real com `workflow:landing-page` usando URL pública explícita,
+  confirmando que o run de coleta salva o artifact `research` e que o segundo
+  run recebe esse pacote como contexto do `landing-page-agent`.

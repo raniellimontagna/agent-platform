@@ -41,7 +41,11 @@ Cards Linear continuam aceitos apenas no provider legado/opcional.
 ## Limites
 
 - Apenas workflow fixo de duas etapas nesta fase.
-- A coleta continua limitada a URLs explícitas e Firecrawl single-page.
+- A coleta continua limitada a URLs explícitas e passa pela scraping policy
+  compartilhada do worker.
+- Firecrawl é o coletor padrão para páginas públicas crawláveis. Playwright é
+  selecionado somente quando o card/plano pede browser, renderização dinâmica ou
+  screenshot.
 - Não há UI para montar workflows arbitrários.
 - Dados privados ou autenticados exigem export/API autorizada e continuam fora do
   scraping público.
