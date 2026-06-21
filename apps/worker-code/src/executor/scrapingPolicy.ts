@@ -101,18 +101,33 @@ export function buildScrapingPolicy(input: ScrapingPolicyInput): ScrapingPolicyR
 }
 
 function hasUnsafeBypassInstruction(text: string): boolean {
-  return text
-    .split(/[\n.!?;]+/)
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .some((sentence) => {
-      if (isBypassProhibition(sentence)) return false;
-      return BYPASS_PATTERNS.some((pattern) => pattern.test(sentence));
-    });
+  let inOutOfScopeSection = false;
+  for (const line of text.split(/\n+/)) {
+    const trimmedLine = line.trim();
+    if (!trimmedLine) continue;
+
+    if (/\b(fora de escopo|out of scope)\b/i.test(trimmedLine)) {
+      inOutOfScopeSection = true;
+    } else if (/^#{1,6}\s+/.test(trimmedLine)) {
+      inOutOfScopeSection = false;
+    }
+
+    for (const sentence of trimmedLine
+      .split(/[.!?;]+/)
+      .map((part) => part.trim())
+      .filter(Boolean)) {
+      if (isBypassProhibition(sentence) || inOutOfScopeSection) continue;
+      if (BYPASS_PATTERNS.some((pattern) => pattern.test(sentence))) return true;
+    }
+  }
+  return false;
 }
 
 function isBypassProhibition(sentence: string): boolean {
-  return /\b(do not|don't|never|avoid|without|no|não|nao|nunca|evite|sem)\b.*\b(bypass|contorn|login|captcha|paywall|rate limits?|stealth|anti[- ]?bot)\b/i.test(
+  const bypassTerm =
+    /\b(bypass|contorn|login|captcha|paywall|rate limits?|stealth|anti[- ]?bot)\b/i;
+  if (!bypassTerm.test(sentence)) return false;
+  return /\b(do not|don't|never|avoid|without|no|não|nao|nunca|evite|sem|fora de escopo|out of scope)\b/i.test(
     sentence,
   );
 }
