@@ -51,9 +51,37 @@ Variáveis do runner:
   reais de coleta.
 - `FIRECRAWL_BASE_URL`: default `https://api.firecrawl.dev`.
 - `FIRECRAWL_TIMEOUT_MS`: default `60000`.
+- `SCRAPING_MAX_PAGES`: default `5`.
+- `SCRAPING_MAX_OUTPUT_CHARS`: default `20000`.
+- `SCRAPING_RATE_LIMIT_PER_MINUTE`: default `6`.
 
-Limites desta fase: apenas scrape de páginas explícitas; sem crawl amplo, sem
-browser, sem screenshot e sem execução de comandos de scraping no allowlist.
+Firecrawl é o padrão para páginas públicas estáticas/crawláveis, quando o card
+precisa de Markdown/resumo e não pede browser. Ele só recebe URLs explícitas do
+título, descrição ou plano do card.
+
+## Playwright controlado
+
+AGP-9 adiciona um caminho Playwright governado para coleta dinâmica:
+
+- usado apenas quando o card/plano pedir explicitamente Playwright, browser,
+  renderização dinâmica ou screenshot;
+- navega somente para URLs explícitas e autorizadas pela mesma policy de
+  scraping do Firecrawl;
+- bloqueia localhost, redes privadas, metadados cloud, hostnames internos,
+  downloads e submissões de formulário;
+- captura HTML renderizado, texto renderizado e screenshot PNG em base64 dentro
+  do artifact `research`;
+- falha de forma explícita se a dependência/runtime Playwright não estiver
+  instalada no worker.
+
+Variável adicional:
+
+- `PLAYWRIGHT_TIMEOUT_MS`: default `30000`.
+
+Use Playwright quando a página depende de JavaScript para renderizar conteúdo,
+quando o objetivo inclui screenshot/evidência visual, ou quando o HTML estático
+não contém os dados necessários. Use Firecrawl para coleta textual comum,
+conteúdo público crawlável e research packs sem necessidade de browser.
 
 ## Tools planejadas
 
@@ -69,9 +97,9 @@ As tools foram adicionadas ao Tool Registry como metadado:
   (`landing-page-agent`, futuro `media-generation-agent`), condicionada a OAuth
   persistido e policy específica.
 
-Nesta etapa, Firecrawl roda via integração controlada no worker. As demais tools
-ainda não entram no `AGENT_COMMAND_ALLOWLIST` do runner. Isso evita habilitar
-execução ampla antes de termos política e sandbox específicos para coleta.
+Nesta etapa, Firecrawl e Playwright rodam via integrações controladas no worker.
+As demais tools ainda não entram no `AGENT_COMMAND_ALLOWLIST` do runner. Isso
+evita habilitar execução ampla fora da policy de coleta.
 
 Cards Linear ainda podem ser usados apenas no provider legado/opcional.
 
@@ -84,6 +112,11 @@ Cards Linear ainda podem ser usados apenas no provider legado/opcional.
 - Rate-limit e crawls pequenos por padrão.
 - Separar fatos de inferências.
 - Salvar fontes e limitações junto do resultado.
+- Autorizar somente URLs explícitas vindas do card/plano/job.
+- Bloquear comandos ou instruções de scraping amplo, recursivo ou "all links".
+- Bloquear URLs com credenciais embutidas.
+- Bloquear `localhost`, redes privadas/link-local/multicast, hostnames internos
+  e endpoints de metadata cloud como `169.254.169.254`.
 
 ## Avaliação da skill Scrapling
 
@@ -95,7 +128,6 @@ compliance com termos do site.
 
 ## Próximas etapas
 
-- Adicionar modo Playwright controlado para screenshots e páginas dinâmicas.
-- Definir artifacts de saída para research packs.
-- Criar policy/allowlist específica para comandos de scraping.
-- Conectar research packs ao `landing-page-agent`.
+- Validar um E2E real com `workflow:landing-page` usando URL pública explícita,
+  confirmando que o run de coleta salva o artifact `research` e que o segundo
+  run recebe esse pacote como contexto do `landing-page-agent`.

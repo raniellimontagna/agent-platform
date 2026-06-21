@@ -40,6 +40,34 @@ describe('createPlaneGateway', () => {
     });
   });
 
+  it('falls back to readable description_html when stripped text is absent', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        id: 'work-1',
+        sequence_id: 34,
+        name: 'Collect public profile',
+        description_stripped: null,
+        description_html:
+          '<div><p>URL explícita: <a href="https://www.instagram.com/cameraecarburador/">https://www.instagram.com/cameraecarburador/</a></p><p>Use Playwright.</p></div>',
+        labels: [{ name: 'agent:data-collector' }],
+        project_detail: { identifier: 'AGP' },
+      }),
+    } as Response);
+
+    const gateway = createPlaneGateway({
+      baseUrl: 'http://plane.local',
+      apiKey: 'key',
+      workspaceSlug: 'attodev',
+      projectId: 'project-1',
+    });
+
+    await expect(gateway.getCard('work-1')).resolves.toMatchObject({
+      description:
+        'URL explícita: https://www.instagram.com/cameraecarburador/ https://www.instagram.com/cameraecarburador/\n\nUse Playwright.',
+    });
+  });
+
   it('creates work items with external provenance', async () => {
     const calls: Array<{ url: string; init: RequestInit }> = [];
     globalThis.fetch = vi.fn().mockImplementation(async (url: string, init: RequestInit) => {

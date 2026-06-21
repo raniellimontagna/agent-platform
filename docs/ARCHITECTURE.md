@@ -5,7 +5,7 @@ card do Plane (workspace `attodev`, projeto **Agent Platform** / `AGP`) se
 encaixa na estrutura. Linear fica como provider opcional legado e só entra no
 mapa quando existe card histórico ou suporte explícito em `/webhooks/linear`.
 
-> Estado em 2026-06-16. Legenda: ✅ feito · 🏗 no ar/parcial · ⏳ pendente.
+> Estado em 2026-06-21. Legenda: ✅ feito · 🏗 no ar/parcial · ⏳ pendente.
 > **Fases 0–7 completas** — projeto deployado em prod; auto-merge opt-in,
 > loop critic até 3 voltas, identidade de commits do agente e dashboards
 > validados com E2E real.
@@ -102,11 +102,11 @@ Linear remains supported as an optional provider for legacy cards through `/webh
 | Componente | Card(s) | Local no repo | Estado |
 |---|---|---|---|
 | Decisões/ADRs | MAC-6 | `docs/decisions/` | ✅ |
-| Infra Proxmox (4 VMs, rede, deploy) | MAC-8/9/10/11 | `infra/proxmox/`, `infra/deploy/` | no ar; deploy parcial |
-| LiteLLM Gateway | MAC-12 | `infra/compose/gateway/` | config pronta; ⏳ deploy |
-| Provider Verboo (`cheap_fast`) | MAC-13 | `infra/compose/gateway/litellm-config.yaml` | config pronta; ⏳ key |
-| Provider OmniRoute/OAuth (`research`/`strong_coder`/`heavy_coder`/`critic`) | MAC-48 | `infra/compose/gateway/` + ADR-0006 | config pronta; ⏳ OAuth |
-| Budgets / Rate limits | MAC-15 | `litellm-config.yaml` + `docs/runbooks/litellm-guardrails.md` | config pronta; ⏳ aplicar chaves virtuais |
+| Infra Proxmox (4 VMs, rede, deploy) | MAC-8/9/10/11 | `infra/proxmox/`, `infra/deploy/` | ✅ no ar |
+| LiteLLM Gateway | MAC-12 | `infra/compose/gateway/` | ✅ no ar |
+| Provider Verboo (`cheap_fast`) | MAC-13 | `infra/compose/gateway/litellm-config.yaml` | ✅ configurado |
+| Provider OmniRoute/OAuth (`research`/`strong_coder`/`heavy_coder`/`critic`) | MAC-48 | `infra/compose/gateway/` + ADR-0006 | ✅ OAuth feito |
+| Budgets / Rate limits | MAC-15 | `litellm-config.yaml` + `docs/runbooks/litellm-guardrails.md` | ✅ aplicados |
 | API + Webhooks Plane/Linear (legacy optional) | MAC-19 | `apps/orchestrator-api/src/routes/webhooks.ts` | ✅ |
 | Fluxo ai-ready | MAC-20 | `apps/orchestrator-api` (enfileirar) | ✅ |
 | State Machine | MAC-14 | `packages/graph` + schema `runs/run_steps` | ✅ (planning→coding→reviewing→pr→report) |
@@ -128,6 +128,7 @@ Linear remains supported as an optional provider for legacy cards through `/webh
 | MCP server | MAC-46 | `apps/mcp-server` (stdio facade) | ✅ rodando zero-túnel no Proxmox (docker exec) |
 | Multi-Agent Execution | MAC-47 | `apps/orchestrator-api` (worker `concurrency`, `/admin/concurrency`), migration 0009 | ✅ N runs em paralelo + dedup de issue ativa |
 | Identidade de commits do agente | pós MAC-67 | `apps/worker-code/src/executor/runJob.ts`, compose runners | ✅ autor `Ranielli Montagna <raniellimontagna@hotmail.com>` + `Co-authored-by: Codex <noreply@openai.com>` |
+| Scraping policy + Playwright controlado | AGP-8/AGP-9 | `apps/worker-code/src/executor/scrapingPolicy.ts`, `playwrightResearch.ts` | ✅ policy compartilhada; Playwright só por pedido explícito |
 
 Provider LLM é híbrido: Verboo (MAC-13) + OmniRoute/OAuth (MAC-48) — ver §5 e ADR-0006.
 
@@ -138,8 +139,8 @@ Provider LLM é híbrido: Verboo (MAC-13) + OmniRoute/OAuth (MAC-48) — ver §5
 | Fase | Milestone | Cards | Alvo | Estado |
 |---|---|---|---|---|
 | 0 | Fundação e decisões | MAC-6 | 16/06 | ✅ |
-| 1 | Infra Proxmox e rede | MAC-8/9/10/11 (+MAC-7¹) | 23/06 | 🏗 no ar; deploy parcial |
-| 2 | Gateway LiteLLM e provedores | MAC-12/13/48/15 | 30/06 | 🏗 no ar; OAuth feito |
+| 1 | Infra Proxmox e rede | MAC-8/9/10/11 (+MAC-7¹) | 23/06 | ✅ |
+| 2 | Gateway LiteLLM e provedores | MAC-12/13/48/15 | 30/06 | ✅ |
 | 3 | Orquestrador LangGraph | MAC-14/16/17/18/21/22/23/24/33/34 | 10/07 | ✅ completa |
 | 4 | Cards, GitHub e Code Runner | MAC-19/20/25/26/27/28/29 | 20/07 | ✅ |
 | 5 | Segurança e Observabilidade | MAC-30/31/32/35/36 | 10/08 | ✅ |
