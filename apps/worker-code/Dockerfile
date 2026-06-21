@@ -28,6 +28,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends git ca-certific
 RUN npm install -g @higgsfield/cli@0.2.3
 # Copia o workspace já buildado (mantém os symlinks dos workspace packages).
 COPY --from=build /app /app
+# Playwright precisa do browser e das libs do sistema dentro da imagem final.
+RUN pnpm --dir /app/apps/worker-code exec playwright install --with-deps chromium
 
 WORKDIR /app/apps/worker-code
 EXPOSE 8080
