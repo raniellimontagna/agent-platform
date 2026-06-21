@@ -81,11 +81,8 @@ export function buildScrapingPolicy(input: ScrapingPolicyInput): ScrapingPolicyR
     if (reason) reasons.push(`${url}: ${reason}`);
   }
 
-  for (const pattern of BYPASS_PATTERNS) {
-    if (pattern.test(text)) {
-      reasons.push('bypass/login/captcha/paywall instruction is not allowed');
-      break;
-    }
+  if (hasUnsafeBypassInstruction(text)) {
+    reasons.push('bypass/login/captcha/paywall instruction is not allowed');
   }
 
   for (const pattern of BROAD_CRAWL_PATTERNS) {
@@ -101,6 +98,23 @@ export function buildScrapingPolicy(input: ScrapingPolicyInput): ScrapingPolicyR
     reasons,
     limits: clampLimits(input.limits, limitCeiling),
   };
+}
+
+function hasUnsafeBypassInstruction(text: string): boolean {
+  return text
+    .split(/[\n.!?;]+/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .some((sentence) => {
+      if (isBypassProhibition(sentence)) return false;
+      return BYPASS_PATTERNS.some((pattern) => pattern.test(sentence));
+    });
+}
+
+function isBypassProhibition(sentence: string): boolean {
+  return /\b(do not|don't|never|avoid|without|no|não|nao|nunca|evite|sem)\b.*\b(bypass|contorn|login|captcha|paywall|rate limits?|stealth|anti[- ]?bot)\b/i.test(
+    sentence,
+  );
 }
 
 function clampLimits(limits: ScrapingLimits, ceiling: ScrapingLimits): ScrapingLimits {

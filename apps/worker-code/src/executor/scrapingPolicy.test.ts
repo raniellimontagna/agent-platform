@@ -70,6 +70,18 @@ describe('buildScrapingPolicy', () => {
     expect(policy.reasons.join('\n')).toMatch(/credential|captcha|paywall|login|stealth/i);
   });
 
+  it('allows explicit prohibitions against login, captcha, paywall, and rate-limit bypass', () => {
+    const policy = buildScrapingPolicy({
+      title: 'Collect https://www.instagram.com/cameraecarburador/',
+      description: 'Do not bypass login, captcha, paywall, rate limits, or platform restrictions.',
+      plan: 'Use Playwright only for public rendering evidence and record limitations.',
+      limits: baseLimits,
+    });
+
+    expect(policy.allowed).toBe(true);
+    expect(policy.reasons).toEqual([]);
+  });
+
   it('blocks broad crawling instructions even when a URL is present', () => {
     const policy = buildScrapingPolicy({
       title: 'Crawl entire site https://example.com',
