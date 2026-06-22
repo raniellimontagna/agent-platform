@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import {
   DATA_COLLECTOR_AGENT_KEY,
-  DEFAULT_AGENT_KEY,
   DEFAULT_AGENTS,
+  DEFAULT_AGENT_KEY,
   LANDING_PAGE_AGENT_KEY,
   REVIEWER_AGENT_KEY,
-  agentKeyFromLabels,
   SOFTWARE_DELIVERY_PIPELINE_KEY,
   SOFTWARE_DELIVERY_PIPELINE_ROLES,
+  agentKeyFromLabels,
   agentRolesFromCapabilities,
-  roleCapabilities,
   createAgentSchema,
   pickActiveAgent,
+  roleCapabilities,
 } from './agents.js';
 import type { Agent } from './db/schema.js';
 
