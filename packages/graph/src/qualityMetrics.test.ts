@@ -38,6 +38,18 @@ describe('qualityMetricsForState', () => {
     expect(metrics.autoMergeBlockedReason).toBe('validation failed');
   });
 
+  it('não marca auto-merge como elegível quando o PR não foi aberto', () => {
+    const metrics = qualityMetricsForState({
+      review: 'Veredito: APROVADO',
+      testsPassed: true,
+      autoMerge: true,
+    } as never);
+
+    expect(metrics.prOpened).toBe(false);
+    expect(metrics.autoMergeEligible).toBe(false);
+    expect(metrics.autoMergeBlockedReason).toBe('pull request not opened');
+  });
+
   it('explica bloqueio de auto-merge quando a revisão está malformada', () => {
     const metrics = qualityMetricsForState({
       review: 'parecer sem veredito reconhecível',

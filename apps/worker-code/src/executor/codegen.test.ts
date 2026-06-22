@@ -97,6 +97,18 @@ describe('buildAgentInstructions', () => {
     expect(pipeline).toContain('APPROVAL_REASONS');
     expect(pipeline).toContain('software-reporter');
   });
+
+  it('injeta só o contrato coder no caminho de codegen', () => {
+    const coder = buildAgentInstructions('coder-agent', ['typescript'], undefined, {
+      skills: ['software-coder'],
+    });
+
+    expect(coder).toContain('software-coder');
+    expect(coder).toContain('Preserve todo código não relacionado');
+    expect(coder).not.toContain('software-planner');
+    expect(coder).not.toContain('Do not write code');
+    expect(coder).not.toContain('software-reporter');
+  });
 });
 
 describe('completeJson', () => {

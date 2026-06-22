@@ -14,18 +14,21 @@ export interface QualityMetrics {
 
 export function qualityMetricsForState(state: Partial<AgentStateType>): QualityMetrics {
   const criticVerdict = verdictOf(state.review);
-  const autoMergeEligible = shouldAutoMerge({
-    autoMerge: state.autoMerge,
-    testsPassed: state.testsPassed,
-    review: state.review,
-  });
+  const prOpened = Boolean(state.prUrl);
+  const autoMergeEligible =
+    prOpened &&
+    shouldAutoMerge({
+      autoMerge: state.autoMerge,
+      testsPassed: state.testsPassed,
+      review: state.review,
+    });
 
   return {
     criticVerdict,
     criticRounds: state.reviewRounds ?? 0,
     fixAttempts: state.fixAttempts ?? 0,
     testsPassed: state.testsPassed,
-    prOpened: Boolean(state.prUrl),
+    prOpened,
     autoMergeEligible,
     autoMergeBlockedReason: autoMergeEligible ? null : autoMergeBlockedReason(state),
     estimatedCostUsd:
@@ -44,6 +47,7 @@ function autoMergeBlockedReason(state: Partial<AgentStateType>): string | null {
   if (verdict === 'APROVADO COM RESSALVAS' && !hasOnlyOperationalCaveats(state.review)) {
     return 'non-operational caveat requires manual review';
   }
+  if (!state.prUrl) return 'pull request not opened';
   return null;
 }
 
