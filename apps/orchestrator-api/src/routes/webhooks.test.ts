@@ -380,6 +380,11 @@ describe('POST /webhooks/linear', () => {
     });
 
     expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toMatchObject({
+      ok: true,
+      skipped: true,
+      reason: 'no relevant label transition',
+    });
     expect(createRun).not.toHaveBeenCalled();
     expect(agentQueue.add).not.toHaveBeenCalled();
   });
@@ -405,6 +410,11 @@ describe('POST /webhooks/linear', () => {
     });
 
     expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toMatchObject({
+      ok: true,
+      skipped: true,
+      reason: 'previous labels missing',
+    });
     expect(createRun).not.toHaveBeenCalled();
     expect(agentQueue.add).not.toHaveBeenCalled();
   });

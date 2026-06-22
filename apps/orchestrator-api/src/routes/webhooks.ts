@@ -109,6 +109,23 @@ function verifyPlaneSignature(rawBody: string, signature: string | undefined): b
   return verifySignature(rawBody, signature, env.PLANE_WEBHOOK_SECRET);
 }
 
+function skipPlaneWebhook(
+  reason: string,
+  context: {
+    action?: string;
+    event?: string;
+    cardId?: string;
+    cardIdentifier?: string;
+    currentNames?: string[];
+    currentIds?: string[];
+    previousNames?: string[];
+    previousIds?: string[];
+  } = {},
+) {
+  logger.info({ provider: 'plane', reason, ...context }, 'Plane webhook skipped');
+  return { ok: true, skipped: true, reason } as const;
+}
+
 async function handleAiReadyCard(input: {
   provider: 'plane' | 'linear';
   cardId: string;
@@ -293,13 +310,23 @@ webhooks.post('/webhooks/plane', async (c) => {
   const payload = JSON.parse(rawBody) as PlanePayload;
 
   if (!isPlaneWorkItemWebhook(payload, eventHeader)) {
-    return c.json({ ok: true, skipped: true });
+    return c.json(
+      skipPlaneWebhook('unsupported event type', {
+        action: payload.action,
+        event: eventHeader ?? payload.event ?? payload.type,
+      }),
+    );
   }
 
   const item = payload.data;
   const cardId = item?.id;
   if (!cardId) {
-    return c.json({ ok: true, skipped: true, reason: 'no work item id' });
+    return c.json(
+      skipPlaneWebhook('no work item id', {
+        action: payload.action,
+        event: eventHeader ?? payload.event ?? payload.type,
+      }),
+    );
   }
 
   const currentNames = planeLabelNames(item.labels) ?? [];
@@ -321,7 +348,18 @@ webhooks.post('/webhooks/plane', async (c) => {
   ) {
     const run = await findAwaitingApprovalRunForCard('plane', cardId);
     if (!run) {
-      return c.json({ ok: true, skipped: true, reason: 'nenhum run aguardando aprovação' });
+      return c.json(
+        skipPlaneWebhook('nenhum run aguardando aprovação', {
+          action: payload.action,
+          event: eventHeader ?? payload.event ?? payload.type,
+          cardId,
+          cardIdentifier: planeCardIdentifier(item),
+          currentNames,
+          currentIds,
+          previousNames,
+          previousIds,
+        }),
+      );
     }
     await resolveApproval(run.id, 'approved', 'plane');
     await updateRunStatus(run.id, 'executing');
@@ -348,7 +386,21 @@ webhooks.post('/webhooks/plane', async (c) => {
       id: env.PLANE_AI_READY_LABEL_ID,
     })
   ) {
-    return c.json({ ok: true, skipped: true });
+    return c.json(
+      skipPlaneWebhook(
+        previousLabels ? 'no relevant label transition' : 'previous labels missing',
+        {
+          action: payload.action,
+          event: eventHeader ?? payload.event ?? payload.type,
+          cardId,
+          cardIdentifier: planeCardIdentifier(item),
+          currentNames,
+          currentIds,
+          previousNames,
+          previousIds,
+        },
+      ),
+    );
   }
 
   const result = await handleAiReadyCard({

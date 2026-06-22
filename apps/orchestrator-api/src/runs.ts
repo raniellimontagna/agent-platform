@@ -234,6 +234,16 @@ export async function listRunsBySchedule(scheduleId: string, limit = 50) {
     .limit(limit);
 }
 
+/** Histórico recente de runs de um card específico, para auditoria de webhooks. */
+export async function listRunsForCard(cardProvider: CardProvider, cardId: string, limit = 20) {
+  return db
+    .select()
+    .from(schema.runs)
+    .where(and(eq(schema.runs.cardProvider, cardProvider), eq(schema.runs.cardId, cardId)))
+    .orderBy(desc(schema.runs.createdAt))
+    .limit(limit);
+}
+
 /** Resumo agregado das execuções do agente para dashboards/API. */
 export async function runStats(): Promise<RunStats> {
   const statusRows = await db

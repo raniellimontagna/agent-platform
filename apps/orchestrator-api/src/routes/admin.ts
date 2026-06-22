@@ -3,7 +3,7 @@ import { getAgent } from '../agent.js';
 import { env } from '../env.js';
 import { isPaused, setPaused } from '../killswitch.js';
 import { logger } from '../logger.js';
-import { ACTIVE_STATUSES, countRunsByStatus } from '../runs.js';
+import { ACTIVE_STATUSES, countRunsByStatus, listRunsForCard } from '../runs.js';
 
 export const adminRoute = new Hono();
 
@@ -46,4 +46,24 @@ adminRoute.get('/admin/concurrency', async (c) => {
   const byStatus = await countRunsByStatus();
   const active = ACTIVE_STATUSES.reduce((sum, s) => sum + (byStatus[s] ?? 0), 0);
   return c.json({ limit: env.AGENT_MAX_CONCURRENCY, active, byStatus });
+});
+
+adminRoute.get('/admin/card-runs', async (c) => {
+  const provider = c.req.query('provider');
+  const cardId = c.req.query('cardId');
+  const limit = Number(c.req.query('limit') ?? 20);
+
+  if (!provider || !cardId) {
+    return c.json({ error: 'provider and cardId are required' }, 400);
+  }
+  if (provider !== 'plane' && provider !== 'linear') {
+    return c.json({ error: 'provider must be plane or linear' }, 400);
+  }
+
+  const runs = await listRunsForCard(
+    provider,
+    cardId,
+    Number.isFinite(limit) && limit > 0 ? Math.min(Math.floor(limit), 100) : 20,
+  );
+  return c.json({ runs });
 });
