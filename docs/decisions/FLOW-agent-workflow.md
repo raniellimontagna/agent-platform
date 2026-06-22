@@ -42,23 +42,40 @@
 │  14. Chama LiteLLM [critic] → revisa diff                       │
 │  15. Loop de revisão (MAC-59): REPROVA/ressalva? → coder        │
 │      re-coda endereçando o parecer → re-revisa, até teto        │
-│  16. Abre Draft PR no GitHub (título Conventional Commits EN)   │
-│  17. Artifact Store (MAC-44): guarda plano/patch/review/        │
+│  16. Abre PR no GitHub (Draft ou pronto conforme auto-merge)    │
+│  17. Merging opt-in: auto-merge se label + testes + critic OK   │
+│  18. Cloudflare deploy opcional para landings geradas           │
+│  19. Artifact Store (MAC-44): guarda plano/patch/review/        │
 │      validação/summary do run                                   │
-│  18. Memory (MAC-23/45): se critic REPROVA / validação ❌ →     │
+│  20. Memory (MAC-23/45): se critic REPROVA / validação ❌ →     │
 │      destila lição [cheap_fast], embeda e guarda por repo       │
-│  19. Report: comenta resultado consolidado + custo no Plane     │
-│  20. Persiste qualidade no run (validação/veredito/fixAttempts) │
+│  21. Report: comenta resultado consolidado + custo no Plane     │
+│  22. Persiste qualidade no run (validação/veredito/fixAttempts) │
 └─────────────────────────────────────────────────────────────────┘
 
-                    ── MERGE É MANUAL ──
+            ── sem label `auto-merge`, o merge fica manual ──
 ```
 
-Grafo LangGraph: `planning → [⏸ aprovação] → coding → reviewing → [revisar? → revising → reviewing] → pr → report → END`
+Grafo LangGraph: `planning → [⏸ aprovação] → coding → reviewing → [revisar? → revising → reviewing] → pr → merging → cloudflareDeploy → report → END`
 (falha do coder curto-circuita para `report`). O self-correction (passo 11) vive
 dentro do runner — não muda a topologia do grafo; o loop de revisão (passo 15) é
 graph-level (nó `revising`, fora do `interruptBefore` p/ não re-pedir aprovação).
 Checkpointer Postgres persiste e retoma após restart (MAC-34).
+
+## Pipeline e roles
+
+O runtime físico ainda é um único LangGraph, mas o catálogo diferencia a chave
+compatível `coder-agent` da identidade mais clara `software-delivery-pipeline`.
+Essa identidade expõe roles para leitura, observabilidade e evolução futura:
+
+- `planner`: gera plano e `APPROVAL_REASONS`.
+- `coder`: aplica o plano no runner e valida mudanças.
+- `critic`: revisa o diff e decide recode ou PR.
+- `pr`: abre PR e avalia auto-merge.
+- `reporter`: publica o resumo final no provider de origem.
+
+Essas roles não são serviços separados nesta fase; elas nomeiam as
+responsabilidades já existentes no grafo e no runner.
 
 **Disparo e escala.** Além do webhook `ai-ready`, um **scheduler cron** (MAC-38)
 cria cards + runs (auto-aprovados se sem motivo crítico). O run grava `agent_id`
@@ -69,7 +86,10 @@ dispatch faz **failover** entre runners (MAC-39). Concorrência observável em
 `GET /admin/concurrency`.
 
 Linear continua suportado como provider legado/opcional para cards migrados ou
-integrações antigas, mas o fluxo operacional novo usa Plane por padrão.
+integrações antigas, mas o fluxo operacional novo usa Plane por padrão. O handler
+Plane audita skips de webhook com `reason`, labels atuais/anteriores e
+identificador do card; o histórico de runs por card pode ser consultado em
+`GET /admin/card-runs`.
 
 ## VMs e DNS interno
 

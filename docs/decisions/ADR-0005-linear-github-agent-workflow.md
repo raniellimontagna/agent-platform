@@ -3,7 +3,7 @@
 **Status:** Accepted  
 **Date:** 2026-06-10
 
-> Nota de atualização (2026-06-20): este ADR documenta o fluxo histórico Linear + GitHub + Agent. O estado atual do projeto é Plane-first; Linear permanece opcional/legado para cards existentes e `/webhooks/linear`.
+> Nota de atualização (2026-06-22): este ADR documenta o fluxo histórico Linear + GitHub + Agent. O estado atual do projeto é Plane-first; Linear permanece opcional/legado para cards existentes e `/webhooks/linear`. Auto-merge existe como opt-in por label `auto-merge`; sem essa label, o merge continua manual.
 
 ## Contexto
 
@@ -48,7 +48,7 @@ PR inicial criado como **Draft** quando há incerteza ou revisão pendente.
 | In Review | PR aberto, aguardando revisão humana |
 | Done | Merge realizado manualmente |
 
-### O que permanece manual no MVP
+### O que era manual no MVP histórico
 
 - Merge do PR
 - Deploy
@@ -58,4 +58,4 @@ PR inicial criado como **Draft** quando há incerteza ou revisão pendente.
 
 - Linear foi o painel de controle principal neste fluxo histórico; hoje Plane é o provider primário e Linear segue opcional/legado.
 - Aprovação humana está no meio do fluxo — não no final.
-- Draft PR garante que nenhum merge acidental acontece antes da revisão.
+- Draft PR e auto-merge opt-in impedem merge acidental fora das políticas atuais.

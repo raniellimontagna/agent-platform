@@ -1,6 +1,6 @@
 # Runbook — Webhooks de cards via Tailscale Funnel (MAC-19/20)
 
-Plane (primary card provider) -> Orchestrator API -> agent-runners -> GitHub PR -> Plane report
+Plane (primary card provider) -> Orchestrator API -> agent-runners -> GitHub PR/merge -> Plane report
 Linear remains supported as an optional provider for legacy cards through `/webhooks/linear`.
 
 Expor os endpoints de webhook do orchestrator (.11, LXC 201) publicamente por

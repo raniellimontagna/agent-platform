@@ -5,8 +5,9 @@ descobertos na prática. Complementa o [proxmox-setup.md](./proxmox-setup.md) (q
 descreve o passo a passo do zero). **Leia isto antes de mexer no ambiente de outra
 máquina** — evita re-descobrir as armadilhas abaixo.
 
-> Última atualização: 2026-06-16 (auto-merge opt-in, loop critic 3x,
-> identidade de commits do agente e dashboards validados em prod).
+> Última atualização: 2026-06-22 (Plane-first, auditoria de webhooks,
+> `software-delivery-pipeline` com roles no registry, auto-merge opt-in,
+> loop critic 3x, identidade de commits do agente e dashboards validados em prod).
 
 ---
 
@@ -144,11 +145,20 @@ qm destroy <ID>        # VM
 
 ## Status do deploy
 
+> **Atualização 2026-06-22:** Plane é o provider primário do projeto
+> `Agent Platform` (`AGP`). Linear segue legado/opcional via `/webhooks/linear`.
+> O handler Plane registra skips com `reason`, labels atuais/anteriores,
+> `cardId` e `cardIdentifier`; o endpoint interno
+> `/admin/card-runs?provider=plane&cardId=<id>` mostra o histórico persistido
+> por card. O registry expõe `software-delivery-pipeline` como identidade clara
+> do pipeline atual e mantém `coder-agent` como chave compatível. Roles visíveis:
+> `planner`, `coder`, `critic`, `pr` e `reporter`.
+
 > **Atualização 2026-06-16 (MAC-67 pós-deploy):** auto-merge opt-in validado em
 > produção com issues descartáveis `MAC-84` e `MAC-85`. Fluxo confirmado:
 > `ai-ready` + `auto-merge` cria run, pausa em aprovação humana, `approved`
-> retoma via webhook Linear, abre PR, mergeia automaticamente na `main`, remove
-> branch remota e move a issue para `Done`.
+> retoma via webhook do provider de origem, abre PR, mergeia automaticamente na
+> `main`, remove branch remota e move o card/issue para `Done`.
 >
 > **Loop critic:** `AGENT_MAX_REVIEW_ROUNDS=3` está ativo no orchestrator. O E2E
 > `MAC-85` exercitou as 3 voltas de revisão e terminou com

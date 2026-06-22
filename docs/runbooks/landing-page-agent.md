@@ -1,9 +1,9 @@
 # Landing Page Agent
 
 `landing-page-agent` é o primeiro agente especializado de produto do
-agent-platform. Ele usa o mesmo fluxo operacional do `coder-agent`, mas recebe
-skills versionadas no codegen para construir landing pages prontas em pouco
-tempo.
+agent-platform. Ele usa o mesmo LangGraph do pipeline de entrega
+(`software-delivery-pipeline` / `coder-agent` compatível), mas recebe skills
+versionadas no codegen para construir landing pages prontas em pouco tempo.
 
 ## Como selecionar
 
@@ -13,7 +13,8 @@ Em um card Plane:
 - adicione `agent:landing-page`;
 - aprove normalmente com `approved` quando o plano estiver bom.
 
-Sem `agent:landing-page`, o fluxo continua usando `coder-agent`.
+Sem `agent:landing-page`, o fluxo continua usando a chave compatível
+`coder-agent` do pipeline padrão.
 Cards Linear ainda são aceitos apenas no provider legado/opcional.
 
 ## Skills atuais
@@ -53,12 +54,15 @@ Veja também `docs/runbooks/agent-skills.md`.
 
 ## Limites atuais
 
-- Ainda usa o mesmo grafo de execução (`planning -> coding -> reviewing -> PR`).
+- Ainda usa o mesmo grafo de execução
+  (`planning -> coding -> reviewing -> pr -> merging -> cloudflareDeploy -> report`).
 - Não executa Higgsfield automaticamente enquanto o runner não tiver MCP/CLI
   autenticado por OAuth de forma persistente. A skill já orienta prompts,
   slots, nomes de arquivos, fallback e integração dos assets quando a tool
   estiver disponível.
-- Não faz deploy automático da LP.
+- Deploy Cloudflare automático só roda quando a configuração de landings geradas
+  estiver habilitada e o repo alvo for elegível; caso contrário o resultado fica
+  no PR.
 - `gsap-motion` só deve ser aplicado quando a dependência existir ou puder ser
   adicionada com segurança.
 - Astro + React é o padrão para LPs novas, mas o agente ainda deve respeitar o

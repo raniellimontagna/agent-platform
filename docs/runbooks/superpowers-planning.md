@@ -27,7 +27,8 @@ O contrato exige:
 
 Os docs em `docs/superpowers/specs` e `docs/superpowers/plans` continuam sendo o
 local para specs e planos maiores. Para trabalhos pequenos, o plano comentado no
-Linear já deve seguir o contrato acima.
+provider de origem já deve seguir o contrato acima. Hoje o provider padrão é
+Plane; Linear permanece legado/opcional para cards antigos.
 
 ## Próximas evoluções recomendadas
 
