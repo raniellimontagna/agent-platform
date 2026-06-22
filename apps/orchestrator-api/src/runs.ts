@@ -244,6 +244,26 @@ export async function listRunsForCard(cardProvider: CardProvider, cardId: string
     .limit(limit);
 }
 
+/** Cancela todos os runs ativos de um card removido/arquivado no provider. */
+export async function cancelActiveRunsForCard(
+  cardProvider: CardProvider,
+  cardId: string,
+  reason: string,
+): Promise<number> {
+  const rows = await db
+    .update(schema.runs)
+    .set({ status: 'cancelled', error: reason })
+    .where(
+      and(
+        eq(schema.runs.cardProvider, cardProvider),
+        eq(schema.runs.cardId, cardId),
+        inArray(schema.runs.status, ACTIVE_STATUSES),
+      ),
+    )
+    .returning({ id: schema.runs.id });
+  return rows.length;
+}
+
 /** Resumo agregado das execuções do agente para dashboards/API. */
 export async function runStats(): Promise<RunStats> {
   const statusRows = await db

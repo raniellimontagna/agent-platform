@@ -150,9 +150,11 @@ qm destroy <ID>        # VM
 > O handler Plane registra skips com `reason`, labels atuais/anteriores,
 > `cardId` e `cardIdentifier`; o endpoint interno
 > `/admin/card-runs?provider=plane&cardId=<id>` mostra o histórico persistido
-> por card. O registry expõe `software-delivery-pipeline` como identidade clara
-> do pipeline atual e mantém `coder-agent` como chave compatível. Roles visíveis:
-> `planner`, `coder`, `critic`, `pr` e `reporter`.
+> por card. Eventos de remoção/arquivo do Plane cancelam runs ativos do card
+> para evitar itens pendurados em `awaiting_approval`. O registry expõe
+> `software-delivery-pipeline` como identidade clara do pipeline atual e mantém
+> `coder-agent` como chave compatível. Roles visíveis: `planner`, `coder`,
+> `critic`, `pr` e `reporter`.
 
 > **Atualização 2026-06-16 (MAC-67 pós-deploy):** auto-merge opt-in validado em
 > produção com issues descartáveis `MAC-84` e `MAC-85`. Fluxo confirmado:

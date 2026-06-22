@@ -9,6 +9,7 @@ import { isPaused } from '../killswitch.js';
 import { logger } from '../logger.js';
 import { JOB_PRIORITY, agentQueue } from '../queue.js';
 import {
+  cancelActiveRunsForCard,
   costLast24hUsd,
   createRun,
   findAwaitingApprovalRunForCard,
@@ -23,6 +24,15 @@ export const webhooks = new Hono();
 const AI_READY_LABEL = 'ai-ready';
 const APPROVED_LABEL = 'approved';
 const AUTO_MERGE_LABEL = 'auto-merge';
+const PLANE_REMOVED_REASON = 'plane work item removed';
+const PLANE_REMOVAL_ACTIONS = new Set([
+  'delete',
+  'deleted',
+  'remove',
+  'removed',
+  'archive',
+  'archived',
+]);
 
 interface IssueData {
   id?: string;
@@ -66,6 +76,10 @@ interface PlanePayload {
 function isPlaneWorkItemWebhook(payload: PlanePayload, eventHeader: string | undefined): boolean {
   const event = eventHeader ?? payload.event ?? payload.type;
   return event === 'work_item' || event === 'issue';
+}
+
+function isPlaneRemovalAction(action: string | undefined): boolean {
+  return action ? PLANE_REMOVAL_ACTIONS.has(action.toLowerCase()) : false;
 }
 
 function verifySignature(rawBody: string, signature: string | undefined, secret: string): boolean {
@@ -327,6 +341,22 @@ webhooks.post('/webhooks/plane', async (c) => {
         event: eventHeader ?? payload.event ?? payload.type,
       }),
     );
+  }
+
+  if (isPlaneRemovalAction(payload.action)) {
+    const cancelled = await cancelActiveRunsForCard('plane', cardId, PLANE_REMOVED_REASON);
+    logger.info(
+      {
+        provider: 'plane',
+        action: payload.action,
+        event: eventHeader ?? payload.event ?? payload.type,
+        cardId,
+        cardIdentifier: planeCardIdentifier(item),
+        cancelled,
+      },
+      'Plane work item removed; active runs cancelled',
+    );
+    return c.json({ ok: true, cancelled, reason: PLANE_REMOVED_REASON });
   }
 
   const currentNames = planeLabelNames(item.labels) ?? [];
