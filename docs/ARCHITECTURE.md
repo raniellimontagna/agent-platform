@@ -5,10 +5,12 @@ card do Plane (workspace `attodev`, projeto **Agent Platform** / `AGP`) se
 encaixa na estrutura. Linear fica como provider opcional legado e só entra no
 mapa quando existe card histórico ou suporte explícito em `/webhooks/linear`.
 
-> Estado em 2026-06-21. Legenda: ✅ feito · 🏗 no ar/parcial · ⏳ pendente.
+> Estado em 2026-06-22. Legenda: ✅ feito · 🏗 no ar/parcial · ⏳ pendente.
 > **Fases 0–7 completas** — projeto deployado em prod; auto-merge opt-in,
 > loop critic até 3 voltas, identidade de commits do agente e dashboards
-> validados com E2E real.
+> validados com E2E real. O catálogo agora diferencia o pipeline compatível
+> `coder-agent` da identidade mais clara `software-delivery-pipeline`, com roles
+> `planner`, `coder`, `critic`, `pr` e `reporter`.
 
 ---
 
@@ -40,7 +42,7 @@ flowchart TB
   RUN -->|"aliases LLM"| GW
   GW -->|"OAuth combos (research/strong_coder/heavy_coder/critic)"| SUBS
   GW -->|"API key (cheap_fast)"| VERBOO
-  ORCH -->|"branch · PR · comentários"| GH
+  ORCH -->|"branch · PR · merge opt-in"| GH
   ORCH -->|"status · comentários"| PLANE
   ORCH -.legacy status/comments.-> LINEAR
   ORCH -.métricas/logs.-> OBS
@@ -59,40 +61,44 @@ flowchart TB
 
 ```mermaid
 flowchart TD
-  A["Card recebe label <b>ai-ready</b>"] -->|webhook| B["Webhook Plane<br/>MAC-19 (dedup por card ativo)"]
+  A["Card recebe label <b>ai-ready</b>"] -->|webhook| B["Webhook Plane<br/>MAC-19 (dedup por card ativo + audit de skips)"]
   SCHED["Scheduler cron<br/>MAC-38"] -->|cria card + run| C
   B --> C["Cria run (agent_id do registry)<br/>MAC-20/42"]
   C --> D["State Machine — fila BullMQ<br/>N runs em paralelo · MAC-14/47"]
-  D --> E["Planner Agent gera plano<br/>MAC-16"]
+  D --> E["Role planner gera plano<br/>MAC-16"]
   E --> F["Reporter comenta plano no Plane<br/>MAC-21"]
   F --> G{"Human Approval Node<br/>MAC-22 (auto-aprova agendado)"}
   G -->|aprovado| H["Coder: branch única + worktree<br/>MAC-25/27"]
   G -->|reprovado| Z["Encerra / aguarda"]
-  H --> J["Coder Agent altera código<br/>contexto + lições (busca semântica)<br/>MAC-17/24/23/45"]
+  H --> J["Role coder altera código<br/>contexto + lições (busca semântica)<br/>MAC-17/24/23/45"]
   J --> K["Sandbox Executor (allowlist)<br/>MAC-28/31"]
   K --> L["Valida ANTES de pushar<br/>MAC-29"]
   L -->|"falhou"| FX["Self-correction<br/>fix dirigido MAC-54"]
   FX --> L
-  L -->|"ok ou esgotou retries"| M["Reviewer Agent revisa diff (critic)<br/>MAC-18"]
+  L -->|"ok ou esgotou retries"| M["Role critic revisa diff<br/>MAC-18"]
   M -->|"REPROVA / ressalva"| RV["Revising: re-coda endereçando<br/>o parecer · MAC-59"]
   RV --> M
-  M -->|"aprovado / ressalva operacional / teto"| N["PR Creator abre PR<br/>Draft sem auto-merge; pronto com opt-in<br/>MAC-26/67"]
-  N --> AR["Artifact Store: plano/patch/review/...<br/>MAC-44"]
+  M -->|"aprovado / ressalva operacional / teto"| N["Role pr abre PR<br/>Draft ou pronto conforme auto-merge<br/>MAC-26/67"]
+  N --> P["Merging opt-in<br/>label auto-merge + testes verdes + critic<br/>MAC-67"]
+  P --> CF["Cloudflare deploy opcional<br/>landings geradas"]
+  CF --> AR["Artifact Store: plano/patch/review/...<br/>MAC-44"]
   AR --> Q["Memory: destila lição se falhou<br/>(embeda p/ busca futura) MAC-23/45"]
-  Q --> O["Reporter comenta resultado no Plane<br/>MAC-21"]
-  O --> P["Merge automático opt-in<br/>label auto-merge + testes verdes + critic<br/>MAC-67"]
+  Q --> O["Role reporter comenta resultado no Plane<br/>MAC-21"]
 ```
 
-Grafo LangGraph: `planning → [⏸ aprovação] → coding → reviewing → [revisar? → revising → reviewing] → pr → merging → report → END`
+Grafo LangGraph: `planning → [⏸ aprovação] → coding → reviewing → [revisar? → revising → reviewing] → pr → merging → cloudflareDeploy → report → END`
 (falha do coder curto-circuita para `report`). Atravessando tudo: **Context Builder**
 (MAC-24), **Memory Layer** (MAC-23/45 — lições por repo, recuperadas por similaridade),
 **Self-correction** (MAC-54 — fix intra-run), **Loop de revisão** (MAC-59), **Retry
 Engine** (MAC-33), **Workflow Persistence** (MAC-34), **Cost Guard** (MAC-40) e o
-gateway de modelos (Fase 2). Catálogos: **Agent/Tool Registry** (MAC-42/43, metadado +
-FK, não executam — o grafo segue em código). Concorrência: `AGENT_MAX_CONCURRENCY`
+gateway de modelos (Fase 2). Catálogos: **Agent/Tool Registry** (MAC-42/43,
+metadado + FK, não executam — o grafo segue em código). O `coder-agent` segue
+como chave compatível do pipeline; `software-delivery-pipeline` expõe a mesma
+execução com roles de catálogo (`planner`, `coder`, `critic`, `pr`, `reporter`).
+Concorrência: `AGENT_MAX_CONCURRENCY`
 runs simultâneos, observável em `GET /admin/concurrency` (MAC-47).
 
-Plane (primary card provider) -> Orchestrator API -> agent-runners -> GitHub PR -> Plane report
+Plane (primary card provider) -> Orchestrator API -> agent-runners -> GitHub PR/merge -> Plane report
 Linear remains supported as an optional provider for legacy cards through `/webhooks/linear`.
 
 ---
@@ -109,8 +115,9 @@ Linear remains supported as an optional provider for legacy cards through `/webh
 | Budgets / Rate limits | MAC-15 | `litellm-config.yaml` + `docs/runbooks/litellm-guardrails.md` | ✅ aplicados |
 | API + Webhooks Plane/Linear (legacy optional) | MAC-19 | `apps/orchestrator-api/src/routes/webhooks.ts` | ✅ |
 | Fluxo ai-ready | MAC-20 | `apps/orchestrator-api` (enfileirar) | ✅ |
-| State Machine | MAC-14 | `packages/graph` + schema `runs/run_steps` | ✅ (planning→coding→reviewing→pr→report) |
-| Planner / Coder / Reviewer / Reporter | MAC-16/17/18/21 | `packages/graph/src/nodes`, `apps/worker-code` (code-gen) | ✅ |
+| State Machine | MAC-14 | `packages/graph` + schema `runs/run_steps` | ✅ (`planning→coding→reviewing→pr→merging→cloudflareDeploy→report`) |
+| Pipeline roles (planner/coder/critic/pr/reporter) | AGP follow-up | `apps/orchestrator-api/src/agents.ts`, registry UI | ✅ `coder-agent` compatível + `software-delivery-pipeline` |
+| Planner / Coder / Reviewer / Reporter | MAC-16/17/18/21 | `packages/graph/src/nodes`, `apps/worker-code` (code-gen) | ✅ roles nomeadas no catálogo |
 | Human Approval Node | MAC-22 | `packages/graph` (interruptBefore) + tabela `approvals` | ✅ |
 | Context Builder | MAC-24 | `apps/worker-code/src/executor/context.ts` | ✅ (convenções + arquivos-exemplo) |
 | Memory Layer | MAC-23 | `packages/memory`, `apps/orchestrator-api` (lessons) | ✅ (feedback learning: lições por repo) |
@@ -129,6 +136,7 @@ Linear remains supported as an optional provider for legacy cards through `/webh
 | Multi-Agent Execution | MAC-47 | `apps/orchestrator-api` (worker `concurrency`, `/admin/concurrency`), migration 0009 | ✅ N runs em paralelo + dedup de issue ativa |
 | Identidade de commits do agente | pós MAC-67 | `apps/worker-code/src/executor/runJob.ts`, compose runners | ✅ autor `Ranielli Montagna <raniellimontagna@hotmail.com>` + `Co-authored-by: Codex <noreply@openai.com>` |
 | Scraping policy + Playwright controlado | AGP-8/AGP-9 | `apps/worker-code/src/executor/scrapingPolicy.ts`, `playwrightResearch.ts` | ✅ policy compartilhada; Playwright só por pedido explícito |
+| Auditoria de webhooks Plane | AGP follow-up | `apps/orchestrator-api/src/routes/webhooks.ts`, `/admin/card-runs` | ✅ skips com `reason` + histórico por card |
 
 Provider LLM é híbrido: Verboo (MAC-13) + OmniRoute/OAuth (MAC-48) — ver §5 e ADR-0006.
 

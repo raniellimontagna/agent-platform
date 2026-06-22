@@ -1,9 +1,9 @@
 # Eval harness
 
 O eval harness mede regressões básicas de qualidade do agente sem chamar LLM,
-GitHub ou Linear. Cada fixture cria um repositório temporário, aplica uma mudança
-candidata versionada, roda comandos permitidos e compara o resultado com critérios
-objetivos.
+GitHub, Plane, Linear ou produção. Cada fixture cria um repositório temporário,
+aplica uma mudança candidata versionada, roda comandos permitidos e compara o
+resultado com critérios objetivos.
 
 Rodar todos os cenários:
 
@@ -26,8 +26,9 @@ Gate rápido recomendado antes de mexer em planner/coder/reviewer/merging:
 rtk corepack pnpm verify:loop
 ```
 
-Esse comando roda build do monorepo, testes e eval. Ele não chama GitHub, Linear ou
-produção, e deve falhar com exit code diferente de zero se qualquer etapa quebrar.
+Esse comando roda build do monorepo, testes e eval. Ele não chama GitHub, Plane,
+Linear ou produção, e deve falhar com exit code diferente de zero se qualquer
+etapa quebrar.
 
 Artefatos ficam em `.eval-runs/<timestamp>/` com:
 
@@ -51,7 +52,7 @@ adicionar um cenário, crie uma pasta em
 Fixtures também podem declarar `workerDryRun`. Nesse modo o harness cria uma
 branch local, aplica uma resposta fake de codegen, roda validação, aplica fixes
 fake quando necessário, faz commit local e salva o diff. O resultado sempre traz
-`pushed: false`; GitHub e Linear não são chamados.
+`pushed: false`; GitHub, Plane e Linear não são chamados.
 
 Quando `workerDryRun.llmResponses` está presente, o harness usa o codegen real
 (`generateAndApplyCode` e `applyFix`) com um `LlmClient` fake que devolve as
@@ -77,16 +78,24 @@ Esse modo compara score agregado e score por cenário contra
 - `worker-json-repair`: resposta inicial inválida/truncada e repair para JSON.
 - `noop-review-safe`: cenário sem mudanças, validando no-op verde.
 - `forbidden-file-preserved`: alteração cirúrgica preservando arquivo proibido.
+- `auto-merge-approved`: critic aprovado, zero voltas, commit metadata e
+  auto-merge esperado.
+- `auto-merge-operational-caveat`: ressalva operacional não bloqueia
+  auto-merge.
+- `auto-merge-blocked-non-operational-caveat`: ressalva não-operacional bloqueia
+  auto-merge.
+- `critic-max-rounds-3`: loop critic chega ao teto de 3 voltas.
+- `critic-reproved-blocks-pr`: `REPROVADO` terminal bloqueia PR/auto-merge.
+- `review-noop-commit-trailers`: revisão no-op preserva trailers de commit.
+- `review-recode-required`: critic pede recode e o fluxo segue até o teto
+  esperado.
 
 ## Próxima evolução recomendada
 
-O auto-merge em produção torna regressão silenciosa de qualidade mais cara. A
-próxima versão do harness deve cobrir, sem GitHub/Linear/prod:
+O auto-merge e o loop critic já têm fixtures determinísticas. As próximas
+evoluções mais úteis são:
 
-- decisão de auto-merge para `APROVADO`, `APROVADO COM RESSALVAS` operacional e
-  ressalva não-operacional;
-- limite de até 3 voltas do critic antes de seguir para PR;
-- geração da mensagem de commit com `Ref:` e `Co-authored-by`;
-- cenários de revisão que exigem recode e cenários de revisão no-op;
-- relatório que destaque veredito, motivo de bloqueio e resultado esperado do
-  auto-merge.
+- eval de qualidade mínima de plano para a role `planner`;
+- eval que associe checks explicitamente às roles `planner`, `coder` e `critic`;
+- cenários de workflow composto `workflow:landing-page` sem chamar Plane/GitHub;
+- relatório que destaque melhor a role responsável por bloqueio ou regressão.

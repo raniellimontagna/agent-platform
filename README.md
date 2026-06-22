@@ -1,17 +1,21 @@
 # agent-platform
 
-Orquestrador de agentes self-hosted. Cards do Plane com label `ai-ready` disparam um fluxo autônomo: leitura de contexto → plano → aprovação humana → branch → código → **validação + auto-correção** → revisão → Draft PR.
+Orquestrador de agentes self-hosted. Cards do Plane com label `ai-ready`
+disparam um pipeline autônomo de entrega de software: leitura de contexto →
+plano → aprovação humana → branch → código → **validação + auto-correção** →
+revisão → Draft PR → auto-merge opt-in → report.
 
 O agente **aprende com as próprias falhas** (memória de lições por repo, com **busca semântica**) e **se corrige dentro do run** quando a validação quebra, antes de abrir o PR. Governança embutida: kill switch, cost guard, políticas de aprovação. Observabilidade via Grafana (execuções, custo, qualidade, memória). Roda **vários runs em paralelo** com catálogos versionados de agentes e ferramentas.
 
 ## Capacidades
 
-- **Loop autônomo ponta a ponta** — webhook `ai-ready` do provider primário → plano (LLM) → aprovação humana (label `approved`) → codegen com contexto → validação no sandbox → revisão (critic) → Draft PR → report consolidado no provider de origem.
+- **Loop autônomo ponta a ponta** — webhook `ai-ready` do provider primário → plano (LLM) → aprovação humana (label `approved`) → codegen com contexto → validação no sandbox → revisão (critic) → Draft PR → merge opt-in → report consolidado no provider de origem.
+- **Pipeline com roles** — `coder-agent` permanece como chave compatível; o catálogo também expõe `software-delivery-pipeline` com roles `planner`, `coder`, `critic`, `pr` e `reporter` para deixar claro o papel de cada etapa sem dividir fisicamente o LangGraph.
 - **Memory Layer (MAC-23/45)** — falhas (critic REPROVA / validação ❌) viram lições destiladas, guardadas por repo e reinjetadas no codegen de runs futuros. Recuperação por **relevância** (embeddings locais + pgvector, cosine), com fallback pra recência.
 - **Self-correction (MAC-54)** — valida antes de pushar; se falha, corrige e revalida até `AGENT_MAX_FIX_ATTEMPTS` (default 2).
 - **Loop de revisão (MAC-59)** — critic REPROVA / ressalva → o coder re-coda endereçando o parecer e re-revisa, até `AGENT_MAX_REVIEW_ROUNDS`.
 - **Multi-Agent Execution (MAC-47)** — N runs em paralelo (`AGENT_MAX_CONCURRENCY`), coordenação à prova de race (índice único de issue ativa), observabilidade de concorrência.
-- **Agent Registry (MAC-42) + Tool Registry (MAC-43)** — catálogos versionados (key/version) de tipos de agente (capabilities) e ferramentas (risk + scopes), via REST + MCP; `agent_id` gravado por run.
+- **Agent Registry (MAC-42) + Tool Registry (MAC-43)** — catálogos versionados (key/version) de pipelines/agentes (capabilities + roles) e ferramentas (risk + scopes), via REST + MCP; `agent_id` gravado por run.
 - **Scheduler (MAC-38) + Worker Manager (MAC-39)** — agendamentos cron disparam runs (auto-aprovação sem motivo crítico); failover entre runners.
 - **Artifact Store (MAC-44)** — plano/patch/review/validação/summary de cada run guardados de forma durável e consultável.
 - **Governança** — kill switch (Redis), cost guard (limite por run/24h), approval policies, retry + persistência de runs.
@@ -34,7 +38,7 @@ O agente **aprende com as próprias falhas** (memória de lições por repo, com
 ## Arquitetura
 
 ```
-Plane (primary card provider) → Orchestrator API → agent-runners → GitHub PR → Plane report
+Plane (primary card provider) → Orchestrator API → agent-runners → GitHub PR/merge → Plane report
                                    ↓
                             LiteLLM Gateway
                                    ↓
@@ -83,19 +87,16 @@ agent-platform/
   apps/
     orchestrator-api/     # API Hono + LangGraph (+ registries, vector memory, scheduler)
     worker-code/          # Executor de código (sandbox + self-correction)
-    worker-reviewer/      # Revisor de diff
     mcp-server/           # Fachada MCP (stdio) sobre a REST API
-    dashboard/            # UI de controle
   packages/
-    agents/               # Agentes LangGraph
+    cards/                # Abstração comum de providers de cards
     graph/                # State machines
     llm/                  # Cliente LiteLLM
+    plane/                # Integração Plane (provider primário)
     linear/               # Integração Linear (legado opcional)
     github/               # Integração GitHub
     memory/               # Memória dos agentes
-    tools/                # Ferramentas disponíveis
     policy/               # Políticas de aprovação/custo
-    shared/               # Tipos e utilitários
   infra/
     proxmox/              # Scripts de provisionamento
     compose/              # Docker Compose por VM
