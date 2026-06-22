@@ -4,6 +4,7 @@ import {
   type InstagramGraphFinding,
   type InstagramGraphResearchOptions,
   formatInstagramGraphFindings,
+  redactSensitiveText,
   runInstagramGraphResearch,
 } from './instagramGraphResearch.js';
 import {
@@ -94,6 +95,7 @@ export async function runFirecrawlResearchJob(
   opts: FirecrawlResearchOptions,
 ): Promise<JobResult> {
   const commands: CommandResult[] = [];
+  const persistedSecrets = configuredSecrets(opts);
   const base: JobResult = {
     runId: job.runId,
     status: 'failed',
@@ -110,6 +112,10 @@ export async function runFirecrawlResearchJob(
     ? await runInstagramGraphResearch(instagramHandles, opts.instagramGraph)
     : { findings: [] as InstagramGraphFinding[], commands: [] };
   commands.push(...instagramGraphResult.commands);
+  const graphSuccesses = instagramGraphResult.findings.filter(
+    (finding): finding is Extract<InstagramGraphFinding, { status: 'succeeded' }> =>
+      finding.status === 'succeeded',
+  );
   const inferredInstagramUrls = instagramHandles.map(instagramProfileUrl);
   const policy = buildScrapingPolicy({
     title: job.title,
@@ -137,56 +143,70 @@ export async function runFirecrawlResearchJob(
       testsPassed: false,
     };
   }
-  if (!opts.apiKey) {
-    return {
-      ...base,
-      error: 'FIRECRAWL_API_KEY não configurada no runner; configure o secret para coleta real.',
-      testsPassed: false,
-    };
-  }
 
   const sources: ResearchSource[] = [];
-  for (const [index, url] of policy.urls.slice(0, policy.limits.maxPages).entries()) {
-    if (!url) continue;
-    const started = Date.now();
-    try {
-      const source = await scrapeFirecrawl({
-        id: `S${index + 1}`,
-        url,
-        apiKey: opts.apiKey,
-        baseUrl: opts.baseUrl,
-        timeoutMs: policy.limits.timeoutMs,
-        fetchImpl: opts.fetchImpl ?? fetch,
-      });
-      sources.push({ ...source, durationMs: Date.now() - started });
-      commands.push({
-        command: `firecrawl scrape ${url}`,
-        exitCode: 0,
-        stdout: source.title,
-        stderr: source.warning ?? '',
-        durationMs: Date.now() - started,
-      });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      sources.push({
-        id: `S${index + 1}`,
-        url,
-        title: url,
-        error: message,
-        durationMs: Date.now() - started,
-      });
-      commands.push({
-        command: `firecrawl scrape ${url}`,
-        exitCode: 1,
-        stdout: '',
-        stderr: message,
-        durationMs: Date.now() - started,
-      });
+  if (opts.apiKey) {
+    for (const [index, url] of policy.urls.slice(0, policy.limits.maxPages).entries()) {
+      if (!url) continue;
+      const started = Date.now();
+      try {
+        const source = sanitizeResearchSource(
+          { ...(await scrapeFirecrawl({
+            id: `S${index + 1}`,
+            url,
+            apiKey: opts.apiKey,
+            baseUrl: opts.baseUrl,
+            timeoutMs: policy.limits.timeoutMs,
+            fetchImpl: opts.fetchImpl ?? fetch,
+          })), durationMs: Date.now() - started },
+          persistedSecrets,
+        );
+        sources.push(source);
+        commands.push({
+          command: sanitizeStoredText(`firecrawl scrape ${url}`, persistedSecrets),
+          exitCode: 0,
+          stdout: sanitizeStoredText(source.title, persistedSecrets),
+          stderr: sanitizeStoredText(source.warning ?? '', persistedSecrets),
+          durationMs: source.durationMs,
+        });
+      } catch (err) {
+        const message = sanitizeStoredText(
+          err instanceof Error ? err.message : String(err),
+          persistedSecrets,
+        );
+        const source = sanitizeResearchSource(
+          {
+            id: `S${index + 1}`,
+            url,
+            title: url,
+            error: message,
+            durationMs: Date.now() - started,
+          },
+          persistedSecrets,
+        );
+        sources.push(source);
+        commands.push({
+          command: sanitizeStoredText(`firecrawl scrape ${url}`, persistedSecrets),
+          exitCode: 1,
+          stdout: '',
+          stderr: message,
+          durationMs: source.durationMs,
+        });
+      }
     }
   }
 
-  const successes = sources.filter((source) => !source.error);
-  if (successes.length === 0) {
+  const firecrawlSuccesses = sources.filter((source) => !source.error);
+  const hasUsableResearch = firecrawlSuccesses.length > 0 || graphSuccesses.length > 0;
+  if (!hasUsableResearch) {
+    if (!opts.apiKey) {
+      return {
+        ...base,
+        commands,
+        error: 'FIRECRAWL_API_KEY não configurada no runner; configure o secret para coleta real.',
+        testsPassed: false,
+      };
+    }
     return {
       ...base,
       commands,
@@ -199,6 +219,7 @@ export async function runFirecrawlResearchJob(
         policy.limits,
         instagramHandles,
         instagramGraphResult.findings,
+        persistedSecrets,
       ),
       testsPassed: false,
     };
@@ -208,7 +229,7 @@ export async function runFirecrawlResearchJob(
     ...base,
     status: 'succeeded',
     commands,
-    summary: `Research pack gerado com ${successes.length}/${sources.length} fonte(s) coletada(s).`,
+    summary: buildSuccessSummary(firecrawlSuccesses.length, sources.length, graphSuccesses.length, !!opts.apiKey),
     research: buildResearchPack(
       job,
       sources,
@@ -216,6 +237,7 @@ export async function runFirecrawlResearchJob(
       policy.limits,
       instagramHandles,
       instagramGraphResult.findings,
+      persistedSecrets,
     ),
   };
 }
@@ -284,6 +306,7 @@ function buildResearchPack(
   limits: ScrapingLimits,
   instagramHandles: string[] = [],
   instagramGraphFindings: InstagramGraphFinding[] = [],
+  persistedSecrets: string[] = [],
 ): string {
   const lines = [
     `# Research Pack - ${job.issueIdentifier}`,
@@ -367,11 +390,56 @@ function buildResearchPack(
   } else {
     lines.push(`- ${failed.length} fonte(s) falharam e precisam de revisão manual.`);
   }
-  return lines.join('\n').trim();
+  return sanitizeStoredText(lines.join('\n').trim(), persistedSecrets);
 }
 
 function truncate(text: string, maxChars: number): string {
   const clean = text.trim();
   if (clean.length <= maxChars) return clean;
   return `${clean.slice(0, maxChars - 20).trim()}\n\n[truncated]`;
+}
+
+function configuredSecrets(opts: FirecrawlResearchOptions): string[] {
+  return [opts.apiKey, opts.instagramGraph?.accessToken].filter(
+    (value): value is string => Boolean(value),
+  );
+}
+
+function sanitizeStoredText(value: string, exactSecrets: string[]): string {
+  return redactSensitiveText(value, exactSecrets);
+}
+
+function sanitizeResearchSource(source: ResearchSource, exactSecrets: string[]): ResearchSource {
+  return {
+    ...source,
+    id: sanitizeStoredText(source.id, exactSecrets),
+    url: sanitizeStoredText(source.url, exactSecrets),
+    title: sanitizeStoredText(source.title, exactSecrets),
+    statusCode: source.statusCode,
+    contentType: source.contentType
+      ? sanitizeStoredText(source.contentType, exactSecrets)
+      : undefined,
+    summary: source.summary ? sanitizeStoredText(source.summary, exactSecrets) : undefined,
+    markdown: source.markdown ? sanitizeStoredText(source.markdown, exactSecrets) : undefined,
+    warning: source.warning ? sanitizeStoredText(source.warning, exactSecrets) : undefined,
+    error: source.error ? sanitizeStoredText(source.error, exactSecrets) : undefined,
+    durationMs: source.durationMs,
+  };
+}
+
+function buildSuccessSummary(
+  firecrawlSuccessCount: number,
+  firecrawlSourceCount: number,
+  graphSuccessCount: number,
+  firecrawlWasConfigured: boolean,
+): string {
+  if (firecrawlSuccessCount > 0 && graphSuccessCount > 0) {
+    return `Research pack gerado com ${firecrawlSuccessCount}/${firecrawlSourceCount} fonte(s) Firecrawl e ${graphSuccessCount} perfil(is) do Instagram Graph API.`;
+  }
+  if (graphSuccessCount > 0) {
+    return firecrawlWasConfigured
+      ? `Research pack gerado com ${graphSuccessCount} perfil(is) do Instagram Graph API; fontes Firecrawl exigem revisão manual.`
+      : `Research pack gerado com ${graphSuccessCount} perfil(is) do Instagram Graph API; Firecrawl não executado porque FIRECRAWL_API_KEY está ausente.`;
+  }
+  return `Research pack gerado com ${firecrawlSuccessCount}/${firecrawlSourceCount} fonte(s) coletada(s).`;
 }

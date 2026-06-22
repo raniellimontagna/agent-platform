@@ -81,4 +81,63 @@ describe('runInstagramGraphResearch', () => {
     });
     expect(JSON.stringify(result)).not.toContain('secret-token');
   });
+
+  it('records Meta API errors as redacted limitations instead of throwing', async () => {
+    const fetchImpl = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            error: {
+              message: 'Invalid OAuth access token: abc123',
+              code: 190,
+            },
+          }),
+          { status: 400 },
+        ),
+    ) as typeof fetch;
+
+    const result = await runInstagramGraphResearch(['cameraecarburador'], {
+      accessToken: 'abc123',
+      igUserId: '17841400000000000',
+      baseUrl: 'https://graph.facebook.com',
+      apiVersion: 'v20.0',
+      timeoutMs: 10_000,
+      fetchImpl,
+    });
+
+    expect(result.findings).toEqual([
+      expect.objectContaining({
+        handle: 'cameraecarburador',
+        status: 'failed',
+        limitation: expect.stringContaining('[redacted]'),
+      }),
+    ]);
+    expect(result.commands[0]).toMatchObject({
+      command: 'instagram graph business_discovery @cameraecarburador',
+      exitCode: 1,
+    });
+    expect(result.commands[0]?.stderr).toContain('[redacted]');
+    expect(JSON.stringify(result)).not.toContain('abc123');
+  });
+
+  it('adds an audit command when Business Discovery is skipped for missing config', async () => {
+    const result = await runInstagramGraphResearch(['cameraecarburador'], {
+      baseUrl: 'https://graph.facebook.com',
+      apiVersion: 'v20.0',
+      timeoutMs: 10_000,
+    });
+
+    expect(result.findings).toEqual([
+      expect.objectContaining({
+        handle: 'cameraecarburador',
+        status: 'skipped',
+      }),
+    ]);
+    expect(result.commands).toEqual([
+      expect.objectContaining({
+        command: 'instagram graph business_discovery skipped',
+        exitCode: 0,
+      }),
+    ]);
+  });
 });
