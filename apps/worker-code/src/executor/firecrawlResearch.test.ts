@@ -248,6 +248,109 @@ describe('runFirecrawlResearchJob', () => {
     );
   });
 
+  it('succeeds with Apify findings when Firecrawl rejects Instagram', async () => {
+    const fetchImpl = vi.fn(async (input) => {
+      const url = String(input);
+      if (url.includes('api.apify.com')) {
+        return new Response(
+          JSON.stringify([
+            {
+              username: 'cameraecarburador',
+              fullName: 'Camera e Carburador',
+              biography: 'Oficina e carros antigos.',
+              followersCount: 2345,
+              postsCount: 120,
+              url: 'https://www.instagram.com/cameraecarburador/',
+            },
+          ]),
+          { status: 200 },
+        );
+      }
+      return new Response(
+        JSON.stringify({ success: false, error: 'instagram unsupported by firecrawl' }),
+        { status: 200 },
+      );
+    }) as typeof fetch;
+
+    const result = await runFirecrawlResearchJob(
+      {
+        ...baseJob,
+        description: 'Pesquisar @cameraecarburador para landing page.',
+      },
+      {
+        apiKey: 'fc-test',
+        baseUrl: 'https://api.firecrawl.dev',
+        timeoutMs: 10_000,
+        fetchImpl,
+        apifyInstagram: {
+          token: 'apify-secret-token',
+          actorId: 'shu8hvrXbJbY3Eb9W',
+          baseUrl: 'https://api.apify.com',
+          maxItems: 3,
+          timeoutMs: 10_000,
+          fetchImpl,
+        },
+      },
+    );
+
+    expect(result.status).toBe('succeeded');
+    expect(result.summary).toContain('Apify Instagram');
+    expect(result.research).toContain('## Apify Instagram Findings');
+    expect(result.research).toContain('@cameraecarburador followers: 2345');
+    expect(result.research).toContain('- Error: instagram unsupported by firecrawl');
+    expect(JSON.stringify(result)).not.toContain('apify-secret-token');
+  });
+
+  it('records Apify skip limitation without breaking public collection', async () => {
+    const fetchImpl = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            success: true,
+            data: {
+              summary: 'Perfil público visível.',
+              metadata: {
+                title: '@cameraecarburador',
+                sourceURL: 'https://www.instagram.com/cameraecarburador/',
+              },
+            },
+          }),
+          { status: 200 },
+        ),
+    ) as typeof fetch;
+
+    const result = await runFirecrawlResearchJob(
+      {
+        ...baseJob,
+        description: 'Pesquisar @cameraecarburador para landing page.',
+      },
+      {
+        apiKey: 'fc-test',
+        baseUrl: 'https://api.firecrawl.dev',
+        timeoutMs: 10_000,
+        fetchImpl,
+        apifyInstagram: {
+          actorId: 'shu8hvrXbJbY3Eb9W',
+          baseUrl: 'https://api.apify.com',
+          maxItems: 3,
+          timeoutMs: 10_000,
+          fetchImpl,
+        },
+      },
+    );
+
+    expect(result.status).toBe('succeeded');
+    expect(result.research).toContain('Apify Instagram skipped');
+    expect(result.commands).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          command: 'apify instagram skipped',
+          exitCode: 0,
+        }),
+      ]),
+    );
+  });
+
   it('falha sem FIRECRAWL_API_KEY', async () => {
     const result = await runFirecrawlResearchJob(baseJob, {
       baseUrl: 'https://api.firecrawl.dev',
