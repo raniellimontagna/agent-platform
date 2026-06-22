@@ -5,6 +5,10 @@ import {
   LANDING_PAGE_AGENT_KEY,
   REVIEWER_AGENT_KEY,
   agentKeyFromLabels,
+  SOFTWARE_DELIVERY_PIPELINE_KEY,
+  SOFTWARE_DELIVERY_PIPELINE_ROLES,
+  agentRolesFromCapabilities,
+  roleCapabilities,
   createAgentSchema,
   pickActiveAgent,
 } from './agents.js';
@@ -90,5 +94,59 @@ describe('agentKeyFromLabels', () => {
         'agent:landing-page',
       ]),
     ).toBe(LANDING_PAGE_AGENT_KEY);
+  });
+});
+
+describe('software delivery pipeline roles', () => {
+  it('declares the initial planner/coder/critic/pr/reporter roles', () => {
+    expect(SOFTWARE_DELIVERY_PIPELINE_KEY).toBe('software-delivery-pipeline');
+    expect(SOFTWARE_DELIVERY_PIPELINE_ROLES).toEqual([
+      {
+        key: 'planner',
+        description: 'Gera plano e approval reasons.',
+        modelAlias: 'research',
+        skills: [],
+      },
+      {
+        key: 'coder',
+        description: 'Aplica plano no runner e valida mudancas.',
+        modelAlias: 'strong_coder',
+        skills: [],
+      },
+      {
+        key: 'critic',
+        description: 'Revisa diff e decide recode ou PR.',
+        modelAlias: 'critic',
+        skills: [],
+      },
+      {
+        key: 'pr',
+        description: 'Abre PR e avalia auto-merge.',
+        modelAlias: null,
+        skills: [],
+      },
+      {
+        key: 'reporter',
+        description: 'Publica resumo final no card.',
+        modelAlias: null,
+        skills: [],
+      },
+    ]);
+  });
+
+  it('serializes roles as stable capabilities', () => {
+    expect(roleCapabilities(SOFTWARE_DELIVERY_PIPELINE_ROLES)).toEqual([
+      'role:planner',
+      'role:coder',
+      'role:critic',
+      'role:pr',
+      'role:reporter',
+    ]);
+  });
+
+  it('resolves role definitions from capabilities and ignores unknown tags', () => {
+    expect(
+      agentRolesFromCapabilities(['typescript', 'role:critic', 'role:unknown', 'role:planner']),
+    ).toEqual([SOFTWARE_DELIVERY_PIPELINE_ROLES[0], SOFTWARE_DELIVERY_PIPELINE_ROLES[2]]);
   });
 });
