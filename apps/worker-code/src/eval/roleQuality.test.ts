@@ -38,6 +38,22 @@ describe('scorePlannerOutput', () => {
 
     expect(checks.find((check) => check.name === 'planner:files')?.passed).toBe(true);
   });
+
+  it('aceita Dockerfile em subdiretório', () => {
+    const checks = scorePlannerOutput(
+      [
+        '## Entendimento do problema',
+        '## Escopo',
+        '- `infra/Dockerfile`',
+        'RED/GREEN/REFACTOR',
+        'rtk corepack pnpm lint',
+        '## Critérios de aceite',
+        'APPROVAL_REASONS: infra',
+      ].join('\n'),
+    );
+
+    expect(checks.find((check) => check.name === 'planner:files')?.passed).toBe(true);
+  });
 });
 
 describe('scoreCriticOutput', () => {

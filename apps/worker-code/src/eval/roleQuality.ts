@@ -4,9 +4,10 @@ function check(name: string, passed: boolean, detail: string): EvalCheck {
   return { name, passed, detail };
 }
 
-export function scorePlannerOutput(plan: string): EvalCheck[] {
-  const filePathPattern = /`[^`]+\.(?:ts|tsx|js|jsx|md|json|astro|ya?ml|toml|sh)`|`Dockerfile`/;
+const filePathPattern =
+  /`(?:[^`]+\.(?:ts|tsx|js|jsx|md|json|astro|ya?ml|toml|sh)|[^`]*\/Dockerfile|Dockerfile)`/;
 
+export function scorePlannerOutput(plan: string): EvalCheck[] {
   return [
     check('planner:understanding', /entendimento/i.test(plan), 'contains understanding section'),
     check('planner:scope', /escopo|fora de escopo/i.test(plan), 'contains scope section'),
@@ -37,7 +38,6 @@ export function scorePlannerOutput(plan: string): EvalCheck[] {
 }
 
 export function scoreCriticOutput(review: string): EvalCheck[] {
-  const filePathPattern = /`[^`]+\.(?:ts|tsx|js|jsx|md|json|astro|ya?ml|toml|sh)`|`Dockerfile`/;
   const hasVerdict = /Veredito\**\s*:\s*\**\s*(APROVADO|APROVADO COM RESSALVAS|REPROVADO)/i.test(
     review,
   );
