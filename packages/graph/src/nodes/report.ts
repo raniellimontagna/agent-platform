@@ -1,4 +1,5 @@
 import type { CardGateway } from '@agent-platform/cards';
+import { formatQualityMetrics, qualityMetricsForState } from '../qualityMetrics.js';
 import type { AgentStateType } from '../state.js';
 
 export interface ReportDeps {
@@ -95,6 +96,7 @@ export function makeReportNode(deps: ReportDeps) {
         lines.push(`**Revisões (loop critic):** ${state.reviewRounds} volta(s)`);
       }
     }
+    lines.push(...formatQualityMetrics(qualityMetricsForState(state)));
     const cost = (state.planCostUsd ?? 0) + (state.codeCostUsd ?? 0) + (state.reviewCostUsd ?? 0);
     if (cost > 0) lines.push(`**Custo estimado:** ~$${cost.toFixed(4)}`);
     if (state.summary) lines.push(`\n${state.summary}`);
