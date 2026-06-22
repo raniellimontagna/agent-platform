@@ -1,3 +1,4 @@
+import type { ModelAlias } from '@agent-platform/llm';
 import { describe, expect, it } from 'vitest';
 import { modelAliasForRole } from './roleModels.js';
 
@@ -13,5 +14,11 @@ describe('modelAliasForRole', () => {
   it('allows explicit overrides', () => {
     expect(modelAliasForRole('planner', { planner: 'heavy_coder' })).toBe('heavy_coder');
     expect(modelAliasForRole('reporter', { reporter: 'cheap_fast' })).toBe('cheap_fast');
+  });
+
+  it('returns values assignable to the LLM model alias type', () => {
+    const alias: ModelAlias | null = modelAliasForRole('planner');
+
+    expect(alias).toBe('research');
   });
 });
