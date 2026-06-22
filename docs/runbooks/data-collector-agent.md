@@ -77,6 +77,21 @@ as limitações: sem bypass, sem Graph API autorizada e sem métricas privadas. 
 insights, comentários completos, demografia ou analytics, forneça export
 first-party ou acesso autorizado à Instagram Graph API.
 
+### Instagram Graph API Business Discovery
+
+Quando `INSTAGRAM_GRAPH_ACCESS_TOKEN` e `INSTAGRAM_GRAPH_IG_USER_ID` estão
+configurados no runner, handles `@perfil` também são consultados pela Instagram
+Graph API Business Discovery antes/complementando a coleta pública. Esse caminho
+usa nossa conta profissional autorizada para obter campos públicos suportados de
+perfis Business/Creator de terceiros: bio, website, contagem pública de
+seguidores, contagem de mídia e mídia recente quando a API retorna esses campos.
+
+Se o perfil não for Business/Creator, a permissão do app não cobrir a chamada, o
+token estiver ausente ou a Meta limitar a resposta, o research pack registra a
+limitação e mantém o fallback Firecrawl/Playwright público. Esse fluxo não pede
+analytics privados, DMs, listas de seguidores, demografia, insights internos nem
+conteúdo atrás de login.
+
 ## Playwright controlado
 
 AGP-9 adiciona um caminho Playwright governado para coleta dinâmica:

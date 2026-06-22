@@ -146,8 +146,13 @@ export async function runInstagramGraphResearch(
   for (const handle of uniqueHandles) {
     const started = Date.now();
     const command = `instagram graph business_discovery @${handle}`;
+    const graphOpts = {
+      ...opts,
+      accessToken: opts.accessToken,
+      igUserId: opts.igUserId,
+    };
     try {
-      const profile = await fetchBusinessDiscovery(handle, opts);
+      const profile = await fetchBusinessDiscovery(handle, graphOpts);
       commands.push({
         command,
         exitCode: 0,
@@ -246,8 +251,10 @@ export function formatInstagramGraphFindings(findings: InstagramGraphFinding[]):
     if (finding.status !== 'succeeded') continue;
     lines.push(`- @${finding.handle} username: ${finding.profile.username}`);
     if (finding.profile.name) lines.push(`- @${finding.handle} name: ${finding.profile.name}`);
-    if (finding.profile.biography) lines.push(`- @${finding.handle} bio: ${finding.profile.biography}`);
-    if (finding.profile.website) lines.push(`- @${finding.handle} website: ${finding.profile.website}`);
+    if (finding.profile.biography)
+      lines.push(`- @${finding.handle} bio: ${finding.profile.biography}`);
+    if (finding.profile.website)
+      lines.push(`- @${finding.handle} website: ${finding.profile.website}`);
     if (finding.profile.followersCount !== undefined) {
       lines.push(`- @${finding.handle} followers: ${finding.profile.followersCount}`);
     }
@@ -271,7 +278,9 @@ export function formatInstagramGraphFindings(findings: InstagramGraphFinding[]):
         })
       : [],
   );
-  lines.push(...(mediaLines.length > 0 ? mediaLines : ['- No recent media returned by Business Discovery.']));
+  lines.push(
+    ...(mediaLines.length > 0 ? mediaLines : ['- No recent media returned by Business Discovery.']),
+  );
   lines.push('', '### Limitations', '');
   for (const finding of findings) {
     if (finding.status !== 'succeeded') lines.push(`- @${finding.handle}: ${finding.limitation}`);

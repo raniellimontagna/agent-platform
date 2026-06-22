@@ -49,7 +49,10 @@ export const envSchema = z.object({
   INSTAGRAM_GRAPH_ACCESS_TOKEN: optionalNonEmpty,
   INSTAGRAM_GRAPH_IG_USER_ID: optionalNonEmpty,
   INSTAGRAM_GRAPH_BASE_URL: z.string().url().default('https://graph.facebook.com'),
-  INSTAGRAM_GRAPH_API_VERSION: z.string().regex(/^v\d+\.\d+$/).default('v20.0'),
+  INSTAGRAM_GRAPH_API_VERSION: z
+    .string()
+    .regex(/^v\d+\.\d+$/)
+    .default('v20.0'),
   INSTAGRAM_GRAPH_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
 
   // Higgsfield: wrapper governado para mídia gerada por landing/media agents.
