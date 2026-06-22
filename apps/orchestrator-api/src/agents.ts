@@ -150,12 +150,29 @@ export async function updateAgentStatus(id: string, status: AgentStatus): Promis
   return row ?? null;
 }
 
-const DEFAULT_AGENTS: NewAgent[] = [
+export const DEFAULT_AGENTS: NewAgent[] = [
   {
     key: DEFAULT_AGENT_KEY,
     version: 'v1',
-    description: 'Pipeline LangGraph atual (planner→coder→reviewing→revising→pr→report)',
+    description:
+      'Compatibilidade: pipeline LangGraph atual (planner→coder→reviewing→revising→pr→report).',
     capabilities: ['typescript', 'node', 'hono', 'feature', 'bugfix', 'refactor', 'single-repo'],
+  },
+  {
+    key: SOFTWARE_DELIVERY_PIPELINE_KEY,
+    version: 'v1',
+    description:
+      'Pipeline de entrega de software com planejamento, execucao, revisao, PR e report.',
+    capabilities: [
+      'typescript',
+      'node',
+      'hono',
+      'feature',
+      'bugfix',
+      'refactor',
+      'single-repo',
+      ...roleCapabilities(SOFTWARE_DELIVERY_PIPELINE_ROLES),
+    ],
   },
   {
     key: REVIEWER_AGENT_KEY,

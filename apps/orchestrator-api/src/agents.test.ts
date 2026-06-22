@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DATA_COLLECTOR_AGENT_KEY,
   DEFAULT_AGENT_KEY,
+  DEFAULT_AGENTS,
   LANDING_PAGE_AGENT_KEY,
   REVIEWER_AGENT_KEY,
   agentKeyFromLabels,
@@ -148,5 +149,41 @@ describe('software delivery pipeline roles', () => {
     expect(
       agentRolesFromCapabilities(['typescript', 'role:critic', 'role:unknown', 'role:planner']),
     ).toEqual([SOFTWARE_DELIVERY_PIPELINE_ROLES[0], SOFTWARE_DELIVERY_PIPELINE_ROLES[2]]);
+  });
+});
+
+describe('DEFAULT_AGENTS', () => {
+  it('keeps coder-agent compatible and adds software-delivery-pipeline with roles', () => {
+    const keys = DEFAULT_AGENTS.map((row) => row.key);
+
+    expect(keys).toContain(DEFAULT_AGENT_KEY);
+    expect(keys).toContain(SOFTWARE_DELIVERY_PIPELINE_KEY);
+
+    const coder = DEFAULT_AGENTS.find((row) => row.key === DEFAULT_AGENT_KEY);
+    expect(coder?.description).toContain('Compatibilidade');
+
+    const pipeline = DEFAULT_AGENTS.find((row) => row.key === SOFTWARE_DELIVERY_PIPELINE_KEY);
+    expect(pipeline).toMatchObject({
+      key: SOFTWARE_DELIVERY_PIPELINE_KEY,
+      version: 'v1',
+      description:
+        'Pipeline de entrega de software com planejamento, execucao, revisao, PR e report.',
+    });
+    expect(pipeline?.capabilities).toEqual(
+      expect.arrayContaining([
+        'typescript',
+        'node',
+        'hono',
+        'feature',
+        'bugfix',
+        'refactor',
+        'single-repo',
+        'role:planner',
+        'role:coder',
+        'role:critic',
+        'role:pr',
+        'role:reporter',
+      ]),
+    );
   });
 });
