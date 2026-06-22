@@ -5,6 +5,7 @@ import { resolveAgentByKey } from '../agents.js';
 import { env } from '../env.js';
 import { agentQueue } from '../queue.js';
 import {
+  cancelActiveRunsForCard,
   createRun,
   findAwaitingApprovalRunForCard,
   resolveApproval,
@@ -40,6 +41,7 @@ vi.mock('../queue.js', () => ({
 }));
 
 vi.mock('../runs.js', () => ({
+  cancelActiveRunsForCard: vi.fn(),
   costLast24hUsd: vi.fn().mockResolvedValue(0),
   createRun: vi.fn(),
   findAwaitingApprovalRun: vi.fn(),
@@ -356,6 +358,69 @@ describe('POST /webhooks/linear', () => {
       { kind: 'resume', runId: 'run-plane-approval' },
       { priority: 20 },
     );
+  });
+
+  it('POST /webhooks/plane cancels active runs when work item is deleted', async () => {
+    vi.mocked(cancelActiveRunsForCard).mockResolvedValue(1);
+    const body = JSON.stringify({
+      action: 'delete',
+      type: 'work_item',
+      data: {
+        id: 'plane-work-deleted',
+        sequence_id: 36,
+        name: 'Deleted Plane card',
+        labels: [{ id: 'plane-ai-ready-id', name: 'ai-ready' }],
+        project_id: 'plane-project',
+        project_detail: { identifier: 'AGP' },
+      },
+    });
+
+    const res = await app.request('/webhooks/plane', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-plane-signature': signed(body) },
+      body,
+    });
+
+    expect(res.status).toBe(200);
+    expect(cancelActiveRunsForCard).toHaveBeenCalledWith(
+      'plane',
+      'plane-work-deleted',
+      'plane work item removed',
+    );
+    await expect(res.json()).resolves.toEqual({
+      ok: true,
+      cancelled: 1,
+      reason: 'plane work item removed',
+    });
+    expect(createRun).not.toHaveBeenCalled();
+    expect(resolveApproval).not.toHaveBeenCalled();
+    expect(agentQueue.add).not.toHaveBeenCalled();
+  });
+
+  it('POST /webhooks/plane skips delete events without a work item id', async () => {
+    const body = JSON.stringify({
+      action: 'delete',
+      type: 'work_item',
+      data: {
+        sequence_id: 37,
+        name: 'Deleted Plane card without id',
+      },
+    });
+
+    const res = await app.request('/webhooks/plane', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-plane-signature': signed(body) },
+      body,
+    });
+
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toMatchObject({
+      ok: true,
+      skipped: true,
+      reason: 'no work item id',
+    });
+    expect(cancelActiveRunsForCard).not.toHaveBeenCalled();
+    expect(agentQueue.add).not.toHaveBeenCalled();
   });
 
   it('POST /webhooks/plane skips updates when ai-ready was already present', async () => {

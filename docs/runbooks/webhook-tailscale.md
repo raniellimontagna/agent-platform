@@ -58,7 +58,8 @@ As URLs ficam tipo:
 Plane → **Settings → API → Webhooks → New webhook**:
 - **URL:** `https://orchestrator.<tailnet>.ts.net/webhooks/plane`
 - **Secret:** = `PLANE_WEBHOOK_SECRET` do `.env` do orchestrator (HMAC).
-- **Eventos:** work-item events que cobrem `ai-ready`, `approved` e labels do fluxo.
+- **Eventos:** work-item events que cobrem `ai-ready`, `approved`, remoção/arquivo
+  de card e labels do fluxo.
 
 Linear (legado) → **Settings → API → Webhooks → New webhook**:
 - **URL:** `https://orchestrator.<tailnet>.ts.net/webhooks/linear`
@@ -101,6 +102,11 @@ auditoria principais:
 - `action` e `event`;
 - `cardId` e `cardIdentifier`;
 - labels atuais e anteriores quando disponíveis.
+
+Eventos de remoção/arquivo do Plane (`delete`, `remove`, `archive` e variações
+no passado) cancelam todos os runs ativos do card antes de avaliar labels. A
+resposta esperada é `200` com `cancelled: <n>` e `reason: "plane work item
+removed"`.
 
 Para ver os logs recentes:
 
