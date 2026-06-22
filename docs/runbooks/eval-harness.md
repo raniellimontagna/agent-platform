@@ -90,6 +90,16 @@ Esse modo compara score agregado e score por cenário contra
 - `review-recode-required`: critic pede recode e o fluxo segue até o teto
   esperado.
 
+## Role quality checks
+
+`apps/worker-code/src/eval/roleQuality.ts` contains deterministic checks for
+planner and critic outputs. They do not call Plane, GitHub, Linear, or real LLMs.
+Use them when changing role contracts or prompts:
+
+```bash
+rtk corepack pnpm vitest run apps/worker-code/src/eval/roleQuality.test.ts
+```
+
 ## Próxima evolução recomendada
 
 O auto-merge e o loop critic já têm fixtures determinísticas. As próximas
