@@ -5,7 +5,10 @@ import { listRuns } from '../runs.js';
 import { listTools } from '../tools.js';
 import { registryRoute, renderRegistryPage } from './registry.js';
 
-vi.mock('../agents.js', () => ({ listAgents: vi.fn() }));
+vi.mock('../agents.js', async (orig) => ({
+  ...(await orig<typeof import('../agents.js')>()),
+  listAgents: vi.fn(),
+}));
 vi.mock('../tools.js', () => ({ listTools: vi.fn() }));
 vi.mock('../runs.js', () => ({ listRuns: vi.fn() }));
 
@@ -74,6 +77,41 @@ describe('renderRegistryPage', () => {
     });
 
     expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
+    expect(html).not.toContain('<script>alert(1)</script>');
+  });
+
+  it('renderiza roles do pipeline a partir das capabilities', () => {
+    const html = renderRegistryPage({
+      agents: [
+        {
+          ...agent,
+          key: 'software-delivery-pipeline',
+          description: 'Pipeline',
+          capabilities: ['typescript', 'role:planner', 'role:critic'],
+        },
+      ] as never,
+      tools: [],
+      runs: [],
+    });
+
+    expect(html).toContain('planner');
+    expect(html).toContain('research');
+    expect(html).toContain('critic');
+    expect(html).toContain('Revisa diff e decide recode ou PR.');
+  });
+
+  it('escapa HTML nas capabilities usadas para roles desconhecidas', () => {
+    const html = renderRegistryPage({
+      agents: [
+        {
+          ...agent,
+          capabilities: ['role:<script>alert(1)</script>'],
+        },
+      ] as never,
+      tools: [],
+      runs: [],
+    });
+
     expect(html).not.toContain('<script>alert(1)</script>');
   });
 
