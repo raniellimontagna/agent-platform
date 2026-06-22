@@ -35,13 +35,13 @@ export function qualityMetricsForState(state: Partial<AgentStateType>): QualityM
 
 function autoMergeBlockedReason(state: Partial<AgentStateType>): string | null {
   if (state.autoMerge !== true) return 'auto-merge not requested';
-  if (state.testsPassed !== true) return 'validation failed';
+  if (state.testsPassed === undefined) return 'validation not run';
+  if (state.testsPassed === false) return 'validation failed';
   if (!state.review) return 'critic verdict missing';
-  if (verdictOf(state.review) === 'REPROVADO') return 'critic rejected';
-  if (
-    verdictOf(state.review) === 'APROVADO COM RESSALVAS' &&
-    !hasOnlyOperationalCaveats(state.review)
-  ) {
+  const verdict = verdictOf(state.review);
+  if (verdict === '—') return 'critic verdict unrecognized';
+  if (verdict === 'REPROVADO') return 'critic rejected';
+  if (verdict === 'APROVADO COM RESSALVAS' && !hasOnlyOperationalCaveats(state.review)) {
     return 'non-operational caveat requires manual review';
   }
   return null;
@@ -60,8 +60,12 @@ export function formatQualityMetrics(metrics: QualityMetrics): string[] {
 
   if (metrics.autoMergeEligible) {
     lines.push('**Auto-merge:** elegível');
-  } else if (metrics.autoMergeBlockedReason) {
-    lines.push(`**Auto-merge:** bloqueado — ${metrics.autoMergeBlockedReason}`);
+  } else {
+    lines.push(
+      metrics.autoMergeBlockedReason
+        ? `**Auto-merge:** bloqueado — ${metrics.autoMergeBlockedReason}`
+        : '**Auto-merge:** bloqueado',
+    );
   }
 
   if (metrics.estimatedCostUsd > 0) {
