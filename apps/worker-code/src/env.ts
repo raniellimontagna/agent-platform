@@ -44,6 +44,13 @@ export const envSchema = z.object({
   SCRAPING_MAX_OUTPUT_CHARS: z.coerce.number().int().positive().default(20_000),
   SCRAPING_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(6),
   PLAYWRIGHT_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
+  // Instagram Graph API Business Discovery: optional enrichment for public
+  // Business/Creator profile research.
+  INSTAGRAM_GRAPH_ACCESS_TOKEN: optionalNonEmpty,
+  INSTAGRAM_GRAPH_IG_USER_ID: optionalNonEmpty,
+  INSTAGRAM_GRAPH_BASE_URL: z.string().url().default('https://graph.facebook.com'),
+  INSTAGRAM_GRAPH_API_VERSION: z.string().regex(/^v\d+\.\d+$/).default('v20.0'),
+  INSTAGRAM_GRAPH_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
 
   // Higgsfield: wrapper governado para mídia gerada por landing/media agents.
   HIGGSFIELD_PREFERRED_IMAGE_MODELS: z

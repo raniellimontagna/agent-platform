@@ -201,6 +201,13 @@ export async function runJob(job: Job): Promise<JobResult> {
         maxPages: env.SCRAPING_MAX_PAGES,
         maxOutputChars: env.SCRAPING_MAX_OUTPUT_CHARS,
         rateLimitPerMinute: env.SCRAPING_RATE_LIMIT_PER_MINUTE,
+        instagramGraph: {
+          accessToken: env.INSTAGRAM_GRAPH_ACCESS_TOKEN,
+          igUserId: env.INSTAGRAM_GRAPH_IG_USER_ID,
+          baseUrl: env.INSTAGRAM_GRAPH_BASE_URL,
+          apiVersion: env.INSTAGRAM_GRAPH_API_VERSION,
+          timeoutMs: env.INSTAGRAM_GRAPH_TIMEOUT_MS,
+        },
       });
     }
 

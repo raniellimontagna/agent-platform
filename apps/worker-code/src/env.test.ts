@@ -40,4 +40,22 @@ describe('envSchema', () => {
 
     expect(env.FIRECRAWL_API_KEY).toBeUndefined();
   });
+
+  it('carrega defaults opcionais do Instagram Graph API', async () => {
+    const { envSchema } = await import('./env.js');
+    const parsed = envSchema.parse({
+      RUNNER_WORKDIR: '/tmp/work',
+      RUNNER_ARTIFACTS_DIR: '/tmp/artifacts',
+      LITELLM_BASE_URL: 'http://localhost:4000',
+      LITELLM_API_KEY: 'sk-test',
+      ORCHESTRATOR_BASE_URL: 'http://localhost:3000',
+      RUNNER_AUTH_TOKEN: 'runner-token',
+    });
+
+    expect(parsed.INSTAGRAM_GRAPH_BASE_URL).toBe('https://graph.facebook.com');
+    expect(parsed.INSTAGRAM_GRAPH_API_VERSION).toMatch(/^v\d+\.\d+$/);
+    expect(parsed.INSTAGRAM_GRAPH_TIMEOUT_MS).toBe(30_000);
+    expect(parsed.INSTAGRAM_GRAPH_ACCESS_TOKEN).toBeUndefined();
+    expect(parsed.INSTAGRAM_GRAPH_IG_USER_ID).toBeUndefined();
+  });
 });
