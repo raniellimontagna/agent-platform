@@ -53,6 +53,8 @@ MAC-94 integra o Firecrawl no runner para o primeiro fluxo real de coleta:
 - chama `POST /v2/scrape` com `formats: ["markdown", "summary"]`;
 - gera um `Research Pack` em Markdown com fontes, método, status, resumo,
   extrato e limitações;
+- inclui uma seção `Landing Page Brief` com briefing estruturado para agentes
+  downstream de landing/page;
 - salva o resultado como artifact `research`;
 - encerra o run como `completed`, sem revisão de diff e sem Draft PR.
 
@@ -65,6 +67,27 @@ Variáveis do runner:
 - `SCRAPING_MAX_PAGES`: default `5`.
 - `SCRAPING_MAX_OUTPUT_CHARS`: default `20000`.
 - `SCRAPING_RATE_LIMIT_PER_MINUTE`: default `6`.
+
+### Landing Page Brief
+
+Todo research pack do `data-collector-agent` inclui `## Landing Page Brief`
+antes dos achados por provider. Essa seção é determinística e não usa outra
+chamada LLM. Ela resume:
+
+- marca/perfil pesquisado;
+- hipóteses de público;
+- ângulo de oferta e conversão;
+- evidências reutilizáveis;
+- estrutura recomendada de página;
+- termos SEO/conteúdo;
+- direção visual;
+- CTAs;
+- riscos, lacunas e limitações;
+- fontes que devem sustentar claims da landing.
+
+O briefing não inventa preço, depoimento, WhatsApp, endereço, garantia, métricas
+privadas ou conteúdo oculto. Quando a evidência não existe, ele registra a lacuna
+para o `landing-page-agent` trabalhar de forma conservadora.
 
 Firecrawl é o padrão para páginas públicas estáticas/crawláveis, quando o card
 precisa de Markdown/resumo e não pede browser. Ele só recebe URLs explícitas do
@@ -185,5 +208,6 @@ compliance com termos do site.
 ## Próximas etapas
 
 - Validar um E2E real com `workflow:landing-page` usando URL pública explícita,
-  confirmando que o run de coleta salva o artifact `research` e que o segundo
-  run recebe esse pacote como contexto do `landing-page-agent`.
+  confirmando que o run de coleta salva o artifact `research` com
+  `Landing Page Brief` e que o segundo run recebe esse briefing priorizado como
+  contexto do `landing-page-agent`.
