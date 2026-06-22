@@ -55,6 +55,14 @@ export const envSchema = z.object({
     .default('v20.0'),
   INSTAGRAM_GRAPH_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
 
+  // Apify Instagram actor: optional external provider for public Instagram
+  // research when Graph API is unavailable and generic scrapers reject Instagram.
+  APIFY_TOKEN: optionalNonEmpty,
+  APIFY_INSTAGRAM_ACTOR_ID: z.string().min(1).default('shu8hvrXbJbY3Eb9W'),
+  APIFY_BASE_URL: z.string().url().default('https://api.apify.com'),
+  APIFY_INSTAGRAM_MAX_ITEMS: z.coerce.number().int().positive().default(20),
+  APIFY_TIMEOUT_MS: z.coerce.number().int().positive().default(300_000),
+
   // Higgsfield: wrapper governado para mídia gerada por landing/media agents.
   HIGGSFIELD_PREFERRED_IMAGE_MODELS: z
     .string()

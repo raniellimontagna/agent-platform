@@ -57,5 +57,10 @@ describe('envSchema', () => {
     expect(parsed.INSTAGRAM_GRAPH_TIMEOUT_MS).toBe(30_000);
     expect(parsed.INSTAGRAM_GRAPH_ACCESS_TOKEN).toBeUndefined();
     expect(parsed.INSTAGRAM_GRAPH_IG_USER_ID).toBeUndefined();
+    expect(parsed.APIFY_TOKEN).toBeUndefined();
+    expect(parsed.APIFY_INSTAGRAM_ACTOR_ID).toBe('shu8hvrXbJbY3Eb9W');
+    expect(parsed.APIFY_BASE_URL).toBe('https://api.apify.com');
+    expect(parsed.APIFY_INSTAGRAM_MAX_ITEMS).toBe(20);
+    expect(parsed.APIFY_TIMEOUT_MS).toBe(300_000);
   });
 });

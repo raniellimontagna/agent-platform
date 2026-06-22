@@ -208,6 +208,13 @@ export async function runJob(job: Job): Promise<JobResult> {
           apiVersion: env.INSTAGRAM_GRAPH_API_VERSION,
           timeoutMs: env.INSTAGRAM_GRAPH_TIMEOUT_MS,
         },
+        apifyInstagram: {
+          token: env.APIFY_TOKEN,
+          actorId: env.APIFY_INSTAGRAM_ACTOR_ID,
+          baseUrl: env.APIFY_BASE_URL,
+          maxItems: env.APIFY_INSTAGRAM_MAX_ITEMS,
+          timeoutMs: env.APIFY_TIMEOUT_MS,
+        },
       });
     }
 

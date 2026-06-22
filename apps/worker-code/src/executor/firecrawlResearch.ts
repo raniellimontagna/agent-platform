@@ -1,6 +1,12 @@
 import { z } from 'zod';
 import type { CommandResult, Job, JobResult } from '../types.js';
 import {
+  type ApifyInstagramFinding,
+  type ApifyInstagramResearchOptions,
+  formatApifyInstagramFindings,
+  runApifyInstagramResearch,
+} from './apifyInstagramResearch.js';
+import {
   type InstagramGraphFinding,
   type InstagramGraphResearchOptions,
   formatInstagramGraphFindings,
@@ -31,6 +37,7 @@ interface FirecrawlResearchOptions {
   fetchImpl?: FetchImpl;
   now?: () => Date;
   instagramGraph?: InstagramGraphResearchOptions;
+  apifyInstagram?: ApifyInstagramResearchOptions;
 }
 
 interface ResearchSource {
@@ -116,6 +123,14 @@ export async function runFirecrawlResearchJob(
     (finding): finding is Extract<InstagramGraphFinding, { status: 'succeeded' }> =>
       finding.status === 'succeeded',
   );
+  const apifyInstagramResult = opts.apifyInstagram
+    ? await runApifyInstagramResearch(instagramHandles, opts.apifyInstagram)
+    : { findings: [] as ApifyInstagramFinding[], commands: [] };
+  commands.push(...apifyInstagramResult.commands);
+  const apifySuccesses = apifyInstagramResult.findings.filter(
+    (finding): finding is Extract<ApifyInstagramFinding, { status: 'succeeded' }> =>
+      finding.status === 'succeeded',
+  );
   const inferredInstagramUrls = instagramHandles.map(instagramProfileUrl);
   const policy = buildScrapingPolicy({
     title: job.title,
@@ -151,14 +166,17 @@ export async function runFirecrawlResearchJob(
       const started = Date.now();
       try {
         const source = sanitizeResearchSource(
-          { ...(await scrapeFirecrawl({
-            id: `S${index + 1}`,
-            url,
-            apiKey: opts.apiKey,
-            baseUrl: opts.baseUrl,
-            timeoutMs: policy.limits.timeoutMs,
-            fetchImpl: opts.fetchImpl ?? fetch,
-          })), durationMs: Date.now() - started },
+          {
+            ...(await scrapeFirecrawl({
+              id: `S${index + 1}`,
+              url,
+              apiKey: opts.apiKey,
+              baseUrl: opts.baseUrl,
+              timeoutMs: policy.limits.timeoutMs,
+              fetchImpl: opts.fetchImpl ?? fetch,
+            })),
+            durationMs: Date.now() - started,
+          },
           persistedSecrets,
         );
         sources.push(source);
@@ -197,7 +215,8 @@ export async function runFirecrawlResearchJob(
   }
 
   const firecrawlSuccesses = sources.filter((source) => !source.error);
-  const hasUsableResearch = firecrawlSuccesses.length > 0 || graphSuccesses.length > 0;
+  const hasUsableResearch =
+    firecrawlSuccesses.length > 0 || graphSuccesses.length > 0 || apifySuccesses.length > 0;
   if (!hasUsableResearch) {
     if (!opts.apiKey) {
       return {
@@ -219,6 +238,7 @@ export async function runFirecrawlResearchJob(
         policy.limits,
         instagramHandles,
         instagramGraphResult.findings,
+        apifyInstagramResult.findings,
         persistedSecrets,
       ),
       testsPassed: false,
@@ -229,7 +249,13 @@ export async function runFirecrawlResearchJob(
     ...base,
     status: 'succeeded',
     commands,
-    summary: buildSuccessSummary(firecrawlSuccesses.length, sources.length, graphSuccesses.length, !!opts.apiKey),
+    summary: buildSuccessSummary(
+      firecrawlSuccesses.length,
+      sources.length,
+      graphSuccesses.length,
+      apifySuccesses.length,
+      !!opts.apiKey,
+    ),
     research: buildResearchPack(
       job,
       sources,
@@ -237,6 +263,7 @@ export async function runFirecrawlResearchJob(
       policy.limits,
       instagramHandles,
       instagramGraphResult.findings,
+      apifyInstagramResult.findings,
       persistedSecrets,
     ),
   };
@@ -306,6 +333,7 @@ function buildResearchPack(
   limits: ScrapingLimits,
   instagramHandles: string[] = [],
   instagramGraphFindings: InstagramGraphFinding[] = [],
+  apifyInstagramFindings: ApifyInstagramFinding[] = [],
   persistedSecrets: string[] = [],
 ): string {
   const lines = [
@@ -347,6 +375,7 @@ function buildResearchPack(
   );
   if (instagramHandles.length > 0 || instagramSources.length > 0) {
     lines.push(...formatInstagramGraphFindings(instagramGraphFindings));
+    lines.push(...formatApifyInstagramFindings(apifyInstagramFindings));
     lines.push('## Instagram Findings', '');
     if (instagramHandles.length > 0) {
       lines.push('### Sources', '');
@@ -400,7 +429,7 @@ function truncate(text: string, maxChars: number): string {
 }
 
 function configuredSecrets(opts: FirecrawlResearchOptions): string[] {
-  return [opts.apiKey, opts.instagramGraph?.accessToken].filter(
+  return [opts.apiKey, opts.instagramGraph?.accessToken, opts.apifyInstagram?.token].filter(
     (value): value is string => Boolean(value),
   );
 }
@@ -431,15 +460,20 @@ function buildSuccessSummary(
   firecrawlSuccessCount: number,
   firecrawlSourceCount: number,
   graphSuccessCount: number,
+  apifySuccessCount: number,
   firecrawlWasConfigured: boolean,
 ): string {
-  if (firecrawlSuccessCount > 0 && graphSuccessCount > 0) {
-    return `Research pack gerado com ${firecrawlSuccessCount}/${firecrawlSourceCount} fonte(s) Firecrawl e ${graphSuccessCount} perfil(is) do Instagram Graph API.`;
+  const enrichments = [
+    graphSuccessCount > 0 ? `${graphSuccessCount} perfil(is) do Instagram Graph API` : '',
+    apifySuccessCount > 0 ? `${apifySuccessCount} perfil(is) via Apify Instagram` : '',
+  ].filter(Boolean);
+  if (firecrawlSuccessCount > 0 && enrichments.length > 0) {
+    return `Research pack gerado com ${firecrawlSuccessCount}/${firecrawlSourceCount} fonte(s) Firecrawl e ${enrichments.join(' e ')}.`;
   }
-  if (graphSuccessCount > 0) {
+  if (enrichments.length > 0) {
     return firecrawlWasConfigured
-      ? `Research pack gerado com ${graphSuccessCount} perfil(is) do Instagram Graph API; fontes Firecrawl exigem revisão manual.`
-      : `Research pack gerado com ${graphSuccessCount} perfil(is) do Instagram Graph API; Firecrawl não executado porque FIRECRAWL_API_KEY está ausente.`;
+      ? `Research pack gerado com ${enrichments.join(' e ')}; fontes Firecrawl exigem revisão manual.`
+      : `Research pack gerado com ${enrichments.join(' e ')}; Firecrawl não executado porque FIRECRAWL_API_KEY está ausente.`;
   }
   return `Research pack gerado com ${firecrawlSuccessCount}/${firecrawlSourceCount} fonte(s) coletada(s).`;
 }

@@ -92,6 +92,29 @@ limitação e mantém o fallback Firecrawl/Playwright público. Esse fluxo não 
 analytics privados, DMs, listas de seguidores, demografia, insights internos nem
 conteúdo atrás de login.
 
+### Apify Instagram
+
+Quando `APIFY_TOKEN` está configurado no runner, handles `@perfil` também são
+enviados ao actor Apify `APIFY_INSTAGRAM_ACTOR_ID` (default
+`shu8hvrXbJbY3Eb9W`) como provider externo de pesquisa pública. Esse caminho é
+útil quando a Instagram Graph API não está liberada para Business Discovery e
+quando Firecrawl rejeita `instagram.com`.
+
+O runner limita a coleta por `APIFY_INSTAGRAM_MAX_ITEMS` (default `20`) e salva
+os resultados em uma seção `Apify Instagram Findings` do research pack. Falhas da
+Apify viram limitações auditáveis; o token é tratado como secret e não deve
+aparecer em comandos, erros ou artifacts. O agent-platform não replica técnicas
+internas da Apify, não faz login, não tenta bypass e não executa ações de
+engajamento.
+
+Variáveis:
+
+- `APIFY_TOKEN`: token da Apify. Opcional para boot.
+- `APIFY_INSTAGRAM_ACTOR_ID`: default `shu8hvrXbJbY3Eb9W`.
+- `APIFY_BASE_URL`: default `https://api.apify.com`.
+- `APIFY_INSTAGRAM_MAX_ITEMS`: default `20`.
+- `APIFY_TIMEOUT_MS`: default `300000`.
+
 ## Playwright controlado
 
 AGP-9 adiciona um caminho Playwright governado para coleta dinâmica:

@@ -45,6 +45,7 @@ Política e procedimento de rotação dos segredos do agent-platform.
 | `FIRECRAWL_API_KEY` | runner `.env` | research packs do `data-collector-agent` | Firecrawl dashboard |
 | `INSTAGRAM_GRAPH_ACCESS_TOKEN` | runner `.env` | Business Discovery opcional para `data-collector-agent` | Meta app / Graph API Explorer / token long-lived |
 | `INSTAGRAM_GRAPH_IG_USER_ID` | runner `.env` | IG user raiz autorizado para Business Discovery | Meta Graph API |
+| `APIFY_TOKEN` | runner `.env` | provider externo Apify Instagram para `data-collector-agent` | Apify Console → Settings → Integrations |
 | `DATABASE_URL` | orchestrator `.env` | Postgres | senha do compose |
 | `GRAFANA_PASSWORD` | observability `.env` | Grafana | gerado no deploy |
 
@@ -85,6 +86,10 @@ Geral: editar o `.env` do serviço, salvar, redeployar/reiniciar o container.
   `data-collector-agent` continua com coleta pública e registra que Business
   Discovery foi pulado. Rotacione o token no Meta Developers/Graph API Explorer,
   atualize o runner `.env` e reinicie o runner.
+- **`APIFY_TOKEN`**: opcional e usado só pelo runner. Sem ele, o
+  `data-collector-agent` pula o provider Apify e mantém Graph API,
+  Firecrawl/Playwright. Rotacione no painel da Apify, atualize o runner `.env` e
+  reinicie o runner. Nunca versionar token em `.env.example`.
 
 ## Verificação pós-rotação
 
