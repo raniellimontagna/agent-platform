@@ -1,15 +1,23 @@
 import type { CardGateway } from '@agent-platform/cards';
 import { type LlmClient, type TokenUsage, estimateCostUsd } from '@agent-platform/llm';
+import { buildRoleSystemPrompt } from '../roleContracts.js';
+import { modelAliasForRole } from '../roleModels.js';
 import type { AgentStateType } from '../state.js';
 import { hasOnlyOperationalCaveats, verdictOf } from './report.js';
 
-const SYSTEM_PROMPT = `Você é um revisor de código sênior e crítico.
+export const CRITIC_BASE_PROMPT = `Você é um revisor de código sênior e crítico.
 Recebe a issue, o plano aprovado e o diff das alterações geradas por outro agente.
 Revise o diff e produza um parecer conciso em markdown:
 - **Veredito**: APROVADO | APROVADO COM RESSALVAS | REPROVADO (uma linha).
 - **Problemas** (se houver): bugs, falhas de segurança, lógica incorreta — cada um com arquivo/trecho e correção sugerida.
 - **Observações**: estilo, testes faltando, aderência ao plano.
 Não reescreva o código todo; aponte o que importa. Se estiver bom, diga e seja breve.`;
+
+export const CRITIC_SYSTEM_PROMPT = buildRoleSystemPrompt('critic', CRITIC_BASE_PROMPT);
+
+export function criticModelAlias(): string {
+  return modelAliasForRole('critic') ?? 'critic';
+}
 
 export interface ReviewDecisionOpts {
   maxReviewRounds: number;
@@ -71,13 +79,13 @@ export function makeReviewNode(deps: ReviewDeps) {
     try {
       let usage: TokenUsage = { promptTokens: 0, completionTokens: 0 };
       const review = await deps.llm.complete({
-        alias: 'critic',
+        alias: criticModelAlias(),
         temperature: 0.2,
         onUsage: (u) => {
           usage = u;
         },
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: CRITIC_SYSTEM_PROMPT },
           {
             role: 'user',
             content: [
@@ -92,7 +100,7 @@ export function makeReviewNode(deps: ReviewDeps) {
         ],
       });
 
-      const reviewCostUsd = estimateCostUsd('critic', usage);
+      const reviewCostUsd = estimateCostUsd(criticModelAlias(), usage);
       const totalCostUsd =
         (state.planCostUsd ?? 0) +
         (state.codeCostUsd ?? 0) +

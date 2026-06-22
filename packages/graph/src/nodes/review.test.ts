@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { decideAfterReview } from './review.js';
+import {
+  CRITIC_BASE_PROMPT,
+  CRITIC_SYSTEM_PROMPT,
+  criticModelAlias,
+  decideAfterReview,
+} from './review.js';
 
 const opts = { maxReviewRounds: 1, maxCostPerRunUsd: 2 };
 const base = { reviewRounds: 0, lastReview: '', totalCostUsd: 0 };
@@ -86,5 +91,17 @@ describe('decideAfterReview', () => {
   it('sem veredito parseável (—) → pr', () => {
     const r = decideAfterReview({ ...base, review: 'parecer sem rótulo' }, opts);
     expect(r).toBe('pr');
+  });
+});
+
+describe('CRITIC_SYSTEM_PROMPT', () => {
+  it('compõe o prompt do critic com contrato de role', () => {
+    expect(CRITIC_BASE_PROMPT).toContain('Veredito');
+    expect(CRITIC_SYSTEM_PROMPT).toContain('Role contract: software-critic');
+    expect(CRITIC_SYSTEM_PROMPT).toContain('Software Critic');
+  });
+
+  it('usa alias de modelo da role critic', () => {
+    expect(criticModelAlias()).toBe('critic');
   });
 });
