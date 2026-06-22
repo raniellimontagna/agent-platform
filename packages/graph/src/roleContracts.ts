@@ -3,13 +3,15 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export type SoftwareRole = 'planner' | 'coder' | 'critic' | 'pr' | 'reporter';
+export type RoleContract = SoftwareRole | 'research-planner';
 
-const ROLE_SKILL_BY_ROLE: Record<SoftwareRole, string> = {
+const ROLE_SKILL_BY_ROLE: Record<RoleContract, string> = {
   planner: 'software-planner',
   coder: 'software-coder',
   critic: 'software-critic',
   pr: 'software-pr',
   reporter: 'software-reporter',
+  'research-planner': 'research-planner',
 };
 
 function repoRootFromModule(): string {
@@ -22,11 +24,11 @@ function stripFrontmatter(markdown: string): string {
   return match ? markdown.slice(match[0].length).trim() : markdown.trim();
 }
 
-export function roleSkillName(role: SoftwareRole): string {
+export function roleSkillName(role: RoleContract): string {
   return ROLE_SKILL_BY_ROLE[role];
 }
 
-export function loadRoleContract(role: SoftwareRole, root = repoRootFromModule()): string {
+export function loadRoleContract(role: RoleContract, root = repoRootFromModule()): string {
   const skillName = roleSkillName(role);
   const path = resolve(root, `agent-skills/${skillName}/SKILL.md`);
   if (!existsSync(path)) return '';
@@ -34,7 +36,7 @@ export function loadRoleContract(role: SoftwareRole, root = repoRootFromModule()
 }
 
 export function buildRoleSystemPrompt(
-  role: SoftwareRole,
+  role: RoleContract,
   basePrompt: string,
   root = repoRootFromModule(),
 ): string {

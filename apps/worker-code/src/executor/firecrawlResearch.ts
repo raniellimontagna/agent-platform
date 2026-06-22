@@ -67,6 +67,21 @@ const firecrawlResponseSchema = z
 
 export const extractResearchUrls = extractExplicitUrls;
 
+export function extractInstagramHandles(text: string, limit = 5): string[] {
+  const handles = new Set<string>();
+  for (const match of text.matchAll(/(^|[^\w.])@([a-zA-Z0-9._]{2,30})\b/g)) {
+    const handle = match[2]?.replace(/\.+$/g, '').toLowerCase();
+    if (!handle) continue;
+    handles.add(handle);
+    if (handles.size >= limit) break;
+  }
+  return [...handles];
+}
+
+function instagramProfileUrl(handle: string): string {
+  return `https://www.instagram.com/${handle}/`;
+}
+
 export async function runFirecrawlResearchJob(
   job: Job,
   opts: FirecrawlResearchOptions,
@@ -81,10 +96,14 @@ export async function runFirecrawlResearchJob(
     testsPassed: true,
   };
 
+  const instagramHandles = extractInstagramHandles(
+    [job.title, job.description, job.plan].join('\n'),
+  );
+  const inferredInstagramUrls = instagramHandles.map(instagramProfileUrl);
   const policy = buildScrapingPolicy({
     title: job.title,
     description: job.description,
-    plan: job.plan,
+    plan: [job.plan, ...inferredInstagramUrls].filter(Boolean).join('\n'),
     limits: {
       maxPages: opts.maxPages ?? DEFAULT_SCRAPING_LIMITS.maxPages,
       timeoutMs: opts.timeoutMs,
@@ -162,7 +181,13 @@ export async function runFirecrawlResearchJob(
       commands,
       error: 'Firecrawl não conseguiu coletar nenhuma fonte.',
       summary: 'Falha na coleta de dados: nenhuma fonte retornou conteúdo utilizável.',
-      research: buildResearchPack(job, sources, opts.now?.() ?? new Date(), policy.limits),
+      research: buildResearchPack(
+        job,
+        sources,
+        opts.now?.() ?? new Date(),
+        policy.limits,
+        instagramHandles,
+      ),
       testsPassed: false,
     };
   }
@@ -172,7 +197,13 @@ export async function runFirecrawlResearchJob(
     status: 'succeeded',
     commands,
     summary: `Research pack gerado com ${successes.length}/${sources.length} fonte(s) coletada(s).`,
-    research: buildResearchPack(job, sources, opts.now?.() ?? new Date(), policy.limits),
+    research: buildResearchPack(
+      job,
+      sources,
+      opts.now?.() ?? new Date(),
+      policy.limits,
+      instagramHandles,
+    ),
   };
 }
 
@@ -238,6 +269,7 @@ function buildResearchPack(
   sources: ResearchSource[],
   generatedAt: Date,
   limits: ScrapingLimits,
+  instagramHandles: string[] = [],
 ): string {
   const lines = [
     `# Research Pack - ${job.issueIdentifier}`,
@@ -271,6 +303,41 @@ function buildResearchPack(
     if (source.markdown) {
       lines.push('#### Extract', '', truncate(source.markdown, MAX_EXTRACT_CHARS), '');
     }
+  }
+
+  const instagramSources = sources.filter((source) =>
+    source.url.toLowerCase().includes('instagram.com/'),
+  );
+  if (instagramHandles.length > 0 || instagramSources.length > 0) {
+    lines.push('## Instagram Findings', '');
+    if (instagramHandles.length > 0) {
+      lines.push('### Sources', '');
+      for (const handle of instagramHandles) {
+        lines.push(
+          `- @${handle}: ${instagramProfileUrl(handle)} — public profile URL inferred from handle; collection is limited to content visible sem login, sem Graph API autorizada.`,
+        );
+      }
+      lines.push('');
+    }
+    lines.push('### Visible facts', '');
+    if (instagramSources.length === 0) {
+      lines.push('- Nenhum conteúdo público do Instagram foi coletado com sucesso.', '');
+    } else {
+      for (const source of instagramSources) {
+        lines.push(
+          `- ${source.id}: ${source.title}${source.summary ? ` — ${truncate(source.summary, 300)}` : ''}`,
+        );
+      }
+      lines.push('');
+    }
+    lines.push('### Limitations', '');
+    lines.push(
+      '- Instagram é tratado como fonte pública ou autorizada: não tenta bypass de login, captcha, rate limits, device checks ou permissões da Graph API.',
+    );
+    lines.push(
+      '- Métricas privadas, insights, comentários completos, DMs, dados demográficos e analytics exigem export fornecido pelo usuário ou Instagram Graph API autorizada.',
+      '',
+    );
   }
 
   const failed = sources.filter((source) => source.error);

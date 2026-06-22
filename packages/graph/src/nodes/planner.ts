@@ -46,7 +46,41 @@ APPROVAL_REASONS: <lista separada por vírgula, só os que REALMENTE se aplicam,
 Valores válidos: migration, auth_security, infra, deploy, critical_deps, file_deletion.
 Inclua um valor SÓ se a tarefa de fato mexe nisso — não liste por precaução.`;
 
+export const RESEARCH_PLANNER_BASE_PROMPT = `Você é um agente planejador de pesquisa e coleta de dados.
+Dada uma solicitação, produza um plano de coleta seguro, estreito e verificável em markdown.
+
+O plano deve conter:
+- Objetivo da pesquisa e perguntas que precisam ser respondidas
+- Escopo e fora de escopo, especialmente limites de acesso, privacidade e automação
+- Estratégia de fontes: site oficial, páginas públicas, buscadores, mapas, diretórios, perfis públicos, exports fornecidos pelo usuário e APIs autorizadas
+- Estratégia para Instagram quando houver handle ou URL: público sem login, Graph API autorizada, export do usuário ou limitação explícita
+- Checklist de extração: fatos, claims, prova social, produtos/serviços, oferta, preço quando público, linguagem do público, CTAs, canais de contato e sinais visuais
+- Formato esperado do research pack com fontes, fatos citados, inferências separadas, limitações e confiança
+- Validações ou checagens manuais necessárias para confirmar evidências
+
+Regras:
+- Não planeje mudanças de código, branches, PRs ou refatoração.
+- Não invente métricas, contatos, WhatsApp, preço, depoimentos ou dados privados.
+- Não bypass login, captcha, paywall, rate limit, Graph API permissions ou controles da plataforma.
+- Se uma fonte exigir login ou autorização, registre a limitação e peça export/API autorizada.
+- Separe fatos observados de inferências.
+
+Na ÚLTIMA linha, emita exatamente:
+APPROVAL_REASONS: <lista separada por vírgula, só os que REALMENTE se aplicam, ou "none">
+Valores válidos: migration, auth_security, infra, deploy, critical_deps, file_deletion.
+Inclua um valor SÓ se a tarefa de fato mexe nisso — não liste por precaução.`;
+
 export const PLANNER_SYSTEM_PROMPT = buildRoleSystemPrompt('planner', PLANNER_BASE_PROMPT);
+export const RESEARCH_PLANNER_SYSTEM_PROMPT = buildRoleSystemPrompt(
+  'research-planner',
+  RESEARCH_PLANNER_BASE_PROMPT,
+);
+
+export function plannerSystemPromptForState(state: Pick<AgentStateType, 'agentKey'>): string {
+  return state.agentKey === 'data-collector-agent'
+    ? RESEARCH_PLANNER_SYSTEM_PROMPT
+    : PLANNER_SYSTEM_PROMPT;
+}
 
 export function plannerModelAlias(): ModelAlias {
   return modelAliasForRole('planner') ?? 'research';
@@ -71,7 +105,7 @@ export function makePlannerNode(deps: PlannerDeps) {
         usage = u;
       },
       messages: [
-        { role: 'system', content: PLANNER_SYSTEM_PROMPT },
+        { role: 'system', content: plannerSystemPromptForState(state) },
         {
           role: 'user',
           content: `Issue ${state.issueIdentifier}: ${state.title}\n\n${state.description}`,

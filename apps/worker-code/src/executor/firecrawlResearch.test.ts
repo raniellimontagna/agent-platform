@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Job } from '../types.js';
-import { extractResearchUrls, runFirecrawlResearchJob } from './firecrawlResearch.js';
+import {
+  extractInstagramHandles,
+  extractResearchUrls,
+  runFirecrawlResearchJob,
+} from './firecrawlResearch.js';
 
 const baseJob: Job = {
   runId: '12345678-1234-1234-1234-123456789abc',
@@ -25,6 +29,14 @@ describe('extractResearchUrls', () => {
         'Veja https://example.com/docs, e [https://example.com/docs](<https://example.com/docs>). Depois `https://x.test/a`)',
       ),
     ).toEqual(['https://example.com/docs', 'https://x.test/a']);
+  });
+});
+
+describe('extractInstagramHandles', () => {
+  it('extrai handles do Instagram sem capturar emails', () => {
+    expect(
+      extractInstagramHandles('Pesquise @cameraecarburador e contato teste@example.com'),
+    ).toEqual(['cameraecarburador']);
   });
 });
 
@@ -75,6 +87,55 @@ describe('runFirecrawlResearchJob', () => {
         headers: expect.objectContaining({ authorization: 'Bearer fc-test' }),
       }),
     );
+  });
+
+  it('transforma handle do Instagram em fonte pública com limitações explícitas', async () => {
+    const fetchImpl = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            success: true,
+            data: {
+              summary: 'Perfil público com oficina, carros antigos e conteúdo de carburadores.',
+              markdown: 'Bio visível: Camera e Carburador.',
+              metadata: {
+                title: '@cameraecarburador',
+                sourceURL: 'https://www.instagram.com/cameraecarburador/',
+                statusCode: 200,
+                contentType: 'text/html',
+              },
+            },
+          }),
+          { status: 200 },
+        ),
+    ) as typeof fetch;
+
+    const result = await runFirecrawlResearchJob(
+      {
+        ...baseJob,
+        description: 'Buscar dados públicos do perfil @cameraecarburador para landing page.',
+      },
+      {
+        apiKey: 'fc-test',
+        baseUrl: 'https://api.firecrawl.dev',
+        timeoutMs: 10_000,
+        fetchImpl,
+        now: () => new Date('2026-06-18T00:00:00.000Z'),
+      },
+    );
+
+    expect(result.status).toBe('succeeded');
+    expect(fetchImpl).toHaveBeenCalledWith(
+      'https://api.firecrawl.dev/v2/scrape',
+      expect.objectContaining({
+        body: expect.stringContaining('https://www.instagram.com/cameraecarburador/'),
+      }),
+    );
+    expect(result.research).toContain('## Instagram Findings');
+    expect(result.research).toContain('@cameraecarburador');
+    expect(result.research).toContain('public profile URL inferred from handle');
+    expect(result.research).toContain('sem login, sem Graph API autorizada');
+    expect(result.research).toContain('não tenta bypass');
   });
 
   it('falha sem FIRECRAWL_API_KEY', async () => {

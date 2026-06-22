@@ -68,6 +68,9 @@ pipeline, sem mudar labels existentes nem separar a execucao fisica do LangGraph
 
 ## Skills atuais
 
+- `research-planner`: planejamento de coleta segura para empresas, perfis
+  públicos, Instagram e research packs, sem instruções de implementação de
+  software.
 - `landing-page-production`: contrato base para landing pages completas.
 - `frontend-design`: qualidade visual, layout, responsividade e estados de UI.
 - `ui-ux-pro-max`: direção visual, hierarquia, interação, motion e polish.
