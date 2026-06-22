@@ -73,6 +73,55 @@ Acompanhar: `pct exec 201 -- bash -lc "cd .../orchestrator && docker compose log
 O handler aceita o payload por **nome** (`labels[].name`) ou por **id**
 (`labelIds[]` vs `PLANE_AI_READY_LABEL_ID`, default = id da label `ai-ready`).
 
+### Validar roteamento público sem criar run
+
+Use uma assinatura inválida para confirmar que o Funnel chega ao orchestrator e
+que a validação HMAC está ativa:
+
+```bash
+curl -i -X POST https://agent-orchestrator.tail85607e.ts.net/webhooks/plane \
+  -H 'content-type: application/json' \
+  -H 'x-plane-event: work_item' \
+  -H 'x-plane-signature: invalid' \
+  --data-raw '{}'
+```
+
+Resultado esperado: `401` com `{"error":"invalid signature"}` e log
+`Plane webhook with invalid signature rejected` no `orchestrator-api-1`.
+
+### Auditar eventos e skips
+
+Eventos não-transicionais do Plane retornam `200` com `skipped: true`. Isso é
+normal para comentários, updates sem mudança nova de label ou updates onde o
+payload não traz `updated_from.labels`. O handler loga o motivo e os campos de
+auditoria principais:
+
+- `reason`: por exemplo `no relevant label transition`, `previous labels missing`
+  ou `nenhum run aguardando aprovação`;
+- `action` e `event`;
+- `cardId` e `cardIdentifier`;
+- labels atuais e anteriores quando disponíveis.
+
+Para ver os logs recentes:
+
+```bash
+pct exec 201 -- bash -lc \
+  "docker logs --since 30m orchestrator-api-1 2>&1 | grep -Ei 'Plane webhook|ai-ready|approved'"
+```
+
+Para auditar runs já criados para um card específico, use o endpoint interno
+protegido por bearer:
+
+```bash
+TOKEN="$(pct exec 201 -- docker exec orchestrator-api-1 printenv RUNNER_AUTH_TOKEN)"
+curl -fsS \
+  -H "authorization: Bearer $TOKEN" \
+  "http://10.10.0.11:3000/admin/card-runs?provider=plane&cardId=<work-item-id>"
+```
+
+Esse endpoint não consulta o Plane; ele mostra o histórico persistido no
+orchestrator para confirmar se o webhook gerou ou retomou runs.
+
 ## Fallback legado
 
 Hoje `/runs/:id/approve|reject` não tem auth (OK enquanto só o Funnel scoped
