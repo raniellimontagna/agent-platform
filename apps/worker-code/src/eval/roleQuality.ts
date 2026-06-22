@@ -5,14 +5,12 @@ function check(name: string, passed: boolean, detail: string): EvalCheck {
 }
 
 export function scorePlannerOutput(plan: string): EvalCheck[] {
+  const filePathPattern = /`[^`]+\.(?:ts|tsx|js|jsx|md|json|astro|ya?ml|toml|sh)`|`Dockerfile`/;
+
   return [
     check('planner:understanding', /entendimento/i.test(plan), 'contains understanding section'),
     check('planner:scope', /escopo|fora de escopo/i.test(plan), 'contains scope section'),
-    check(
-      'planner:files',
-      /`[^`]+\.(ts|tsx|js|jsx|md|json|astro)`/.test(plan),
-      'contains exact file path',
-    ),
+    check('planner:files', filePathPattern.test(plan), 'contains exact file path'),
     check(
       'planner:tdd',
       /RED\/GREEN\/REFACTOR|teste que falha|TDD/i.test(plan),
@@ -39,12 +37,13 @@ export function scorePlannerOutput(plan: string): EvalCheck[] {
 }
 
 export function scoreCriticOutput(review: string): EvalCheck[] {
+  const filePathPattern = /`[^`]+\.(?:ts|tsx|js|jsx|md|json|astro|ya?ml|toml|sh)`|`Dockerfile`/;
   const hasVerdict = /Veredito\**\s*:\s*\**\s*(APROVADO|APROVADO COM RESSALVAS|REPROVADO)/i.test(
     review,
   );
   const hasProblemsSection = /problemas/i.test(review);
-  const hasPath = /`[^`]+\.(ts|tsx|js|jsx|md|json|astro)`/.test(review);
-  const approved = /Veredito\**\s*:\s*\**\s*APROVADO\s*$/im.test(review);
+  const hasPath = filePathPattern.test(review);
+  const approved = /Veredito\**\s*:\s*\**\s*(APROVADO)(?!\s*COM RESSALVAS)/i.test(review);
 
   return [
     check('critic:verdict', hasVerdict, 'contains supported verdict'),
