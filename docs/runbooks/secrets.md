@@ -43,6 +43,8 @@ Política e procedimento de rotação dos segredos do agent-platform.
 | `GITHUB_TOKEN` | orchestrator `.env` | clone/push/PR | GitHub PAT (escopo `repo`) |
 | `RUNNER_AUTH_TOKEN` | orchestrator + runner `.env` | auth orchestrator↔runner + `/admin` | gerado (`openssl rand -hex 24`) |
 | `FIRECRAWL_API_KEY` | runner `.env` | research packs do `data-collector-agent` | Firecrawl dashboard |
+| `INSTAGRAM_GRAPH_ACCESS_TOKEN` | runner `.env` | Business Discovery opcional para `data-collector-agent` | Meta app / Graph API Explorer / token long-lived |
+| `INSTAGRAM_GRAPH_IG_USER_ID` | runner `.env` | IG user raiz autorizado para Business Discovery | Meta Graph API |
 | `DATABASE_URL` | orchestrator `.env` | Postgres | senha do compose |
 | `GRAFANA_PASSWORD` | observability `.env` | Grafana | gerado no deploy |
 
@@ -78,6 +80,11 @@ Geral: editar o `.env` do serviço, salvar, redeployar/reiniciar o container.
   GitHub → Settings → Developer settings → Tokens.
 - **`FIRECRAWL_API_KEY`**: só o runner precisa. Sem ela o serviço sobe, mas jobs
   do `data-collector-agent` falham com mensagem explícita antes de chamar API.
+- **Instagram Graph API**: opcional e usado só pelo runner. Sem
+  `INSTAGRAM_GRAPH_ACCESS_TOKEN` ou `INSTAGRAM_GRAPH_IG_USER_ID`, o
+  `data-collector-agent` continua com coleta pública e registra que Business
+  Discovery foi pulado. Rotacione o token no Meta Developers/Graph API Explorer,
+  atualize o runner `.env` e reinicie o runner.
 
 ## Verificação pós-rotação
 
