@@ -10,6 +10,60 @@ export const DEFAULT_AGENT_KEY = env.AGENT_KEY;
 export const REVIEWER_AGENT_KEY = 'reviewer-agent';
 export const LANDING_PAGE_AGENT_KEY = 'landing-page-agent';
 export const DATA_COLLECTOR_AGENT_KEY = 'data-collector-agent';
+export const SOFTWARE_DELIVERY_PIPELINE_KEY = 'software-delivery-pipeline';
+
+export interface AgentRoleDefinition {
+  key: string;
+  description: string;
+  modelAlias: string | null;
+  skills: string[];
+}
+
+export const SOFTWARE_DELIVERY_PIPELINE_ROLES: AgentRoleDefinition[] = [
+  {
+    key: 'planner',
+    description: 'Gera plano e approval reasons.',
+    modelAlias: 'research',
+    skills: [],
+  },
+  {
+    key: 'coder',
+    description: 'Aplica plano no runner e valida mudancas.',
+    modelAlias: 'strong_coder',
+    skills: [],
+  },
+  {
+    key: 'critic',
+    description: 'Revisa diff e decide recode ou PR.',
+    modelAlias: 'critic',
+    skills: [],
+  },
+  {
+    key: 'pr',
+    description: 'Abre PR e avalia auto-merge.',
+    modelAlias: null,
+    skills: [],
+  },
+  {
+    key: 'reporter',
+    description: 'Publica resumo final no card.',
+    modelAlias: null,
+    skills: [],
+  },
+];
+
+export function roleCapabilities(roles: AgentRoleDefinition[]): string[] {
+  return roles.map((role) => `role:${role.key}`);
+}
+
+export function agentRolesFromCapabilities(capabilities: string[]): AgentRoleDefinition[] {
+  const requested = new Set(
+    capabilities
+      .filter((capability) => capability.startsWith('role:'))
+      .map((capability) => capability.slice('role:'.length)),
+  );
+  return SOFTWARE_DELIVERY_PIPELINE_ROLES.filter((role) => requested.has(role.key));
+}
 
 /** Schema de criação de agente via REST. */
 export const createAgentSchema = z.object({
