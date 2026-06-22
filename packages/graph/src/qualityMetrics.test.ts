@@ -37,6 +37,36 @@ describe('qualityMetricsForState', () => {
     expect(metrics.autoMergeEligible).toBe(false);
     expect(metrics.autoMergeBlockedReason).toBe('validation failed');
   });
+
+  it('explica bloqueio de auto-merge quando a revisão está malformada', () => {
+    const metrics = qualityMetricsForState({
+      review: 'parecer sem veredito reconhecível',
+      testsPassed: true,
+      autoMerge: true,
+    } as never);
+
+    expect(metrics.autoMergeEligible).toBe(false);
+    expect(metrics.autoMergeBlockedReason).toBe('critic verdict unrecognized');
+  });
+
+  it('distingue validação não executada de validação falhada', () => {
+    const notRun = qualityMetricsForState({
+      review: 'Veredito: APROVADO',
+      testsPassed: undefined,
+      autoMerge: true,
+    } as never);
+    const failed = qualityMetricsForState({
+      review: 'Veredito: APROVADO',
+      testsPassed: false,
+      autoMerge: true,
+    } as never);
+
+    expect(notRun.autoMergeEligible).toBe(false);
+    expect(failed.autoMergeEligible).toBe(false);
+    expect(notRun.autoMergeBlockedReason).toBe('validation not run');
+    expect(failed.autoMergeBlockedReason).toBe('validation failed');
+    expect(notRun.autoMergeBlockedReason).not.toBe(failed.autoMergeBlockedReason);
+  });
 });
 
 describe('formatQualityMetrics', () => {
@@ -53,5 +83,20 @@ describe('formatQualityMetrics', () => {
         estimatedCostUsd: 0.0123,
       }),
     ).toContain('**Qualidade:** critic `APROVADO`, validação passou, PR aberto');
+  });
+
+  it('emite a linha de auto-merge quando não é elegível', () => {
+    expect(
+      formatQualityMetrics({
+        criticVerdict: '—',
+        criticRounds: 0,
+        fixAttempts: 0,
+        testsPassed: undefined,
+        prOpened: false,
+        autoMergeEligible: false,
+        autoMergeBlockedReason: 'critic verdict unrecognized',
+        estimatedCostUsd: 0,
+      }),
+    ).toContain('**Auto-merge:** bloqueado — critic verdict unrecognized');
   });
 });
