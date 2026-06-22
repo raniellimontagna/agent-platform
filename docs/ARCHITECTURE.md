@@ -8,9 +8,9 @@ mapa quando existe card histórico ou suporte explícito em `/webhooks/linear`.
 > Estado em 2026-06-22. Legenda: ✅ feito · 🏗 no ar/parcial · ⏳ pendente.
 > **Fases 0–7 completas** — projeto deployado em prod; auto-merge opt-in,
 > loop critic até 3 voltas, identidade de commits do agente e dashboards
-> validados com E2E real. O catálogo agora diferencia o pipeline compatível
-> `coder-agent` da identidade mais clara `software-delivery-pipeline`, com roles
-> `planner`, `coder`, `critic`, `pr` e `reporter`.
+> validados com E2E real. O catálogo expõe roles com contratos versionados em
+> `agent-skills/software-*`, aliases de modelo por role, evals determinísticos
+> para planner/critic e métricas de qualidade no report final.
 
 ---
 
@@ -116,7 +116,7 @@ Linear remains supported as an optional provider for legacy cards through `/webh
 | API + Webhooks Plane/Linear (legacy optional) | MAC-19 | `apps/orchestrator-api/src/routes/webhooks.ts` | ✅ |
 | Fluxo ai-ready | MAC-20 | `apps/orchestrator-api` (enfileirar) | ✅ |
 | State Machine | MAC-14 | `packages/graph` + schema `runs/run_steps` | ✅ (`planning→coding→reviewing→pr→merging→cloudflareDeploy→report`) |
-| Pipeline roles (planner/coder/critic/pr/reporter) | AGP follow-up | `apps/orchestrator-api/src/agents.ts`, registry UI | ✅ `coder-agent` compatível + `software-delivery-pipeline` |
+| Pipeline roles (planner/coder/critic/pr/reporter) | AGP follow-up | `apps/orchestrator-api/src/agents.ts`, registry UI | ✅ `coder-agent` compatível + `software-delivery-pipeline`, contratos `software-*`, aliases por role, evals planner/critic e métricas no report |
 | Planner / Coder / Reviewer / Reporter | MAC-16/17/18/21 | `packages/graph/src/nodes`, `apps/worker-code` (code-gen) | ✅ roles nomeadas no catálogo |
 | Human Approval Node | MAC-22 | `packages/graph` (interruptBefore) + tabela `approvals` | ✅ |
 | Context Builder | MAC-24 | `apps/worker-code/src/executor/context.ts` | ✅ (convenções + arquivos-exemplo) |
