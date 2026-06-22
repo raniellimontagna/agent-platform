@@ -41,6 +41,21 @@ Exemplo:
 - Manter fallback seguro: se uma skill não existir, o job não deve quebrar por
   causa do catálogo.
 
+## Pipeline roles
+
+O `coder-agent` permanece como chave compativel do pipeline LangGraph atual.
+Novas evolucoes devem tratar esse fluxo como um pipeline de entrega de software
+composto por roles:
+
+- `planner`: gera plano e approval reasons.
+- `coder`: aplica plano no runner e valida mudancas.
+- `critic`: revisa diff e decide recode ou PR.
+- `pr`: abre PR e avalia auto-merge.
+- `reporter`: publica resumo final no card.
+
+O catalogo pode expor `software-delivery-pipeline` como identidade mais clara do
+pipeline, sem mudar labels existentes nem separar a execucao fisica do LangGraph.
+
 ## Skills atuais
 
 - `landing-page-production`: contrato base para landing pages completas.
