@@ -131,12 +131,20 @@ export async function runInstagramGraphResearch(
   if (uniqueHandles.length === 0) return { findings: [], commands };
 
   if (!opts.accessToken || !opts.igUserId) {
+    const limitation =
+      'Instagram Graph API Business Discovery skipped: INSTAGRAM_GRAPH_ACCESS_TOKEN or INSTAGRAM_GRAPH_IG_USER_ID is not configured.';
+    commands.push({
+      command: 'instagram graph business_discovery skipped',
+      exitCode: 0,
+      stdout: uniqueHandles.map((handle) => `@${handle}`).join(', '),
+      stderr: limitation,
+      durationMs: 0,
+    });
     return {
       findings: uniqueHandles.map((handle) => ({
         handle,
         status: 'skipped',
-        limitation:
-          'Instagram Graph API Business Discovery skipped: INSTAGRAM_GRAPH_ACCESS_TOKEN or INSTAGRAM_GRAPH_IG_USER_ID is not configured.',
+        limitation,
       })),
       commands,
     };
@@ -162,7 +170,7 @@ export async function runInstagramGraphResearch(
       });
       findings.push({ handle, status: 'succeeded', profile });
     } catch (err) {
-      const limitation = graphLimitation(err);
+      const limitation = graphLimitation(err, [opts.accessToken]);
       commands.push({
         command,
         exitCode: 1,
@@ -231,13 +239,21 @@ async function fetchBusinessDiscovery(
   }
 }
 
-function graphLimitation(err: unknown): string {
+function graphLimitation(err: unknown, exactSecrets: string[] = []): string {
   const message = err instanceof Error ? err.message : String(err);
-  return `Instagram Graph API Business Discovery limitation: ${redactTokenLikeValues(message)}`;
+  return `Instagram Graph API Business Discovery limitation: ${redactSensitiveText(message, exactSecrets)}`;
 }
 
-function redactTokenLikeValues(value: string): string {
-  return value.replace(/[A-Za-z0-9_-]{20,}/g, '[redacted]');
+export function redactSensitiveText(value: string, exactSecrets: string[] = []): string {
+  let redacted = value;
+  for (const secret of new Set(exactSecrets.filter(Boolean))) {
+    redacted = redacted.split(secret).join('[redacted]');
+    const encodedSecret = encodeURIComponent(secret);
+    if (encodedSecret && encodedSecret !== secret) {
+      redacted = redacted.split(encodedSecret).join('[redacted]');
+    }
+  }
+  return redacted.replace(/[A-Za-z0-9_-]{20,}/g, '[redacted]');
 }
 
 export function formatInstagramGraphFindings(findings: InstagramGraphFinding[]): string[] {

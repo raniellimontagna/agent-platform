@@ -238,6 +238,14 @@ describe('runFirecrawlResearchJob', () => {
     expect(result.status).toBe('succeeded');
     expect(result.research).toContain('Business Discovery skipped');
     expect(result.research).toContain('## Instagram Findings');
+    expect(result.commands).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          command: 'instagram graph business_discovery skipped',
+          exitCode: 0,
+        }),
+      ]),
+    );
   });
 
   it('falha sem FIRECRAWL_API_KEY', async () => {
@@ -249,6 +257,103 @@ describe('runFirecrawlResearchJob', () => {
     expect(result.status).toBe('failed');
     expect(result.error).toContain('FIRECRAWL_API_KEY');
     expect(result.commands).toEqual([]);
+  });
+
+  it('succeeds with Graph findings when FIRECRAWL_API_KEY is missing', async () => {
+    const fetchImpl = vi.fn(async (input) => {
+      const url = String(input);
+      if (url.includes('graph.facebook.com')) {
+        return new Response(
+          JSON.stringify({
+            business_discovery: {
+              username: 'cameraecarburador',
+              name: 'Camera e Carburador',
+              followers_count: 1234,
+            },
+          }),
+          { status: 200 },
+        );
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    }) as typeof fetch;
+
+    const result = await runFirecrawlResearchJob(
+      {
+        ...baseJob,
+        description: 'Pesquisar @cameraecarburador para landing page.',
+      },
+      {
+        baseUrl: 'https://api.firecrawl.dev',
+        timeoutMs: 10_000,
+        fetchImpl,
+        instagramGraph: {
+          accessToken: 'abc123',
+          igUserId: '17841400000000000',
+          baseUrl: 'https://graph.facebook.com',
+          apiVersion: 'v20.0',
+          timeoutMs: 10_000,
+          fetchImpl,
+        },
+      },
+    );
+
+    expect(result.status).toBe('succeeded');
+    expect(result.summary).toContain('Instagram Graph');
+    expect(result.research).toContain('## Instagram Graph API Findings');
+    expect(result.research).toContain('@cameraecarburador followers: 1234');
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it('succeeds when Graph produces usable research and Firecrawl scrape fails', async () => {
+    const fetchImpl = vi.fn(async (input) => {
+      const url = String(input);
+      if (url.includes('graph.facebook.com')) {
+        return new Response(
+          JSON.stringify({
+            business_discovery: {
+              username: 'cameraecarburador',
+              name: 'Camera e Carburador',
+            },
+          }),
+          { status: 200 },
+        );
+      }
+      return new Response(JSON.stringify({ success: false, error: 'blocked' }), { status: 200 });
+    }) as typeof fetch;
+
+    const result = await runFirecrawlResearchJob(
+      {
+        ...baseJob,
+        description: 'Pesquisar @cameraecarburador para landing page.',
+      },
+      {
+        apiKey: 'fc-test',
+        baseUrl: 'https://api.firecrawl.dev',
+        timeoutMs: 10_000,
+        fetchImpl,
+        instagramGraph: {
+          accessToken: 'abc123',
+          igUserId: '17841400000000000',
+          baseUrl: 'https://graph.facebook.com',
+          apiVersion: 'v20.0',
+          timeoutMs: 10_000,
+          fetchImpl,
+        },
+      },
+    );
+
+    expect(result.status).toBe('succeeded');
+    expect(result.summary).toContain('Instagram Graph');
+    expect(result.research).toContain('## Instagram Graph API Findings');
+    expect(result.research).toContain('- Error: blocked');
+    expect(result.commands).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          command: 'firecrawl scrape https://www.instagram.com/cameraecarburador/',
+          exitCode: 1,
+        }),
+      ]),
+    );
   });
 
   it('bloqueia URL interna antes de chamar Firecrawl', async () => {
@@ -328,5 +433,24 @@ describe('runFirecrawlResearchJob', () => {
     expect(result.status).toBe('failed');
     expect(result.research).toContain('blocked');
     expect(result.testsPassed).toBe(false);
+  });
+
+  it('redacts the exact configured token from stored Firecrawl errors', async () => {
+    const result = await runFirecrawlResearchJob(baseJob, {
+      apiKey: 'abc123',
+      baseUrl: 'https://api.firecrawl.dev',
+      timeoutMs: 10_000,
+      fetchImpl: vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({ success: false, error: 'authorization failed for abc123' }),
+            { status: 200 },
+          ),
+      ) as typeof fetch,
+    });
+
+    expect(result.status).toBe('failed');
+    expect(result.research).toContain('[redacted]');
+    expect(JSON.stringify(result)).not.toContain('abc123');
   });
 });
