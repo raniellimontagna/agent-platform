@@ -13,7 +13,21 @@
       "gsap-motion",
       "higgsfield-media-generation"
     ],
-    "data-collector-agent": ["research-data-collection", "instagram-public-research"]
+    "data-collector-agent": ["research-data-collection", "instagram-public-research"],
+    "coder-agent": [
+      "software-planner",
+      "software-coder",
+      "software-critic",
+      "software-pr",
+      "software-reporter"
+    ],
+    "software-delivery-pipeline": [
+      "software-planner",
+      "software-coder",
+      "software-critic",
+      "software-pr",
+      "software-reporter"
+    ]
   },
   "skills": [
     {
@@ -75,6 +89,31 @@
       "name": "instagram-public-research",
       "path": "agent-skills/instagram-public-research/SKILL.md",
       "description": "Collect Instagram-related public and first-party data safely for research packs without posting, messaging, deleting, or bypassing access controls."
+    },
+    {
+      "name": "software-planner",
+      "path": "agent-skills/software-planner/SKILL.md",
+      "description": "Plan software delivery work with scope, TDD, validation, approval reasons, and self-review."
+    },
+    {
+      "name": "software-coder",
+      "path": "agent-skills/software-coder/SKILL.md",
+      "description": "Implement approved software plans while preserving unrelated code and respecting repo conventions."
+    },
+    {
+      "name": "software-critic",
+      "path": "agent-skills/software-critic/SKILL.md",
+      "description": "Review generated diffs for bugs, regressions, tests, security, scope, and operational caveats."
+    },
+    {
+      "name": "software-pr",
+      "path": "agent-skills/software-pr/SKILL.md",
+      "description": "Package validated branches into factual GitHub pull requests with safe auto-merge gates."
+    },
+    {
+      "name": "software-reporter",
+      "path": "agent-skills/software-reporter/SKILL.md",
+      "description": "Report final run outcomes and quality signals back to Plane cards."
     }
   ]
 }

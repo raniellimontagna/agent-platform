@@ -53,6 +53,16 @@ composto por roles:
 - `pr`: abre PR e avalia auto-merge.
 - `reporter`: publica resumo final no card.
 
+Each pipeline role has a local reviewed skill:
+
+- `software-planner`
+- `software-coder`
+- `software-critic`
+- `software-pr`
+- `software-reporter`
+
+`coder-agent` and `software-delivery-pipeline` both load these skills so existing labels keep working while the clearer pipeline identity evolves.
+
 O catalogo pode expor `software-delivery-pipeline` como identidade mais clara do
 pipeline, sem mudar labels existentes nem separar a execucao fisica do LangGraph.
 
