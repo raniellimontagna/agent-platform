@@ -1,5 +1,10 @@
 import type { CardGateway } from '@agent-platform/cards';
-import { type LlmClient, type TokenUsage, estimateCostUsd } from '@agent-platform/llm';
+import {
+  type LlmClient,
+  type ModelAlias,
+  type TokenUsage,
+  estimateCostUsd,
+} from '@agent-platform/llm';
 import {
   criticalReasons,
   parseApprovalReasons,
@@ -43,7 +48,7 @@ Inclua um valor SÓ se a tarefa de fato mexe nisso — não liste por precauçã
 
 export const PLANNER_SYSTEM_PROMPT = buildRoleSystemPrompt('planner', PLANNER_BASE_PROMPT);
 
-export function plannerModelAlias(): string {
+export function plannerModelAlias(): ModelAlias {
   return modelAliasForRole('planner') ?? 'research';
 }
 

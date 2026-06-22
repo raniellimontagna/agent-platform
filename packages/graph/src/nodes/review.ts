@@ -1,5 +1,10 @@
 import type { CardGateway } from '@agent-platform/cards';
-import { type LlmClient, type TokenUsage, estimateCostUsd } from '@agent-platform/llm';
+import {
+  type LlmClient,
+  type ModelAlias,
+  type TokenUsage,
+  estimateCostUsd,
+} from '@agent-platform/llm';
 import { buildRoleSystemPrompt } from '../roleContracts.js';
 import { modelAliasForRole } from '../roleModels.js';
 import type { AgentStateType } from '../state.js';
@@ -15,7 +20,7 @@ Não reescreva o código todo; aponte o que importa. Se estiver bom, diga e seja
 
 export const CRITIC_SYSTEM_PROMPT = buildRoleSystemPrompt('critic', CRITIC_BASE_PROMPT);
 
-export function criticModelAlias(): string {
+export function criticModelAlias(): ModelAlias {
   return modelAliasForRole('critic') ?? 'critic';
 }
 
