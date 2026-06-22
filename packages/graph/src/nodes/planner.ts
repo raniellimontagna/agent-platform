@@ -6,9 +6,11 @@ import {
   reasonLabel,
   stripApprovalReasonsLine,
 } from '@agent-platform/policy';
+import { buildRoleSystemPrompt } from '../roleContracts.js';
+import { modelAliasForRole } from '../roleModels.js';
 import type { AgentStateType } from '../state.js';
 
-export const PLANNER_SYSTEM_PROMPT = `Você é um agente planejador de engenharia de software.
+export const PLANNER_BASE_PROMPT = `Você é um agente planejador de engenharia de software.
 Use um contrato de planejamento Superpowers-inspired: especificação clara, tarefas pequenas,
 TDD quando houver mudança de comportamento, revisão objetiva e verificação antes de concluir.
 
@@ -39,6 +41,12 @@ APPROVAL_REASONS: <lista separada por vírgula, só os que REALMENTE se aplicam,
 Valores válidos: migration, auth_security, infra, deploy, critical_deps, file_deletion.
 Inclua um valor SÓ se a tarefa de fato mexe nisso — não liste por precaução.`;
 
+export const PLANNER_SYSTEM_PROMPT = buildRoleSystemPrompt('planner', PLANNER_BASE_PROMPT);
+
+export function plannerModelAlias(): string {
+  return modelAliasForRole('planner') ?? 'research';
+}
+
 export interface PlannerDeps {
   llm: LlmClient;
   cards: CardGateway;
@@ -53,7 +61,7 @@ export function makePlannerNode(deps: PlannerDeps) {
   return async (state: AgentStateType): Promise<Partial<AgentStateType>> => {
     let usage: TokenUsage = { promptTokens: 0, completionTokens: 0 };
     const plan = await deps.llm.complete({
-      alias: 'research',
+      alias: plannerModelAlias(),
       onUsage: (u) => {
         usage = u;
       },
@@ -83,7 +91,7 @@ export function makePlannerNode(deps: PlannerDeps) {
       plan: cleanPlan,
       approvalReasons: reasons,
       status: 'awaiting_approval',
-      planCostUsd: estimateCostUsd('research', usage),
+      planCostUsd: estimateCostUsd(plannerModelAlias(), usage),
     };
   };
 }
