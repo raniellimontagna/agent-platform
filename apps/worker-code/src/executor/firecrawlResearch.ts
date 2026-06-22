@@ -1,6 +1,12 @@
 import { z } from 'zod';
 import type { CommandResult, Job, JobResult } from '../types.js';
 import {
+  type InstagramGraphFinding,
+  type InstagramGraphResearchOptions,
+  formatInstagramGraphFindings,
+  runInstagramGraphResearch,
+} from './instagramGraphResearch.js';
+import {
   DEFAULT_SCRAPING_LIMITS,
   type ScrapingLimits,
   buildScrapingPolicy,
@@ -23,6 +29,7 @@ interface FirecrawlResearchOptions {
   rateLimitPerMinute?: number;
   fetchImpl?: FetchImpl;
   now?: () => Date;
+  instagramGraph?: InstagramGraphResearchOptions;
 }
 
 interface ResearchSource {
@@ -99,6 +106,10 @@ export async function runFirecrawlResearchJob(
   const instagramHandles = extractInstagramHandles(
     [job.title, job.description, job.plan].join('\n'),
   );
+  const instagramGraphResult = opts.instagramGraph
+    ? await runInstagramGraphResearch(instagramHandles, opts.instagramGraph)
+    : { findings: [] as InstagramGraphFinding[], commands: [] };
+  commands.push(...instagramGraphResult.commands);
   const inferredInstagramUrls = instagramHandles.map(instagramProfileUrl);
   const policy = buildScrapingPolicy({
     title: job.title,
@@ -187,6 +198,7 @@ export async function runFirecrawlResearchJob(
         opts.now?.() ?? new Date(),
         policy.limits,
         instagramHandles,
+        instagramGraphResult.findings,
       ),
       testsPassed: false,
     };
@@ -203,6 +215,7 @@ export async function runFirecrawlResearchJob(
       opts.now?.() ?? new Date(),
       policy.limits,
       instagramHandles,
+      instagramGraphResult.findings,
     ),
   };
 }
@@ -270,6 +283,7 @@ function buildResearchPack(
   generatedAt: Date,
   limits: ScrapingLimits,
   instagramHandles: string[] = [],
+  instagramGraphFindings: InstagramGraphFinding[] = [],
 ): string {
   const lines = [
     `# Research Pack - ${job.issueIdentifier}`,
@@ -309,6 +323,7 @@ function buildResearchPack(
     source.url.toLowerCase().includes('instagram.com/'),
   );
   if (instagramHandles.length > 0 || instagramSources.length > 0) {
+    lines.push(...formatInstagramGraphFindings(instagramGraphFindings));
     lines.push('## Instagram Findings', '');
     if (instagramHandles.length > 0) {
       lines.push('### Sources', '');
