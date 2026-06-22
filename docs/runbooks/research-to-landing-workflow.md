@@ -5,7 +5,8 @@ Ele encadeia dois agentes no mesmo card Plane:
 
 1. `data-collector-agent` coleta dados públicos e salva artifact `research`.
 2. O orchestrator cria automaticamente um segundo run com `landing-page-agent`.
-3. O segundo run recebe o research pack como contexto extra do planner.
+3. O segundo run recebe o `Landing Page Brief` priorizado e o research pack
+   completo como contexto extra do planner.
 4. Só a etapa final de landing page abre Draft PR.
 
 ## Como disparar
@@ -37,6 +38,9 @@ Cards Linear continuam aceitos apenas no provider legado/opcional.
   ainda ficará aguardando aprovação humana.
 - A etapa de landing page usa o research pack como fonte principal de copy,
   prova, objeções, SEO, visual e estrutura.
+- Quando o artifact contém `## Landing Page Brief`, o contexto do
+  `landing-page-agent` coloca esse briefing antes do research pack completo para
+  orientar a primeira decisão do planner.
 
 ## Limites
 
@@ -49,3 +53,5 @@ Cards Linear continuam aceitos apenas no provider legado/opcional.
 - Não há UI para montar workflows arbitrários.
 - Dados privados ou autenticados exigem export/API autorizada e continuam fora do
   scraping público.
+- O briefing é uma síntese determinística do research pack; ele não autoriza o
+  agente downstream a inventar claims sem fonte.

@@ -62,4 +62,33 @@ describe('formatResearchToLandingContext', () => {
     expect(context).toContain('fonte principal');
     expect(context).toContain('# Research Pack');
   });
+
+  it('promove briefing estruturado antes do research pack completo', () => {
+    const context = formatResearchToLandingContext(
+      [
+        '# Research Pack - AGP-1',
+        '',
+        '## Landing Page Brief',
+        '',
+        '### Brand / Subject',
+        '',
+        '- Camera e Carburador',
+        '',
+        '### Recommended Page Structure',
+        '',
+        '- Hero com proposta de valor.',
+        '',
+        '## Apify Instagram Findings',
+        '',
+        '- AP1: @cameraecarburador via Apify actor.',
+      ].join('\n'),
+      'run-1',
+    );
+
+    expect(context.indexOf('## Structured landing/page brief')).toBeLessThan(
+      context.indexOf('## Full research pack'),
+    );
+    expect(context).toContain('### Recommended Page Structure');
+    expect(context).toContain('# Research Pack - AGP-1');
+  });
 });

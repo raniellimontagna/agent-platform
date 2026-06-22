@@ -295,6 +295,10 @@ describe('runFirecrawlResearchJob', () => {
 
     expect(result.status).toBe('succeeded');
     expect(result.summary).toContain('Apify Instagram');
+    expect(result.research).toContain('## Landing Page Brief');
+    expect(result.research).toContain('### Brand / Subject');
+    expect(result.research).toContain('### Recommended Page Structure');
+    expect(result.research).toContain('### Risks / Gaps');
     expect(result.research).toContain('## Apify Instagram Findings');
     expect(result.research).toContain('@cameraecarburador followers: 2345');
     expect(result.research).toContain('- Error: instagram unsupported by firecrawl');
