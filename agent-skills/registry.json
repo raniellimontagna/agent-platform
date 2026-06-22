@@ -13,7 +13,11 @@
       "gsap-motion",
       "higgsfield-media-generation"
     ],
-    "data-collector-agent": ["research-data-collection", "instagram-public-research"],
+    "data-collector-agent": [
+      "research-planner",
+      "research-data-collection",
+      "instagram-public-research"
+    ],
     "coder-agent": [
       "software-planner",
       "software-coder",
@@ -84,6 +88,11 @@
       "name": "research-data-collection",
       "path": "agent-skills/research-data-collection/SKILL.md",
       "description": "Collect public web data with source evidence, safety policy, rate limits, and structured research outputs for downstream agents."
+    },
+    {
+      "name": "research-planner",
+      "path": "agent-skills/research-planner/SKILL.md",
+      "description": "Plan safe data collection for companies, public profiles, Instagram context, and landing-page research packs."
     },
     {
       "name": "instagram-public-research",

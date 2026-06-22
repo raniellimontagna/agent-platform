@@ -15,10 +15,21 @@ Para o fluxo completo coleta → landing page, use `workflow:landing-page` em ve
 de `agent:data-collector`. Nesse modo o orchestrator roda a coleta primeiro e
 encadeia automaticamente o `landing-page-agent` com o artifact `research`.
 
+## Planner de pesquisa
+
+Para `data-collector-agent`, o planner usa o contrato `research-planner` em vez
+do `software-planner`. O plano esperado descreve objetivo, escopo, estratégia de
+fontes, checklist de extração, limitações e formato do research pack. Ele não
+deve orientar branch, PR, paths de código ou ciclos de implementação de software.
+
+Exemplo: um card pedindo dados para a página `@cameraecarburador` deve gerar um
+plano de coleta pública/Instagram, não um plano de desenvolvimento.
+
 ## Especialização
 
-O agente carrega a skill `research-data-collection`, que orienta o runner/codegen
-a produzir pacotes de pesquisa com:
+O agente carrega `research-planner`, `research-data-collection` e
+`instagram-public-research`, que orientam o runner/codegen a produzir pacotes de
+pesquisa com:
 
 - objetivo e escopo;
 - fontes, URL, método de extração e data de acesso;
@@ -58,6 +69,13 @@ Variáveis do runner:
 Firecrawl é o padrão para páginas públicas estáticas/crawláveis, quando o card
 precisa de Markdown/resumo e não pede browser. Ele só recebe URLs explícitas do
 título, descrição ou plano do card.
+
+Handles públicos de Instagram no formato `@perfil` são normalizados para
+`https://www.instagram.com/perfil/` e tratados como fonte pública inferida. A
+coleta continua limitada ao conteúdo visível sem login e o research pack registra
+as limitações: sem bypass, sem Graph API autorizada e sem métricas privadas. Para
+insights, comentários completos, demografia ou analytics, forneça export
+first-party ou acesso autorizado à Instagram Graph API.
 
 ## Playwright controlado
 
