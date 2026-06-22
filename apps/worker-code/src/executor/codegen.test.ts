@@ -79,8 +79,23 @@ describe('buildAgentInstructions', () => {
     expect(instructions).toContain('responsive');
   });
 
-  it('não adiciona bloco especializado para o agente default sem capabilities', () => {
-    expect(buildAgentInstructions('coder-agent')).toBe('');
+  it('carrega bloco especializado para coder-agent sem capabilities explícitas', () => {
+    const instructions = buildAgentInstructions('coder-agent');
+
+    expect(instructions).toContain('software-coder');
+    expect(instructions).toContain('software-planner');
+  });
+
+  it('carrega contratos de role para coder-agent e software-delivery-pipeline', () => {
+    const coder = buildAgentInstructions('coder-agent', ['typescript']);
+    const pipeline = buildAgentInstructions('software-delivery-pipeline', ['role:planner']);
+
+    expect(coder).toContain('software-coder');
+    expect(coder).toContain('Preserve todo código não relacionado');
+    expect(coder).toContain('software-critic');
+    expect(pipeline).toContain('software-planner');
+    expect(pipeline).toContain('APPROVAL_REASONS');
+    expect(pipeline).toContain('software-reporter');
   });
 });
 
