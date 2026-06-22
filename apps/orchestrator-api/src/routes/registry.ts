@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { listAgents } from '../agents.js';
+import { agentRolesFromCapabilities, listAgents } from '../agents.js';
 import type { Agent, Run, Tool } from '../db/schema.js';
 import { listRuns } from '../runs.js';
 import { listTools } from '../tools.js';
@@ -32,6 +32,20 @@ function statusClass(status: string): string {
       : 'warn';
 }
 
+function renderRoles(capabilities: string[]): string {
+  const roles = agentRolesFromCapabilities(capabilities);
+  if (roles.length === 0) return '';
+  const items = roles
+    .map((role) => {
+      const model = role.modelAlias ? ` · ${role.modelAlias}` : '';
+      return `<li><strong>${escapeHtml(role.key)}</strong><span>${escapeHtml(
+        `${role.description}${model}`,
+      )}</span></li>`;
+    })
+    .join('');
+  return `<ul class="roles">${items}</ul>`;
+}
+
 export function renderRegistryPage(input: { agents: Agent[]; tools: Tool[]; runs: Run[] }): string {
   const agentsById = new Map(input.agents.map((agent) => [agent.id, agent]));
   const activeAgents = input.agents.filter((agent) => agent.status === 'active').length;
@@ -43,7 +57,7 @@ export function renderRegistryPage(input: { agents: Agent[]; tools: Tool[]; runs
         <td><strong>${escapeHtml(agent.key)}</strong><span>${escapeHtml(formatVersion(agent.version))}</span></td>
         <td><span class="pill ${statusClass(agent.status)}">${escapeHtml(agent.status)}</span></td>
         <td>${escapeHtml(agent.description ?? '-')}</td>
-        <td>${agent.capabilities.map((capability) => `<code>${escapeHtml(capability)}</code>`).join(' ')}</td>
+        <td>${agent.capabilities.map((capability) => `<code>${escapeHtml(capability)}</code>`).join(' ')}${renderRoles(agent.capabilities)}</td>
         <td>${formatDate(agent.createdAt)}</td>
       </tr>`,
     )
@@ -100,6 +114,10 @@ export function renderRegistryPage(input: { agents: Agent[]; tools: Tool[]; runs
     td { border-bottom: 1px solid #edf0f5; padding: 10px 8px; vertical-align: top; }
     tr:last-child td { border-bottom: 0; }
     code { display: inline-block; margin: 0 4px 4px 0; padding: 2px 6px; border: 1px solid var(--line); border-radius: 5px; background: #f3f5f8; color: #344054; font-size: 12px; }
+    .roles { margin: 6px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+    .roles li { display: grid; gap: 1px; }
+    .roles strong { font-size: 12px; }
+    .roles span { margin: 0; font-size: 12px; }
     .pill { display: inline-flex; align-items: center; height: 24px; padding: 0 8px; border-radius: 999px; font-size: 12px; font-weight: 650; background: #eef2f6; color: #344054; }
     .pill.ok { background: #e6f6f3; color: var(--ok); }
     .pill.warn { background: #fff4df; color: var(--warn); }
