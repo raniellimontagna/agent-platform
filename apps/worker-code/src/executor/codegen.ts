@@ -159,8 +159,17 @@ function hasJsonObjectStart(raw: string): boolean {
   return candidate.includes('{');
 }
 
-export function buildAgentInstructions(agentKey?: string, capabilities: string[] = []): string {
-  return buildSkillInstructions(agentKey, capabilities);
+export function buildAgentInstructions(
+  agentKey?: string,
+  capabilities: string[] = [],
+  root?: string,
+  opts: { skills?: string[] } = {},
+): string {
+  return buildSkillInstructions(agentKey, capabilities, root, opts);
+}
+
+function buildCoderInstructions(agentKey?: string, capabilities: string[] = []): string {
+  return buildAgentInstructions(agentKey, capabilities, undefined, { skills: ['software-coder'] });
 }
 
 /**
@@ -491,7 +500,7 @@ export async function generateAndApplyCode(args: CodegenArgs): Promise<CodegenRe
 
   // Context Builder (MAC-24): convenções do projeto guiam ambos os passos.
   const conventions = await readConventions(dir, repoSet);
-  const agentInstructions = buildAgentInstructions(agentKey, agentCapabilities);
+  const agentInstructions = buildCoderInstructions(agentKey, agentCapabilities);
 
   // Acumula o uso de tokens das 2 chamadas p/ estimar o custo (MAC-40).
   const usage: TokenUsage = { promptTokens: 0, completionTokens: 0 };
@@ -642,7 +651,7 @@ export interface FixResult {
 export async function applyFix(args: FixArgs): Promise<FixResult> {
   const { llm, dir, filesChanged, failureTail, plan, title, agentKey, agentCapabilities, log } =
     args;
-  const agentInstructions = buildAgentInstructions(agentKey, agentCapabilities);
+  const agentInstructions = buildCoderInstructions(agentKey, agentCapabilities);
 
   // Relê on-disk os arquivos tocados (recém-escritos; arquivos novos podem não
   // estar no git ls-files, então lemos direto, sem filtro de tracking).

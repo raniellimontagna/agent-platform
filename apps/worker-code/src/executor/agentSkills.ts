@@ -57,6 +57,7 @@ export function buildSkillInstructions(
   agentKey?: string,
   capabilities: string[] = [],
   root = repoRootFromModule(),
+  opts: { skills?: string[] } = {},
 ): string {
   if (!agentKey) {
     return capabilities.length > 0
@@ -65,7 +66,7 @@ export function buildSkillInstructions(
   }
 
   const registry = loadAgentSkillRegistry(root);
-  const skillNames = registry?.agentSkills[agentKey] ?? [];
+  const skillNames = opts.skills ?? registry?.agentSkills[agentKey] ?? [];
   const skillByName = new Map(registry?.skills.map((skill) => [skill.name, skill]) ?? []);
   const skillBlocks = skillNames.flatMap((skillName) => {
     const skill = skillByName.get(skillName);
