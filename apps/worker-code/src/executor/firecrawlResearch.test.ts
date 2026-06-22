@@ -138,6 +138,108 @@ describe('runFirecrawlResearchJob', () => {
     expect(result.research).toContain('não tenta bypass');
   });
 
+  it('inclui achados do Instagram Graph API junto do fallback público', async () => {
+    const fetchImpl = vi.fn(async (input) => {
+      const url = String(input);
+      if (url.includes('graph.facebook.com')) {
+        return new Response(
+          JSON.stringify({
+            business_discovery: {
+              username: 'cameraecarburador',
+              name: 'Camera e Carburador',
+              followers_count: 1234,
+              media_count: 87,
+            },
+          }),
+          { status: 200 },
+        );
+      }
+      return new Response(
+        JSON.stringify({
+          success: true,
+          data: {
+            summary: 'Perfil público visível.',
+            metadata: {
+              title: '@cameraecarburador',
+              sourceURL: 'https://www.instagram.com/cameraecarburador/',
+            },
+          },
+        }),
+        { status: 200 },
+      );
+    }) as typeof fetch;
+
+    const result = await runFirecrawlResearchJob(
+      {
+        ...baseJob,
+        description: 'Pesquisar @cameraecarburador para landing page.',
+      },
+      {
+        apiKey: 'fc-test',
+        baseUrl: 'https://api.firecrawl.dev',
+        timeoutMs: 10_000,
+        fetchImpl,
+        instagramGraph: {
+          accessToken: 'secret-token',
+          igUserId: '17841400000000000',
+          baseUrl: 'https://graph.facebook.com',
+          apiVersion: 'v20.0',
+          timeoutMs: 10_000,
+          fetchImpl,
+        },
+      },
+    );
+
+    expect(result.status).toBe('succeeded');
+    expect(result.research).toContain('## Instagram Graph API Findings');
+    expect(result.research).toContain('@cameraecarburador name: Camera e Carburador');
+    expect(result.research).toContain('@cameraecarburador followers: 1234');
+    expect(result.research).toContain('## Instagram Findings');
+    expect(JSON.stringify(result)).not.toContain('secret-token');
+  });
+
+  it('registra limitação quando Graph API não está configurada e mantém coleta pública', async () => {
+    const fetchImpl = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            success: true,
+            data: {
+              summary: 'Perfil público visível.',
+              metadata: {
+                title: '@cameraecarburador',
+                sourceURL: 'https://www.instagram.com/cameraecarburador/',
+              },
+            },
+          }),
+          { status: 200 },
+        ),
+    ) as typeof fetch;
+
+    const result = await runFirecrawlResearchJob(
+      {
+        ...baseJob,
+        description: 'Pesquisar @cameraecarburador para landing page.',
+      },
+      {
+        apiKey: 'fc-test',
+        baseUrl: 'https://api.firecrawl.dev',
+        timeoutMs: 10_000,
+        fetchImpl,
+        instagramGraph: {
+          baseUrl: 'https://graph.facebook.com',
+          apiVersion: 'v20.0',
+          timeoutMs: 10_000,
+          fetchImpl,
+        },
+      },
+    );
+
+    expect(result.status).toBe('succeeded');
+    expect(result.research).toContain('Business Discovery skipped');
+    expect(result.research).toContain('## Instagram Findings');
+  });
+
   it('falha sem FIRECRAWL_API_KEY', async () => {
     const result = await runFirecrawlResearchJob(baseJob, {
       baseUrl: 'https://api.firecrawl.dev',
