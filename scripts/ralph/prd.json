@@ -127,8 +127,8 @@
         "No unfinished Mission Control user story remains with passes=false"
       ],
       "priority": 8,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "`rtk corepack pnpm lint`, `rtk corepack pnpm test`, and `rtk corepack pnpm --filter @agent-platform/orchestrator-api build` passed. Future replay/launch work remains intentionally out of scope for this read-only Mission Control slice."
     }
   ]
 }

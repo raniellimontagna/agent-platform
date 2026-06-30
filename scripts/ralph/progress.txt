@@ -97,3 +97,17 @@ Started: not started
 - Learnings for future iterations:
   - Biome does not currently process Markdown docs, so docs-only lint evidence should use `--no-errors-on-unmatched` and record the zero-file limitation.
 ---
+## 2026-06-30 10:09 - US-008
+- Ran final Mission Control verification and polished Biome lint issues in the Mission Control route tests/imports.
+- Files changed:
+  - apps/orchestrator-api/src/routes/admin.ts
+  - apps/orchestrator-api/src/routes/admin.test.ts
+  - scripts/ralph/prd.json
+  - scripts/ralph/progress.txt
+- Verification:
+  - `rtk corepack pnpm lint`
+  - `rtk corepack pnpm test`
+  - `rtk corepack pnpm --filter @agent-platform/orchestrator-api build`
+- Learnings for future iterations:
+  - Mission Control is verified as a read-only slice; real replay or launch actions remain future work and should add explicit non-read-only routes/tests.
+---

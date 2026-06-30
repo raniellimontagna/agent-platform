@@ -241,10 +241,20 @@ describe('renderMissionControlPage', () => {
     expect(html).toContain('Expected artifacts');
     expect(html).toContain('research');
     expect(html).toContain('Landing Page Brief');
-    expect(html).toContain('This checklist does not trigger Plane, webhooks, GitHub, or live runs.');
+    expect(html).toContain(
+      'This checklist does not trigger Plane, webhooks, GitHub, or live runs.',
+    );
     expect(html).not.toContain('Start mission');
   });
 });
+
+function getFirstMissionScenario() {
+  const scenario = listE2eMissionScenarios()[0];
+  if (!scenario) {
+    throw new Error('Expected at least one Mission Control scenario');
+  }
+  return scenario;
+}
 
 describe('GET /admin/mission-control', () => {
   it('renders the Mission Control dashboard shell as protected HTML', async () => {
@@ -282,7 +292,7 @@ describe('GET /admin/mission-control', () => {
 
 describe('renderMissionDetailPage', () => {
   it('renders a mission with research artifact links and PR metadata', () => {
-    const scenario = listE2eMissionScenarios()[0]!;
+    const scenario = getFirstMissionScenario();
     const html = renderMissionDetailPage({
       scenario,
       run: {
@@ -321,7 +331,7 @@ describe('renderMissionDetailPage', () => {
   });
 
   it('renders approval state and empty downstream continuation for a mission awaiting approval', () => {
-    const scenario = listE2eMissionScenarios()[0]!;
+    const scenario = getFirstMissionScenario();
     const html = renderMissionDetailPage({
       scenario,
       run: {
@@ -367,7 +377,7 @@ describe('renderMissionDetailPage', () => {
   });
 
   it('renders an explicit empty artifact state', () => {
-    const scenario = listE2eMissionScenarios()[0]!;
+    const scenario = getFirstMissionScenario();
     const html = renderMissionDetailPage({
       scenario,
       run: {
