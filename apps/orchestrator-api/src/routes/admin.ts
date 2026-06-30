@@ -5,6 +5,17 @@ import { env } from '../env.js';
 import { isPaused, setPaused } from '../killswitch.js';
 import { logger } from '../logger.js';
 import {
+  type E2eMissionScenario,
+  RESEARCH_TO_LANDING_SCENARIO_ID,
+  listE2eMissionScenarios,
+} from '../missionScenarios.js';
+import {
+  type MissionTimeline,
+  type MissionTimelineStage,
+  type MissionTimelineStageStatus,
+  buildMissionTimeline,
+} from '../missionTimeline.js';
+import {
   ACTIVE_STATUSES,
   countRunsByStatus,
   getRun,
@@ -12,17 +23,6 @@ import {
   listRuns,
   listRunsForCard,
 } from '../runs.js';
-import {
-  RESEARCH_TO_LANDING_SCENARIO_ID,
-  listE2eMissionScenarios,
-  type E2eMissionScenario,
-} from '../missionScenarios.js';
-import {
-  buildMissionTimeline,
-  type MissionTimeline,
-  type MissionTimelineStage,
-  type MissionTimelineStageStatus,
-} from '../missionTimeline.js';
 
 export const adminRoute = new Hono();
 
@@ -229,10 +229,7 @@ function renderScenarioCard(scenario: E2eMissionScenario): string {
   </article>`;
 }
 
-function renderStageTrack(
-  scenario: E2eMissionScenario,
-  mission?: MissionControlSummary,
-): string {
+function renderStageTrack(scenario: E2eMissionScenario, mission?: MissionControlSummary): string {
   return scenario.expectedStages
     .map((stage) => {
       const status = mission?.stageStatuses[stage.id] ?? 'pending';
