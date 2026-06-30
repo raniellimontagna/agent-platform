@@ -1,3 +1,4 @@
+import type { CardProvider } from '@agent-platform/cards';
 import { type Context, Hono, type Next } from 'hono';
 import { getAgent } from '../agent.js';
 import { listArtifacts } from '../artifacts.js';
@@ -101,7 +102,19 @@ adminRoute.get('/admin/mission-control/scenarios', async (c) => {
   return c.json({ scenarios: listE2eMissionScenarios() });
 });
 
+adminRoute.get('/admin/api/mission-control/scenarios', async (c) => {
+  return c.json({ scenarios: listE2eMissionScenarios() });
+});
+
 adminRoute.get('/admin/mission-control/missions', async (c) => {
+  const limit = Number(c.req.query('limit') ?? 20);
+  const safeLimit = Number.isFinite(limit) && limit > 0 ? Math.min(Math.floor(limit), 100) : 20;
+  const missions = await buildRecentMissionSummaries(safeLimit, listE2eMissionScenarios());
+
+  return c.json({ missions });
+});
+
+adminRoute.get('/admin/api/mission-control/missions', async (c) => {
   const limit = Number(c.req.query('limit') ?? 20);
   const safeLimit = Number.isFinite(limit) && limit > 0 ? Math.min(Math.floor(limit), 100) : 20;
   const missions = await buildRecentMissionSummaries(safeLimit, listE2eMissionScenarios());
@@ -116,8 +129,12 @@ adminRoute.get('/admin/mission-control/missions/:runId', async (c) => {
   const scenario = listE2eMissionScenarios().find((item) => item.workflow === run.workflow);
   if (!scenario) return c.json({ error: 'not found' }, 404);
 
-  const [artifacts, approvals] = await Promise.all([listArtifacts(run.id), listApprovals(run.id)]);
-  return c.html(renderMissionDetailPage({ scenario, run, artifacts, approvals }));
+  const missionRuns = await listMissionRunsForSource(run);
+  const [artifacts, approvals] = await Promise.all([
+    listMissionArtifacts(missionRuns),
+    listMissionApprovals(missionRuns),
+  ]);
+  return c.html(renderMissionDetailPage({ scenario, run, missionRuns, artifacts, approvals }));
 });
 
 async function buildRecentMissionSummaries(
@@ -134,14 +151,15 @@ async function buildRecentMissionSummaries(
       const scenario = scenarioByWorkflow.get(run.workflow ?? '');
       if (!scenario) return undefined;
 
+      const missionRuns = await listMissionRunsForSource(run);
       const [artifacts, approvals] = await Promise.all([
-        listArtifacts(run.id),
-        listApprovals(run.id),
+        listMissionArtifacts(missionRuns),
+        listMissionApprovals(missionRuns),
       ]);
       const timeline = buildMissionTimeline({
         scenarioId: scenario.id,
-        runs: [run],
-        artifacts: artifacts.map((artifact) => ({ ...artifact, runId: run.id })),
+        runs: missionRuns,
+        artifacts,
         approvals,
       });
 
@@ -162,14 +180,63 @@ async function buildRecentMissionSummaries(
         artifactKinds: artifacts.map((artifact) => artifact.kind),
         approvalStatus: timeline.approval?.status ?? null,
         updatedAt: run.updatedAt.toISOString(),
-        branch: run.branch,
-        prUrl: run.prUrl,
-        testsPassed: run.testsPassed,
+        branch: timeline.metadata.branch ?? null,
+        prUrl: timeline.metadata.prUrl ?? null,
+        testsPassed: timeline.metadata.testsPassed ?? null,
       };
     }),
   );
 
   return missions.filter((mission) => mission !== undefined);
+}
+
+async function listMissionRunsForSource(
+  sourceRun: MissionControlRun,
+): Promise<MissionControlRun[]> {
+  if (!sourceRun.cardId) return [sourceRun];
+
+  const relatedRuns = await listRunsForCard(
+    sourceRun.cardProvider as CardProvider,
+    sourceRun.cardId,
+    20,
+  );
+  const sourceCreatedAt = new Date(sourceRun.createdAt).getTime();
+  const nextSourceCreatedAt = relatedRuns
+    .filter((run) => run.id !== sourceRun.id && run.workflow === sourceRun.workflow)
+    .map((run) => new Date(run.createdAt).getTime())
+    .filter((createdAt) => createdAt > sourceCreatedAt)
+    .sort((a, b) => a - b)[0];
+
+  const missionRuns = relatedRuns.filter((run) => {
+    const createdAt = new Date(run.createdAt).getTime();
+    return (
+      createdAt >= sourceCreatedAt &&
+      (nextSourceCreatedAt === undefined || createdAt < nextSourceCreatedAt)
+    );
+  });
+
+  if (!missionRuns.some((run) => run.id === sourceRun.id)) {
+    missionRuns.push(sourceRun);
+  }
+
+  return missionRuns;
+}
+
+async function listMissionArtifacts(
+  runs: MissionControlRun[],
+): Promise<Array<MissionControlArtifact & { runId: string }>> {
+  const artifactsByRun = await Promise.all(
+    runs.map(async (run) => {
+      const artifacts = await listArtifacts(run.id);
+      return artifacts.map((artifact) => ({ ...artifact, runId: run.id }));
+    }),
+  );
+  return artifactsByRun.flat();
+}
+
+async function listMissionApprovals(runs: MissionControlRun[]): Promise<MissionControlApproval[]> {
+  const approvalsByRun = await Promise.all(runs.map((run) => listApprovals(run.id)));
+  return approvalsByRun.flat();
 }
 
 function escapeHtml(value: unknown): string {
@@ -371,13 +438,17 @@ function renderContinuationState(timeline: MissionTimeline): string {
 export function renderMissionDetailPage(input: {
   scenario: E2eMissionScenario;
   run: MissionControlRun;
-  artifacts: MissionControlArtifact[];
+  missionRuns?: MissionControlRun[];
+  artifacts: Array<MissionControlArtifact & { runId?: string }>;
   approvals: MissionControlApproval[];
 }): string {
   const timeline = buildMissionTimeline({
     scenarioId: input.scenario.id,
-    runs: [input.run],
-    artifacts: input.artifacts.map((artifact) => ({ ...artifact, runId: input.run.id })),
+    runs: input.missionRuns ?? [input.run],
+    artifacts: input.artifacts.map((artifact) => ({
+      ...artifact,
+      runId: artifact.runId ?? input.run.id,
+    })),
     approvals: input.approvals,
   });
   const card = input.run.cardIdentifier ?? input.run.cardId;
