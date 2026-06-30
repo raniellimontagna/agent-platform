@@ -45,6 +45,9 @@ Ralph starts a fresh `codex exec` process per iteration. Each process reads the
 same PRD and progress log, completes one unfinished story, validates, commits,
 updates `prd.json`, appends to `progress.txt`, and exits.
 
+The Codex invocation uses `--dangerously-bypass-approvals-and-sandbox`, so run it
+only in a repository and machine context where autonomous edits are acceptable.
+
 ## PRD Shape
 
 Use `scripts/ralph/prd.json.example` as the base. Keep stories small enough for

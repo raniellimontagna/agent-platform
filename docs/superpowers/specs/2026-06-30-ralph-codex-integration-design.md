@@ -52,7 +52,7 @@ Superpowers remains the design/planning layer. The expected flow is:
 The Codex runner should call:
 
 ```bash
-codex exec --cd "$PROJECT_ROOT" --sandbox danger-full-access --ask-for-approval never "$(cat "$SCRIPT_DIR/CODEX.md")"
+codex exec --cd "$PROJECT_ROOT" --dangerously-bypass-approvals-and-sandbox "$(cat "$SCRIPT_DIR/CODEX.md")"
 ```
 
 This keeps each iteration non-interactive and lets the prompt reference

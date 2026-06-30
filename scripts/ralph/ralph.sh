@@ -95,7 +95,7 @@ agent_command_description() {
       echo "claude --dangerously-skip-permissions --print < $SCRIPT_DIR/CLAUDE.md"
       ;;
     codex)
-      echo "codex exec --cd $PROJECT_ROOT --sandbox danger-full-access --ask-for-approval never <contents of $SCRIPT_DIR/CODEX.md>"
+      echo "codex exec --cd $PROJECT_ROOT --dangerously-bypass-approvals-and-sandbox <contents of $SCRIPT_DIR/CODEX.md>"
       ;;
   esac
 }
@@ -111,8 +111,7 @@ run_agent_iteration() {
     codex)
       codex exec \
         --cd "$PROJECT_ROOT" \
-        --sandbox danger-full-access \
-        --ask-for-approval never \
+        --dangerously-bypass-approvals-and-sandbox \
         "$(cat "$SCRIPT_DIR/CODEX.md")"
       ;;
   esac
