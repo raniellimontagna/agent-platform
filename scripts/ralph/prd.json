@@ -1,0 +1,134 @@
+{
+  "project": "agent-platform",
+  "branchName": "feat/agp-e2e-studio-mission-control",
+  "description": "E2E Studio Mission Control - an internal admin experience for defining, inspecting, and safely rehearsing end-to-end agent-platform workflows with a polished mission-control interface.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Add typed E2E mission scenario registry",
+      "description": "As an operator, I need versioned E2E scenario definitions so Mission Control can describe supported workflows without hard-coded UI copy.",
+      "acceptanceCriteria": [
+        "Create a typed scenario registry for E2E Mission Control under the orchestrator API source tree",
+        "Include at least the research-to-landing workflow scenario with required labels, expected stages, risk level, and verification checklist",
+        "Add unit tests covering scenario ordering, required label names, and expected stage ids",
+        "Tests pass for the new scenario registry test file",
+        "Typecheck or package build passes for @agent-platform/orchestrator-api"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Build mission timeline view model",
+      "description": "As an operator, I need runs, artifacts, approvals, and workflow metadata normalized into a mission timeline so I can see where an E2E workflow is stopped.",
+      "acceptanceCriteria": [
+        "Create a pure timeline/view-model module that maps run-like records and artifact-like records into mission stages",
+        "Represent at least queued, planning, awaiting approval, collecting research, landing generation, PR, completed, failed, and cancelled states",
+        "Include confidence/status fields suitable for mission-control visual treatment: locked, active, passed, failed, skipped, or pending",
+        "Add unit tests for completed, awaiting-approval, failed, and research-to-landing continuation cases",
+        "Tests pass for the new timeline view-model test file",
+        "Typecheck or package build passes for @agent-platform/orchestrator-api"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Expose read-only Mission Control API endpoints",
+      "description": "As an operator, I need read-only API endpoints for scenarios and recent missions so the UI can load Mission Control data without triggering real agent runs.",
+      "acceptanceCriteria": [
+        "Add read-only routes for listing E2E scenarios and recent mission summaries",
+        "Use existing run/artifact access patterns instead of introducing a database migration",
+        "Protect admin routes with the same admin auth pattern used by existing /admin endpoints",
+        "Add route tests for unauthorized access, scenario listing, and mission summary response shape",
+        "Tests pass for the affected orchestrator API route tests",
+        "Typecheck or package build passes for @agent-platform/orchestrator-api"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Render the Mission Control dashboard shell",
+      "description": "As an operator, I want a polished Mission Control page so I can scan E2E readiness, available missions, and recent workflow state from one screen.",
+      "acceptanceCriteria": [
+        "Add a server-rendered Mission Control page following the existing orchestrator HTML route style",
+        "Show scenario cards, recent mission summaries, stage status, and a clear safe/read-only operating mode indicator",
+        "Use a Mission Control visual language with restrained gamification: mission names, readiness states, progress/status badges, and stage tracks",
+        "Do not use placeholder copy, lorem ipsum, fake controls that claim to launch real runs, or purely decorative status text",
+        "Add render tests asserting key scenario, stage, and read-only mode text is present",
+        "Tests pass for the dashboard render tests",
+        "Typecheck or package build passes for @agent-platform/orchestrator-api"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Add mission detail timeline page",
+      "description": "As an operator, I need a per-mission detail page so I can inspect stages, artifacts, approvals, costs, and next actions for a specific E2E run chain.",
+      "acceptanceCriteria": [
+        "Add a route or render function for a mission detail page keyed by run id or mission id",
+        "Show ordered stages with status, timestamps when available, artifact links, approval state, and PR/deploy metadata when available",
+        "Show explicit empty states when a mission has no artifacts, no approval, or no downstream continuation yet",
+        "Add tests for a mission with research artifact, a mission awaiting approval, and a mission with no artifacts",
+        "Tests pass for the mission detail tests",
+        "Typecheck or package build passes for @agent-platform/orchestrator-api"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Add safe launch checklist for research-to-landing E2E",
+      "description": "As an operator, I need a guided checklist for manually launching a research-to-landing E2E so I can prepare Plane labels, URLs, secrets, and validation expectations safely.",
+      "acceptanceCriteria": [
+        "Add a read-only launch checklist for the research-to-landing scenario",
+        "Checklist includes required Plane labels: ai-ready, workflow:landing-page, and optional repo:create",
+        "Checklist includes required public URL guidance and expected artifacts: research and Landing Page Brief",
+        "Checklist clearly states it does not trigger Plane, webhooks, GitHub, or live runs",
+        "Add tests asserting checklist requirements and non-triggering safety copy are rendered",
+        "Tests pass for the checklist tests",
+        "Typecheck or package build passes for @agent-platform/orchestrator-api"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Document Mission Control operations",
+      "description": "As an operator, I need runbook documentation for using Mission Control and Ralph together so the workflow is reproducible after the first implementation pass.",
+      "acceptanceCriteria": [
+        "Create or update a runbook for E2E Studio Mission Control",
+        "Document the safe read-only scope of the first version",
+        "Document how to run Ralph for this PRD and how to inspect scripts/ralph/progress.txt",
+        "Document the manual research-to-landing E2E launch flow and expected evidence",
+        "Lint passes for repository docs"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Run final verification and polish Mission Control",
+      "description": "As a maintainer, I need the completed Mission Control slice verified end to end so it is safe to continue with real replay or launch capabilities later.",
+      "acceptanceCriteria": [
+        "Run the full repository lint command",
+        "Run the full repository test command",
+        "Run the relevant orchestrator API build command",
+        "Update docs or progress notes with any known limitation left for future real replay/launch work",
+        "No unfinished Mission Control user story remains with passes=false"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}
