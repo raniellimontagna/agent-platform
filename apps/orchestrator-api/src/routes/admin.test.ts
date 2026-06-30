@@ -1,11 +1,12 @@
 import { Hono } from 'hono';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { listE2eMissionScenarios } from '../missionScenarios.js';
-import { countRunsByStatus, listApprovals, listRuns, listRunsForCard } from '../runs.js';
-import { adminRoute, renderMissionControlPage } from './admin.js';
+import { countRunsByStatus, getRun, listApprovals, listRuns, listRunsForCard } from '../runs.js';
+import { adminRoute, renderMissionControlPage, renderMissionDetailPage } from './admin.js';
 
 vi.mock('../runs.js', () => ({
   countRunsByStatus: vi.fn(),
+  getRun: vi.fn(),
   listApprovals: vi.fn(),
   listRuns: vi.fn(),
   listRunsForCard: vi.fn(),
@@ -256,6 +257,154 @@ describe('GET /admin/mission-control', () => {
     expect(html).toContain('Mission Control');
     expect(html).toContain('Read-only rehearsal mode');
     expect(html).toContain('Research landing page');
+  });
+});
+
+describe('renderMissionDetailPage', () => {
+  it('renders a mission with research artifact links and PR metadata', () => {
+    const scenario = listE2eMissionScenarios()[0]!;
+    const html = renderMissionDetailPage({
+      scenario,
+      run: {
+        id: 'run-1',
+        cardProvider: 'plane',
+        cardId: 'card-1',
+        cardIdentifier: 'AGP-91',
+        status: 'reviewing',
+        title: 'Research landing page',
+        branch: 'agent/agp-91-landing',
+        prUrl: 'https://github.com/acme/site/pull/12',
+        testsPassed: true,
+        error: null,
+        workflow: 'research_landing_page',
+        createdAt: new Date('2026-06-30T12:00:00.000Z'),
+        updatedAt: new Date('2026-06-30T12:10:00.000Z'),
+      },
+      artifacts: [
+        {
+          id: 'artifact-research',
+          kind: 'research',
+          createdAt: new Date('2026-06-30T12:06:00.000Z'),
+        },
+      ],
+      approvals: [],
+    });
+
+    expect(html).toContain('Mission Detail');
+    expect(html).toContain('Research landing page');
+    expect(html).toContain('Collecting research');
+    expect(html).toContain('/artifacts/artifact-research');
+    expect(html).toContain('agent/agp-91-landing');
+    expect(html).toContain('https://github.com/acme/site/pull/12');
+    expect(html).toContain('Tests passed');
+    expect(html).toContain('No approval recorded for this mission.');
+  });
+
+  it('renders approval state and empty downstream continuation for a mission awaiting approval', () => {
+    const scenario = listE2eMissionScenarios()[0]!;
+    const html = renderMissionDetailPage({
+      scenario,
+      run: {
+        id: 'run-1',
+        cardProvider: 'plane',
+        cardId: 'card-1',
+        cardIdentifier: 'AGP-91',
+        status: 'awaiting_approval',
+        title: 'Research landing page',
+        branch: null,
+        prUrl: null,
+        testsPassed: null,
+        error: null,
+        workflow: 'research_landing_page',
+        createdAt: new Date('2026-06-30T12:00:00.000Z'),
+        updatedAt: new Date('2026-06-30T12:05:00.000Z'),
+      },
+      artifacts: [
+        {
+          id: 'artifact-research',
+          kind: 'research',
+          createdAt: new Date('2026-06-30T12:04:00.000Z'),
+        },
+      ],
+      approvals: [
+        {
+          id: 'approval-1',
+          runId: 'run-1',
+          reason: 'plan',
+          status: 'pending',
+          summary: 'Operator approval required before code generation.',
+          requestedAt: new Date('2026-06-30T12:05:00.000Z'),
+          resolvedAt: null,
+          resolvedBy: null,
+        },
+      ],
+    });
+
+    expect(html).toContain('Awaiting approval');
+    expect(html).toContain('pending');
+    expect(html).toContain('Operator approval required before code generation.');
+    expect(html).toContain('No downstream continuation has started yet.');
+  });
+
+  it('renders an explicit empty artifact state', () => {
+    const scenario = listE2eMissionScenarios()[0]!;
+    const html = renderMissionDetailPage({
+      scenario,
+      run: {
+        id: 'run-1',
+        cardProvider: 'plane',
+        cardId: 'card-1',
+        cardIdentifier: 'AGP-91',
+        status: 'planning',
+        title: 'Research landing page',
+        branch: null,
+        prUrl: null,
+        testsPassed: null,
+        error: null,
+        workflow: 'research_landing_page',
+        createdAt: new Date('2026-06-30T12:00:00.000Z'),
+        updatedAt: new Date('2026-06-30T12:02:00.000Z'),
+      },
+      artifacts: [],
+      approvals: [],
+    });
+
+    expect(html).toContain('No artifacts recorded for this mission.');
+    expect(html).toContain('No approval recorded for this mission.');
+  });
+});
+
+describe('GET /admin/mission-control/missions/:runId', () => {
+  it('renders a protected mission detail page for a run id', async () => {
+    const { listArtifacts } = await import('../artifacts.js');
+    vi.mocked(getRun).mockResolvedValue({
+      id: 'run-1',
+      cardProvider: 'plane',
+      cardId: 'card-1',
+      cardIdentifier: 'AGP-91',
+      status: 'awaiting_approval',
+      title: 'Research landing page',
+      branch: null,
+      prUrl: null,
+      testsPassed: null,
+      error: null,
+      workflow: 'research_landing_page',
+      createdAt: new Date('2026-06-30T12:00:00.000Z'),
+      updatedAt: new Date('2026-06-30T12:05:00.000Z'),
+    } as never);
+    vi.mocked(listArtifacts).mockResolvedValue([] as never);
+    vi.mocked(listApprovals).mockResolvedValue([] as never);
+
+    const res = await app.request('/admin/mission-control/missions/run-1', { headers: auth });
+
+    expect(res.status).toBe(200);
+    expect(getRun).toHaveBeenCalledWith('run-1');
+    expect(listArtifacts).toHaveBeenCalledWith('run-1');
+    expect(listApprovals).toHaveBeenCalledWith('run-1');
+    const html = await res.text();
+    expect(html).toContain('Mission Detail');
+    expect(html).toContain('Research landing page');
+    expect(html).toContain('No artifacts recorded for this mission.');
   });
 });
 
