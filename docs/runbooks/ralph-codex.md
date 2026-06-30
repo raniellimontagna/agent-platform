@@ -102,6 +102,10 @@ For the E2E Studio Mission Control feature, start by converting the plan into
 stories such as scenario registry, run replay API, timeline data, Mission
 Control shell, gamified status treatment, and verification.
 
+For operator-facing Mission Control usage, safe scope, and manual
+research-to-landing evidence, see
+[`mission-control.md`](mission-control.md).
+
 ## Debugging
 
 Check current Ralph state:

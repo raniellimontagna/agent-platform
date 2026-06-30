@@ -4,6 +4,7 @@ Started: not started
 ## Codebase Patterns
 - Use `rtk corepack pnpm ...` for package commands in this environment because `pnpm` is not directly on PATH.
 - Mission Control scenario ids are display/control ids such as `research-to-landing`; persisted run workflow values use constants such as `research_landing_page`.
+- Biome does not currently process Markdown docs; for docs-only lint evidence, use direct `rtk corepack pnpm exec biome check <docs paths> --no-errors-on-unmatched` and note that zero files are processed.
 ---
 ## 2026-06-30 09:39 - US-001
 - Implemented a typed E2E Mission Control scenario registry for the research-to-landing workflow.
@@ -83,4 +84,16 @@ Started: not started
   - `rtk corepack pnpm --filter @agent-platform/orchestrator-api typecheck`
 - Learnings for future iterations:
   - Dashboard-only Mission Control guidance can stay read-only by rendering scenario-derived metadata plus explicit manual validation copy instead of adding action routes.
+---
+## 2026-06-30 10:06 - US-007
+- Documented Mission Control operations, read-only scope, Ralph state inspection, manual research-to-landing launch flow, expected evidence, and verification commands.
+- Files changed:
+  - docs/runbooks/mission-control.md
+  - docs/runbooks/ralph-codex.md
+  - scripts/ralph/prd.json
+  - scripts/ralph/progress.txt
+- Verification:
+  - `rtk corepack pnpm exec biome check docs/runbooks/mission-control.md docs/runbooks/ralph-codex.md --no-errors-on-unmatched`
+- Learnings for future iterations:
+  - Biome does not currently process Markdown docs, so docs-only lint evidence should use `--no-errors-on-unmatched` and record the zero-file limitation.
 ---
