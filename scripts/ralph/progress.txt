@@ -45,3 +45,16 @@ Started: not started
 - Learnings for future iterations:
   - Mission Control route tests should use the workflow constant value `research_landing_page`; the display scenario id remains `research-to-landing`.
 ---
+## 2026-06-30 09:55 - US-004
+- Implemented a protected server-rendered Mission Control dashboard shell with scenario cards, recent mission summaries, stage tracks, and read-only operating mode copy.
+- Files changed:
+  - apps/orchestrator-api/src/routes/admin.ts
+  - apps/orchestrator-api/src/routes/admin.test.ts
+  - scripts/ralph/prd.json
+  - scripts/ralph/progress.txt
+- Verification:
+  - `rtk corepack pnpm vitest run apps/orchestrator-api/src/routes/admin.test.ts`
+  - `rtk corepack pnpm --filter @agent-platform/orchestrator-api typecheck`
+- Learnings for future iterations:
+  - Mission Control UI routes can reuse the same recent mission summary shape as the JSON endpoint to keep stage/status rendering consistent.
+---

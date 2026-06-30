@@ -1,7 +1,8 @@
 import { Hono } from 'hono';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { listE2eMissionScenarios } from '../missionScenarios.js';
 import { countRunsByStatus, listApprovals, listRuns, listRunsForCard } from '../runs.js';
-import { adminRoute } from './admin.js';
+import { adminRoute, renderMissionControlPage } from './admin.js';
 
 vi.mock('../runs.js', () => ({
   countRunsByStatus: vi.fn(),
@@ -173,6 +174,88 @@ describe('GET /admin/mission-control/missions', () => {
         },
       ],
     });
+  });
+});
+
+describe('renderMissionControlPage', () => {
+  it('renders scenario readiness, recent mission stages, and read-only mode copy', () => {
+    const html = renderMissionControlPage({
+      scenarios: listE2eMissionScenarios(),
+      missions: [
+        {
+          id: 'run-1',
+          scenarioId: 'research-to-landing',
+          title: 'Research landing page',
+          card: {
+            provider: 'plane',
+            id: 'card-1',
+            identifier: 'AGP-91',
+          },
+          state: 'awaiting_approval',
+          activeStageId: 'awaiting_approval',
+          stageStatuses: {
+            queued: 'passed',
+            planning: 'passed',
+            awaiting_approval: 'active',
+            collecting_research: 'locked',
+            landing_generation: 'locked',
+            pull_request: 'locked',
+            completed: 'locked',
+          },
+          artifactKinds: ['research'],
+          approvalStatus: 'pending',
+          updatedAt: '2026-06-30T12:05:00.000Z',
+          branch: null,
+          prUrl: null,
+          testsPassed: null,
+        },
+      ],
+    });
+
+    expect(html).toContain('Mission Control');
+    expect(html).toContain('Read-only rehearsal mode');
+    expect(html).toContain('Research to landing page');
+    expect(html).toContain('required labels: ai-ready, workflow:landing-page');
+    expect(html).toContain('AGP-91');
+    expect(html).toContain('Awaiting approval');
+    expect(html).toContain('Collecting research');
+    expect(html).toContain('active');
+    expect(html).toContain('locked');
+    expect(html).not.toContain('Launch run');
+  });
+});
+
+describe('GET /admin/mission-control', () => {
+  it('renders the Mission Control dashboard shell as protected HTML', async () => {
+    const { listArtifacts } = await import('../artifacts.js');
+    vi.mocked(listRuns).mockResolvedValue([
+      {
+        id: 'run-1',
+        cardProvider: 'plane',
+        cardId: 'card-1',
+        cardIdentifier: 'AGP-91',
+        status: 'awaiting_approval',
+        title: 'Research landing page',
+        branch: null,
+        prUrl: null,
+        testsPassed: null,
+        error: null,
+        workflow: 'research_landing_page',
+        createdAt: new Date('2026-06-30T12:00:00.000Z'),
+        updatedAt: new Date('2026-06-30T12:05:00.000Z'),
+      },
+    ] as never);
+    vi.mocked(listArtifacts).mockResolvedValue([] as never);
+    vi.mocked(listApprovals).mockResolvedValue([] as never);
+
+    const res = await app.request('/admin/mission-control', { headers: auth });
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toContain('text/html');
+    const html = await res.text();
+    expect(html).toContain('Mission Control');
+    expect(html).toContain('Read-only rehearsal mode');
+    expect(html).toContain('Research landing page');
   });
 });
 
