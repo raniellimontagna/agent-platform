@@ -1,12 +1,17 @@
 import { Hono } from 'hono';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { countRunsByStatus, listRunsForCard } from '../runs.js';
+import { countRunsByStatus, listApprovals, listRuns, listRunsForCard } from '../runs.js';
 import { adminRoute } from './admin.js';
 
 vi.mock('../runs.js', () => ({
   countRunsByStatus: vi.fn(),
+  listApprovals: vi.fn(),
+  listRuns: vi.fn(),
   listRunsForCard: vi.fn(),
   ACTIVE_STATUSES: ['pending', 'planning', 'awaiting_approval', 'executing', 'reviewing'],
+}));
+vi.mock('../artifacts.js', () => ({
+  listArtifacts: vi.fn(),
 }));
 vi.mock('../env.js', () => ({ env: { RUNNER_AUTH_TOKEN: 'secret', AGENT_MAX_CONCURRENCY: 3 } }));
 vi.mock('../killswitch.js', () => ({ isPaused: vi.fn(), setPaused: vi.fn() }));
@@ -36,6 +41,138 @@ describe('GET /admin/concurrency', () => {
     expect(body.limit).toBe(3);
     expect(body.active).toBe(3); // executing 2 + planning 1
     expect(body.byStatus).toEqual({ executing: 2, completed: 5, planning: 1 });
+  });
+});
+
+describe('GET /admin/mission-control/scenarios', () => {
+  it('401 sem bearer', async () => {
+    const res = await app.request('/admin/mission-control/scenarios');
+    expect(res.status).toBe(401);
+  });
+
+  it('devolve o registro de cenarios E2E sem disparar runs', async () => {
+    const res = await app.request('/admin/mission-control/scenarios', { headers: auth });
+
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toMatchObject({
+      scenarios: [
+        {
+          id: 'research-to-landing',
+          workflow: 'research_landing_page',
+          riskLevel: 'caution',
+          requiredLabels: [{ name: 'ai-ready' }, { name: 'workflow:landing-page' }],
+          expectedStages: [
+            { id: 'queued' },
+            { id: 'planning' },
+            { id: 'awaiting_approval' },
+            { id: 'collecting_research' },
+            { id: 'landing_generation' },
+            { id: 'pull_request' },
+            { id: 'completed' },
+          ],
+        },
+      ],
+    });
+  });
+});
+
+describe('GET /admin/mission-control/missions', () => {
+  it('401 sem bearer', async () => {
+    const res = await app.request('/admin/mission-control/missions');
+    expect(res.status).toBe(401);
+  });
+
+  it('devolve resumos recentes de missoes com timeline, artefatos e aprovacao', async () => {
+    const { listArtifacts } = await import('../artifacts.js');
+    vi.mocked(listRuns).mockResolvedValue([
+      {
+        id: 'run-1',
+        cardProvider: 'plane',
+        cardId: 'card-1',
+        cardIdentifier: 'AGP-91',
+        status: 'awaiting_approval',
+        title: 'Research landing page',
+        branch: null,
+        prUrl: null,
+        testsPassed: null,
+        error: null,
+        workflow: 'research_landing_page',
+        createdAt: new Date('2026-06-30T12:00:00.000Z'),
+        updatedAt: new Date('2026-06-30T12:05:00.000Z'),
+      },
+      {
+        id: 'run-ignored',
+        cardProvider: 'plane',
+        cardId: 'card-2',
+        cardIdentifier: 'AGP-92',
+        status: 'pending',
+        title: 'Other workflow',
+        branch: null,
+        prUrl: null,
+        testsPassed: null,
+        error: null,
+        workflow: 'other-workflow',
+        createdAt: new Date('2026-06-30T12:01:00.000Z'),
+        updatedAt: new Date('2026-06-30T12:01:00.000Z'),
+      },
+    ] as never);
+    vi.mocked(listArtifacts).mockResolvedValue([
+      {
+        id: 'artifact-1',
+        kind: 'research',
+        createdAt: new Date('2026-06-30T12:04:00.000Z'),
+      },
+    ] as never);
+    vi.mocked(listApprovals).mockResolvedValue([
+      {
+        id: 'approval-1',
+        runId: 'run-1',
+        reason: 'plan',
+        status: 'pending',
+        summary: 'Operator approval required before code generation.',
+        requestedAt: new Date('2026-06-30T12:05:00.000Z'),
+        resolvedAt: null,
+        resolvedBy: null,
+      },
+    ] as never);
+
+    const res = await app.request('/admin/mission-control/missions?limit=5', { headers: auth });
+
+    expect(res.status).toBe(200);
+    expect(listRuns).toHaveBeenCalledWith(5, 0);
+    expect(listArtifacts).toHaveBeenCalledWith('run-1');
+    expect(listApprovals).toHaveBeenCalledWith('run-1');
+    await expect(res.json()).resolves.toEqual({
+      missions: [
+        {
+          id: 'run-1',
+          scenarioId: 'research-to-landing',
+          title: 'Research landing page',
+          card: {
+            provider: 'plane',
+            id: 'card-1',
+            identifier: 'AGP-91',
+          },
+          state: 'awaiting_approval',
+          activeStageId: 'awaiting_approval',
+          stageStatuses: {
+            queued: 'passed',
+            planning: 'passed',
+            awaiting_approval: 'active',
+            collecting_research: 'locked',
+            landing_generation: 'locked',
+            pull_request: 'locked',
+            completed: 'locked',
+          },
+          artifactKinds: ['research'],
+          approvalStatus: 'pending',
+          updatedAt: '2026-06-30T12:05:00.000Z',
+          branch: null,
+          prUrl: null,
+          testsPassed: null,
+        },
+      ],
+    });
   });
 });
 
