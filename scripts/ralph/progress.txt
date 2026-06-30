@@ -18,3 +18,16 @@ Started: not started
 - Learnings for future iterations:
   - Use `rtk corepack pnpm ...` in this environment because `pnpm` is not directly on PATH.
 ---
+## 2026-06-30 09:45 - US-002
+- Implemented a pure Mission Control timeline view model for run, artifact, approval, and continuation state.
+- Files changed:
+  - apps/orchestrator-api/src/missionTimeline.ts
+  - apps/orchestrator-api/src/missionTimeline.test.ts
+  - scripts/ralph/prd.json
+  - scripts/ralph/progress.txt
+- Verification:
+  - `rtk corepack pnpm vitest run apps/orchestrator-api/src/missionTimeline.test.ts`
+  - `rtk corepack pnpm --filter @agent-platform/orchestrator-api typecheck`
+- Learnings for future iterations:
+  - Mission timeline code can stay pure by accepting run-like and artifact-like records instead of importing database access modules.
+---
