@@ -93,7 +93,7 @@ Update the runner to accept:
 For Codex iterations, run:
 
 ```bash
-codex exec --cd "$PROJECT_ROOT" --sandbox danger-full-access --ask-for-approval never "$(cat "$SCRIPT_DIR/CODEX.md")"
+codex exec --cd "$PROJECT_ROOT" --dangerously-bypass-approvals-and-sandbox "$(cat "$SCRIPT_DIR/CODEX.md")"
 ```
 
 - [ ] **Step 3: Add dry-run behavior**
@@ -125,7 +125,7 @@ rtk scripts/ralph/ralph.sh --tool codex --dry-run 1
 ```
 
 Expected: prints a Codex command containing `codex exec`, `--cd /root/agent-platform`,
-`--sandbox danger-full-access`, and `--ask-for-approval never`.
+and `--dangerously-bypass-approvals-and-sandbox`.
 
 ### Task 3: Add Codex Prompt and Documentation
 

@@ -38,3 +38,6 @@ drizzle/meta/_journal.json.bak
 
 # Local MCP session state
 .mcp/
+
+# Ralph local run state
+scripts/ralph/.last-branch
