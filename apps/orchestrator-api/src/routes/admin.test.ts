@@ -224,6 +224,26 @@ describe('renderMissionControlPage', () => {
     expect(html).toContain('locked');
     expect(html).not.toContain('Launch run');
   });
+
+  it('renders the research-to-landing safe launch checklist without live triggers', () => {
+    const html = renderMissionControlPage({
+      scenarios: listE2eMissionScenarios(),
+      missions: [],
+    });
+
+    expect(html).toContain('Safe Launch Checklist');
+    expect(html).toContain('Required Plane labels');
+    expect(html).toContain('ai-ready');
+    expect(html).toContain('workflow:landing-page');
+    expect(html).toContain('Optional Plane label');
+    expect(html).toContain('repo:create');
+    expect(html).toContain('Public URLs must be reachable without private credentials.');
+    expect(html).toContain('Expected artifacts');
+    expect(html).toContain('research');
+    expect(html).toContain('Landing Page Brief');
+    expect(html).toContain('This checklist does not trigger Plane, webhooks, GitHub, or live runs.');
+    expect(html).not.toContain('Start mission');
+  });
 });
 
 describe('GET /admin/mission-control', () => {
