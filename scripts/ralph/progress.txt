@@ -58,3 +58,16 @@ Started: not started
 - Learnings for future iterations:
   - Mission Control UI routes can reuse the same recent mission summary shape as the JSON endpoint to keep stage/status rendering consistent.
 ---
+## 2026-06-30 10:00 - US-005
+- Implemented a protected Mission Control mission detail page with ordered stage status, artifact links, approval state, PR metadata, and explicit empty states.
+- Files changed:
+  - apps/orchestrator-api/src/routes/admin.ts
+  - apps/orchestrator-api/src/routes/admin.test.ts
+  - scripts/ralph/prd.json
+  - scripts/ralph/progress.txt
+- Verification:
+  - `rtk corepack pnpm vitest run apps/orchestrator-api/src/routes/admin.test.ts`
+  - `rtk corepack pnpm --filter @agent-platform/orchestrator-api typecheck`
+- Learnings for future iterations:
+  - Mission detail pages can use `getRun(id)` plus existing artifact and approval accessors instead of paging through recent mission summaries.
+---
