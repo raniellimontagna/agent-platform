@@ -1,9 +1,18 @@
 import { type Context, Hono, type Next } from 'hono';
 import { getAgent } from '../agent.js';
+import { listArtifacts } from '../artifacts.js';
 import { env } from '../env.js';
 import { isPaused, setPaused } from '../killswitch.js';
 import { logger } from '../logger.js';
-import { ACTIVE_STATUSES, countRunsByStatus, listRunsForCard } from '../runs.js';
+import {
+  ACTIVE_STATUSES,
+  countRunsByStatus,
+  listApprovals,
+  listRuns,
+  listRunsForCard,
+} from '../runs.js';
+import { listE2eMissionScenarios } from '../missionScenarios.js';
+import { buildMissionTimeline } from '../missionTimeline.js';
 
 export const adminRoute = new Hono();
 
@@ -46,6 +55,62 @@ adminRoute.get('/admin/concurrency', async (c) => {
   const byStatus = await countRunsByStatus();
   const active = ACTIVE_STATUSES.reduce((sum, s) => sum + (byStatus[s] ?? 0), 0);
   return c.json({ limit: env.AGENT_MAX_CONCURRENCY, active, byStatus });
+});
+
+adminRoute.get('/admin/mission-control/scenarios', async (c) => {
+  return c.json({ scenarios: listE2eMissionScenarios() });
+});
+
+adminRoute.get('/admin/mission-control/missions', async (c) => {
+  const limit = Number(c.req.query('limit') ?? 20);
+  const safeLimit = Number.isFinite(limit) && limit > 0 ? Math.min(Math.floor(limit), 100) : 20;
+  const scenarios = listE2eMissionScenarios();
+  const scenarioByWorkflow = new Map(scenarios.map((scenario) => [scenario.workflow, scenario]));
+  const runs = (await listRuns(safeLimit, 0)).filter((run) =>
+    scenarioByWorkflow.has(run.workflow ?? ''),
+  );
+
+  const missions = await Promise.all(
+    runs.map(async (run) => {
+      const scenario = scenarioByWorkflow.get(run.workflow ?? '');
+      if (!scenario) return undefined;
+
+      const [artifacts, approvals] = await Promise.all([
+        listArtifacts(run.id),
+        listApprovals(run.id),
+      ]);
+      const timeline = buildMissionTimeline({
+        scenarioId: scenario.id,
+        runs: [run],
+        artifacts: artifacts.map((artifact) => ({ ...artifact, runId: run.id })),
+        approvals,
+      });
+
+      return {
+        id: run.id,
+        scenarioId: scenario.id,
+        title: run.title,
+        card: {
+          provider: run.cardProvider,
+          id: run.cardId,
+          identifier: run.cardIdentifier,
+        },
+        state: timeline.state,
+        activeStageId: timeline.activeStageId,
+        stageStatuses: Object.fromEntries(
+          timeline.stages.map((stage) => [stage.id, stage.status] as const),
+        ),
+        artifactKinds: artifacts.map((artifact) => artifact.kind),
+        approvalStatus: timeline.approval?.status ?? null,
+        updatedAt: run.updatedAt.toISOString(),
+        branch: run.branch,
+        prUrl: run.prUrl,
+        testsPassed: run.testsPassed,
+      };
+    }),
+  );
+
+  return c.json({ missions: missions.filter((mission) => mission !== undefined) });
 });
 
 adminRoute.get('/admin/card-runs', async (c) => {
