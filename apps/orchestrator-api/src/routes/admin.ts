@@ -12,7 +12,11 @@ import {
   listRuns,
   listRunsForCard,
 } from '../runs.js';
-import { listE2eMissionScenarios, type E2eMissionScenario } from '../missionScenarios.js';
+import {
+  RESEARCH_TO_LANDING_SCENARIO_ID,
+  listE2eMissionScenarios,
+  type E2eMissionScenario,
+} from '../missionScenarios.js';
 import {
   buildMissionTimeline,
   type MissionTimeline,
@@ -264,6 +268,41 @@ function renderMissionRow(
   </article>`;
 }
 
+function renderLaunchChecklist(scenario: E2eMissionScenario | undefined): string {
+  if (!scenario) {
+    return '<p>No research-to-landing scenario registered.</p>';
+  }
+
+  const requiredLabels = scenario.requiredLabels.map((label) => label.name).join(', ');
+  const checklist = scenario.verificationChecklist
+    .map((item) => `<li>${escapeHtml(item.label)}</li>`)
+    .join('');
+
+  return `<div class="checklist">
+    <div>
+      <h3>Required Plane labels</h3>
+      <p>${escapeHtml(requiredLabels)}</p>
+    </div>
+    <div>
+      <h3>Optional Plane label</h3>
+      <p>repo:create</p>
+    </div>
+    <div>
+      <h3>Public URL guidance</h3>
+      <p>Public URLs must be reachable without private credentials.</p>
+    </div>
+    <div>
+      <h3>Expected artifacts</h3>
+      <p>research and Landing Page Brief</p>
+    </div>
+    <div class="checklist-wide">
+      <h3>Manual validation checklist</h3>
+      <ol>${checklist}</ol>
+    </div>
+    <p class="safe-copy">This checklist does not trigger Plane, webhooks, GitHub, or live runs.</p>
+  </div>`;
+}
+
 function renderDetailStage(stage: MissionTimelineStage): string {
   const artifacts =
     stage.artifactKinds.length > 0
@@ -439,6 +478,7 @@ export function renderMissionControlPage(input: {
   const missionCards = input.missions
     .map((mission) => renderMissionRow(mission, scenarioById.get(mission.scenarioId)))
     .join('');
+  const researchToLanding = scenarioById.get(RESEARCH_TO_LANDING_SCENARIO_ID);
 
   return `<!doctype html>
 <html lang="en">
@@ -467,6 +507,10 @@ export function renderMissionControlPage(input: {
     .scenario-head, .mission-meta { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
     .labels { margin-top: 12px; font-weight: 650; color: var(--ink); }
     ol { margin: 10px 0 0; padding-left: 20px; color: var(--muted); }
+    .checklist { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+    .checklist > div, .safe-copy { border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: #f8fafc; margin: 0; }
+    .checklist-wide, .safe-copy { grid-column: 1 / -1; }
+    .safe-copy { color: var(--ink); font-weight: 650; }
     .badge { display: inline-flex; align-items: center; height: 24px; padding: 0 8px; border-radius: 999px; font-size: 12px; font-weight: 700; background: #eef2f6; color: #344054; white-space: nowrap; }
     .risk-caution, .state-awaiting_approval { background: #fff4df; color: var(--amber); }
     .risk-safe, .state-completed { background: #e6f6f3; color: var(--green); }
@@ -485,7 +529,7 @@ export function renderMissionControlPage(input: {
     dt { color: var(--muted); font-size: 12px; }
     dd { margin: 2px 0 0; overflow-wrap: anywhere; }
     a { color: var(--blue); }
-    @media (max-width: 900px) { header, main { padding-left: 14px; padding-right: 14px; } .summary, .grid, dl { grid-template-columns: 1fr; } }
+    @media (max-width: 900px) { header, main { padding-left: 14px; padding-right: 14px; } .summary, .grid, .checklist, dl { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -502,6 +546,10 @@ export function renderMissionControlPage(input: {
     <section>
       <h2>Mission Readiness</h2>
       <div class="grid">${scenarioCards || '<p>No E2E scenarios registered.</p>'}</div>
+    </section>
+    <section>
+      <h2>Safe Launch Checklist</h2>
+      ${renderLaunchChecklist(researchToLanding)}
     </section>
     <section>
       <h2>Recent Missions</h2>

@@ -71,3 +71,16 @@ Started: not started
 - Learnings for future iterations:
   - Mission detail pages can use `getRun(id)` plus existing artifact and approval accessors instead of paging through recent mission summaries.
 ---
+## 2026-06-30 10:02 - US-006
+- Implemented a read-only research-to-landing safe launch checklist in Mission Control with required Plane labels, optional repo:create guidance, public URL expectations, expected artifacts, and explicit non-triggering safety copy.
+- Files changed:
+  - apps/orchestrator-api/src/routes/admin.ts
+  - apps/orchestrator-api/src/routes/admin.test.ts
+  - scripts/ralph/prd.json
+  - scripts/ralph/progress.txt
+- Verification:
+  - `rtk corepack pnpm vitest run apps/orchestrator-api/src/routes/admin.test.ts`
+  - `rtk corepack pnpm --filter @agent-platform/orchestrator-api typecheck`
+- Learnings for future iterations:
+  - Dashboard-only Mission Control guidance can stay read-only by rendering scenario-derived metadata plus explicit manual validation copy instead of adding action routes.
+---
