@@ -111,3 +111,95 @@ and typecheck:
 rtk corepack pnpm vitest run apps/orchestrator-api/src/routes/admin.test.ts
 rtk corepack pnpm --filter @agent-platform/orchestrator-api typecheck
 ```
+
+## Next Session Checklist
+
+Use this checklist when resuming the Mission Control rollout.
+
+### 1. Sync and Verify Local State
+
+```bash
+rtk git switch main
+rtk git pull --ff-only origin main
+rtk corepack pnpm --filter @agent-platform/orchestrator-api build
+rtk corepack pnpm lint
+rtk corepack pnpm test
+```
+
+Expected: local `main` matches `origin/main`; build, lint, and tests pass.
+
+### 2. Deploy Orchestrator
+
+Deploy the updated orchestrator so the new `/admin/mission-control` routes are
+available in the Proxmox environment.
+
+```bash
+rtk infra/deploy/deploy.sh orchestrator
+```
+
+If deploy fails because of disk pressure on LXC 201, use the disk cleanup notes
+in [`proxmox-estado-atual.md`](proxmox-estado-atual.md) before retrying.
+
+### 3. Smoke Mission Control Endpoints
+
+Use the deployed orchestrator URL and the same bearer token used for other
+admin endpoints.
+
+```bash
+rtk curl -H "Authorization: Bearer <RUNNER_AUTH_TOKEN>" \
+  http://<orchestrator-host>:3000/admin/api/mission-control/scenarios
+
+rtk curl -H "Authorization: Bearer <RUNNER_AUTH_TOKEN>" \
+  http://<orchestrator-host>:3000/admin/api/mission-control/missions
+```
+
+Then open the HTML dashboard in a browser:
+
+```text
+http://<orchestrator-host>:3000/admin/mission-control
+```
+
+Expected:
+
+- scenarios endpoint returns `research-to-landing`;
+- missions endpoint returns recent mission summaries, or an empty list if none
+  exist yet;
+- dashboard shows read-only rehearsal mode and the safe launch checklist.
+
+### 4. Run One Manual Research-to-Landing E2E
+
+In Plane workspace `attodev`, project `Agent Platform` (`AGP`), create or reuse
+a card with:
+
+- `ai-ready`;
+- `workflow:landing-page`;
+- one explicit public URL in the description;
+- optional `repo:create` if the test should create a generated repo;
+- no `agent:landing-page` and no `agent:data-collector`.
+
+After the planner comments the initial plan, add `approved` to continue.
+
+Expected E2E evidence:
+
+- the first run has workflow `research_landing_page`;
+- the first run stores a `research` artifact;
+- the artifact includes `## Landing Page Brief` when evidence exists;
+- the orchestrator comments that it started the landing-page continuation;
+- the second run uses `landing-page-agent`;
+- Mission Control shows the mission progressing into `landing_generation` or
+  later;
+- the detail page shows artifacts, approval state, continuation state, and PR
+  metadata when available.
+
+### 5. Decide the Next Feature Slice
+
+After the first real E2E, choose one follow-up:
+
+- **Run Replay Safe Mode:** replay saved Plane/webhook fixtures without live
+  side effects.
+- **Mission Filters:** filter dashboard by status, provider, card identifier, or
+  scenario.
+- **Artifact Inspection:** show artifact excerpts and source links directly in
+  Mission Control.
+- **Operator Actions:** add explicit, tested controls for approve/retry/cancel.
+  Do this only after read-only behavior has been validated.
