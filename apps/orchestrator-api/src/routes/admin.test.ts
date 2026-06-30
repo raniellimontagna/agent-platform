@@ -118,6 +118,23 @@ describe('GET /admin/mission-control/missions', () => {
         updatedAt: new Date('2026-06-30T12:01:00.000Z'),
       },
     ] as never);
+    vi.mocked(listRunsForCard).mockResolvedValue([
+      {
+        id: 'run-1',
+        cardProvider: 'plane',
+        cardId: 'card-1',
+        cardIdentifier: 'AGP-91',
+        status: 'awaiting_approval',
+        title: 'Research landing page',
+        branch: null,
+        prUrl: null,
+        testsPassed: null,
+        error: null,
+        workflow: 'research_landing_page',
+        createdAt: new Date('2026-06-30T12:00:00.000Z'),
+        updatedAt: new Date('2026-06-30T12:05:00.000Z'),
+      },
+    ] as never);
     vi.mocked(listArtifacts).mockResolvedValue([
       {
         id: 'artifact-1',
@@ -174,6 +191,96 @@ describe('GET /admin/mission-control/missions', () => {
           testsPassed: null,
         },
       ],
+    });
+  });
+
+  it('inclui run de continuidade da landing page na timeline da missao', async () => {
+    const { listArtifacts } = await import('../artifacts.js');
+    vi.mocked(listRuns).mockResolvedValue([
+      {
+        id: 'run-collector',
+        cardProvider: 'plane',
+        cardId: 'card-1',
+        cardIdentifier: 'AGP-91',
+        status: 'completed',
+        title: 'Research landing page',
+        branch: null,
+        prUrl: null,
+        testsPassed: null,
+        error: null,
+        workflow: 'research_landing_page',
+        createdAt: new Date('2026-06-30T12:00:00.000Z'),
+        updatedAt: new Date('2026-06-30T12:05:00.000Z'),
+      },
+    ] as never);
+    vi.mocked(listRunsForCard).mockResolvedValue([
+      {
+        id: 'run-landing',
+        cardProvider: 'plane',
+        cardId: 'card-1',
+        cardIdentifier: 'AGP-91',
+        status: 'planning',
+        title: 'Research landing page — landing page',
+        branch: 'agent/agp-91-landing',
+        prUrl: null,
+        testsPassed: null,
+        error: null,
+        workflow: null,
+        createdAt: new Date('2026-06-30T12:06:00.000Z'),
+        updatedAt: new Date('2026-06-30T12:07:00.000Z'),
+      },
+      {
+        id: 'run-collector',
+        cardProvider: 'plane',
+        cardId: 'card-1',
+        cardIdentifier: 'AGP-91',
+        status: 'completed',
+        title: 'Research landing page',
+        branch: null,
+        prUrl: null,
+        testsPassed: null,
+        error: null,
+        workflow: 'research_landing_page',
+        createdAt: new Date('2026-06-30T12:00:00.000Z'),
+        updatedAt: new Date('2026-06-30T12:05:00.000Z'),
+      },
+    ] as never);
+    vi.mocked(listArtifacts).mockResolvedValue([
+      {
+        id: 'artifact-research',
+        kind: 'research',
+        createdAt: new Date('2026-06-30T12:04:00.000Z'),
+      },
+    ] as never);
+    vi.mocked(listApprovals).mockResolvedValue([] as never);
+
+    const res = await app.request('/admin/mission-control/missions?limit=5', { headers: auth });
+
+    expect(res.status).toBe(200);
+    expect(listRunsForCard).toHaveBeenCalledWith('plane', 'card-1', 20);
+    await expect(res.json()).resolves.toMatchObject({
+      missions: [
+        {
+          id: 'run-collector',
+          state: 'landing_generation',
+          activeStageId: 'landing_generation',
+          branch: 'agent/agp-91-landing',
+          stageStatuses: {
+            collecting_research: 'passed',
+            landing_generation: 'active',
+            pull_request: 'pending',
+          },
+        },
+      ],
+    });
+  });
+
+  it('mantem alias /admin/api para os endpoints documentados', async () => {
+    const res = await app.request('/admin/api/mission-control/scenarios', { headers: auth });
+
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toMatchObject({
+      scenarios: [{ id: 'research-to-landing' }],
     });
   });
 });
@@ -422,6 +529,23 @@ describe('GET /admin/mission-control/missions/:runId', () => {
       createdAt: new Date('2026-06-30T12:00:00.000Z'),
       updatedAt: new Date('2026-06-30T12:05:00.000Z'),
     } as never);
+    vi.mocked(listRunsForCard).mockResolvedValue([
+      {
+        id: 'run-1',
+        cardProvider: 'plane',
+        cardId: 'card-1',
+        cardIdentifier: 'AGP-91',
+        status: 'awaiting_approval',
+        title: 'Research landing page',
+        branch: null,
+        prUrl: null,
+        testsPassed: null,
+        error: null,
+        workflow: 'research_landing_page',
+        createdAt: new Date('2026-06-30T12:00:00.000Z'),
+        updatedAt: new Date('2026-06-30T12:05:00.000Z'),
+      },
+    ] as never);
     vi.mocked(listArtifacts).mockResolvedValue([] as never);
     vi.mocked(listApprovals).mockResolvedValue([] as never);
 
