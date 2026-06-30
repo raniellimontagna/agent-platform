@@ -1,3 +1,20 @@
 # Ralph Progress Log
 Started: not started
 ---
+## Codebase Patterns
+- Use `rtk corepack pnpm ...` for package commands in this environment because `pnpm` is not directly on PATH.
+---
+## 2026-06-30 09:39 - US-001
+- Implemented a typed E2E Mission Control scenario registry for the research-to-landing workflow.
+- Files changed:
+  - apps/orchestrator-api/src/missionScenarios.ts
+  - apps/orchestrator-api/src/missionScenarios.test.ts
+  - scripts/ralph/prd.json
+  - scripts/ralph/progress.txt
+- Verification:
+  - `rtk corepack pnpm vitest run apps/orchestrator-api/src/missionScenarios.test.ts`
+  - `rtk corepack pnpm --filter @agent-platform/orchestrator-api typecheck`
+  - `rtk corepack pnpm --filter @agent-platform/orchestrator-api build`
+- Learnings for future iterations:
+  - Use `rtk corepack pnpm ...` in this environment because `pnpm` is not directly on PATH.
+---
