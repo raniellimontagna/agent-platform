@@ -5,16 +5,16 @@ milestone_name: milestone
 current_phase: 06
 current_phase_name: Worker and Eval Hub Refactor
 status: executing
-stopped_at: Completed 06-01-PLAN.md; ready for 06-02-PLAN.md
-last_updated: "2026-07-02T18:03:41.159Z"
+stopped_at: Completed 06-02-PLAN.md; ready for 06-03-PLAN.md
+last_updated: "2026-07-02T18:17:30.177Z"
 last_activity: 2026-07-02
-last_activity_desc: Phase 06 plan 06-01 complete; 06-02 codegen seams ready
+last_activity_desc: Phase 06 plan 06-02 complete
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 20
-  completed_plans: 15
-  percent: 75
+  completed_plans: 16
+  percent: 80
 ---
 
 # Project State
@@ -25,24 +25,24 @@ See: `.planning/PROJECT.md` (updated 2026-07-02)
 
 **Core value:** Recover control of `agent-platform` through Plane-first docs,
 legacy removal, modular flow refactors, and verification gates.
-**Current focus:** Phase 06 — Worker and Eval Hub Refactor (06-01 complete; 06-02 next)
+**Current focus:** Phase 06 — Worker and Eval Hub Refactor (06-02 complete; 06-03 next)
 
 ## Current Position
 
 Phase: 06 — Worker and Eval Hub Refactor
-Plan: 06-02 — Codegen Seams
+Plan: 06-03 — Eval Harness Seams
 Status: Ready to execute
-Last activity: 2026-07-02 — Phase 06 plan 06-01 complete
+Last activity: 2026-07-02 — Phase 06 plan 06-02 complete
 
-Progress: [████████░░] 75%
+Progress: [████████░░] 80%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 24
-- Average duration: ~23 minutes
-- Total execution time: ~2.7 hours documented effort
+- Total plans completed: 25
+- Average duration: ~22 minutes
+- Total execution time: ~2.85 hours documented effort
 
 **By Phase:**
 
@@ -53,7 +53,7 @@ Progress: [████████░░] 75%
 | 3. Plane-Only Provider Cutover | 5 | 5 | ~14m |
 | 4. Operational Flow Reorganization | 2 | 2 | ~6m56s |
 | 5. Orchestrator Hub Refactor | 3 | 3 | ~10m30s |
-| 6. Worker and Eval Hub Refactor | 1 | 4 | 11m45s |
+| 6. Worker and Eval Hub Refactor | 2 | 4 | ~10m29s |
 | 7. Final Verification and Governance Closeout | 0 | 2 | - |
 | 05 | 3 | - | - |
 | 03 | 5 | - | - |
@@ -61,8 +61,8 @@ Progress: [████████░░] 75%
 
 **Recent Trend:**
 
-- Last 5 completed plans: 04-02, 05-01, 05-02, 05-03, 06-01 all complete.
-- Trend: Phase 6 has started with runner seams extracted behind fail-first characterization while route/provider/schema/package surfaces stayed unchanged.
+- Last 5 completed plans: 05-01, 05-02, 05-03, 06-01, 06-02 all complete.
+- Trend: Phase 6 now has runner and codegen seams extracted behind fail-first characterization while route/provider/schema/package surfaces stayed unchanged.
 
 **Recent Plan Metrics:**
 
@@ -79,6 +79,7 @@ Progress: [████████░░] 75%
 | Phase 05 P02 | 9m46s | 2 tasks | 7 files |
 | Phase 05 P03 | 16m26s | 2 tasks | 7 files |
 | Phase 06 P01 | 11m45s | 3 tasks | 9 files |
+| Phase 06 P02 | 9m12s | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -122,6 +123,9 @@ Progress: [████████░░] 75%
 - [Phase 06]: 06-01 kept runJob.ts as the public worker facade and compatibility re-export owner for existing tests and jobs routes. — Preserves route imports and public runner compatibility while moving implementation details behind local seams.
 - [Phase 06]: 06-01 kept provider, Git, worktree, sandbox, Higgsfield, and validation-policy behavior in existing owners; new runner seam modules only delegate or orchestrate. — Avoids provider behavior changes, new shell paths, package changes, and schema changes in a behavior-preserving refactor.
 - [Phase 06]: 06-01 uses dependency-injected seam helpers for characterization tests instead of changing product/runtime behavior. — Allows deterministic RED/GREEN coverage for dispatch, validation, callback, and retry behavior without live services.
+- [Phase 06]: 06-02 kept codegen.ts as the public facade while moving prompt, JSON, file, selection, and fix helpers into worker-local modules.
+- [Phase 06]: 06-02 preserved strong_coder JSON mode, repair behavior, accepted/rejected file handling, dry-run compatibility, and package/schema surfaces with focused tests.
+- [Phase 06]: 06-02 left out-of-scope 06-01 runner Biome formatting findings untouched per plan ownership boundaries.
 
 ### Pending Todos
 
@@ -140,9 +144,10 @@ Progress: [████████░░] 75%
 |----------|------|--------|-------------|
 | Provider deletion | Runtime Linear removal until schema/env/test gates pass | Deferred to Phase 3 | 2026-07-02 |
 | File moves/deletion | Historical docs remain in place until index is reviewed | Deferred to later cleanup | 2026-07-02 |
+| Full verify formatting | `rtk corepack pnpm verify` is blocked by 06-01 runner Biome formatting/import findings outside 06-02 scope | Deferred to Phase 06 cleanup | 2026-07-02 |
 
 ## Session Continuity
 
-Last session: 2026-07-02T18:03:41.149Z
-Stopped at: Completed 06-01-PLAN.md; ready for 06-02-PLAN.md
+Last session: 2026-07-02T18:17:30.167Z
+Stopped at: Completed 06-02-PLAN.md; ready for 06-03-PLAN.md
 Resume file: None
