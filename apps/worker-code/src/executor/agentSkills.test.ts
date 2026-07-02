@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -48,6 +48,52 @@ describe('agentSkills', () => {
     expect(instructions).toContain('Prefer Higgsfield models covered');
   });
 
+  it('injeta contrato GSD para o pipeline de software', () => {
+    const coder = buildSkillInstructions('coder-agent', ['typescript']);
+    const pipeline = buildSkillInstructions('software-delivery-pipeline', ['role:pipeline']);
+
+    for (const instructions of [coder, pipeline]) {
+      expect(instructions).toContain('## Skill: gsd');
+      expect(instructions).toContain('Git. Ship. Done.');
+      expect(instructions).toContain('Discuss -> Plan -> Execute -> Verify -> Ship');
+      expect(instructions).toContain('fresh-context handoff');
+    }
+  });
+
+  it('mantem coder-agent como alias compativel do pipeline de software', () => {
+    const registry = loadAgentSkillRegistry();
+
+    expect(registry?.agentSkills['coder-agent']).toEqual(
+      registry?.agentSkills['software-delivery-pipeline'],
+    );
+    expect(registry?.agentSkills['software-delivery-pipeline']).toEqual([
+      'gsd',
+      'software-planner',
+      'software-coder',
+      'software-critic',
+      'software-pr',
+      'software-reporter',
+    ]);
+  });
+
+  it('mantem bundles especializados para landing e research', () => {
+    const registry = loadAgentSkillRegistry();
+
+    expect(registry?.agentSkills['landing-page-agent']).toEqual(
+      expect.arrayContaining([
+        'landing-page-production',
+        'landing-page-style-recipes',
+        'frontend-design',
+        'higgsfield-media-generation',
+      ]),
+    );
+    expect(registry?.agentSkills['data-collector-agent']).toEqual([
+      'research-planner',
+      'research-data-collection',
+      'instagram-public-research',
+    ]);
+  });
+
   it('injeta skill de coleta para data-collector-agent', () => {
     const instructions = buildSkillInstructions('data-collector-agent', ['research']);
 
@@ -86,6 +132,15 @@ describe('agentSkills', () => {
 
     expect(buildSkillInstructions('reviewer-agent', ['review'], root)).toBe(
       'Agente selecionado: reviewer-agent (review).',
+    );
+  });
+
+  it('documenta coder-agent como compatibilidade e software-delivery-pipeline como identidade atual', async () => {
+    const docs = await readFile('docs/runbooks/agent-skills.md', 'utf8');
+
+    expect(docs).toContain('`coder-agent` permanece como chave compativel');
+    expect(docs).toContain(
+      '`software-delivery-pipeline` como identidade atual mais clara do pipeline',
     );
   });
 });
