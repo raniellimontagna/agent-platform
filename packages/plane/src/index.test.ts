@@ -111,6 +111,40 @@ describe('createPlaneGateway', () => {
     });
   });
 
+  it('omits external provenance for ordinary Plane card creation', async () => {
+    let capturedBody: string | undefined;
+    globalThis.fetch = vi.fn().mockImplementation(async (_url: string, init: RequestInit) => {
+      capturedBody = String(init.body ?? '');
+      return {
+        ok: true,
+        json: async () => ({
+          id: 'work-ordinary',
+          sequence_id: 9,
+          name: 'Ordinary',
+          description_stripped: 'Body',
+          labels: [],
+          project_detail: { identifier: 'AGP' },
+        }),
+      } as Response;
+    });
+
+    const gateway = createPlaneGateway({
+      baseUrl: 'http://plane.local',
+      apiKey: 'key',
+      workspaceSlug: 'attodev',
+      projectId: 'project-1',
+    });
+
+    await gateway.createCard({
+      title: 'Ordinary',
+      description: 'Body',
+    });
+
+    const body = JSON.parse(String(capturedBody)) as Record<string, unknown>;
+    expect(body).not.toHaveProperty('external_source');
+    expect(body).not.toHaveProperty('external_id');
+  });
+
   it('accepts empty responses for write paths', async () => {
     const responses = [
       new Response(null, { status: 204, statusText: 'No Content' }),
