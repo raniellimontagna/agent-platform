@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_phase: 06
-current_phase_name: Worker and Eval Hub Refactor
-status: executing
-stopped_at: Completed 06-03-PLAN.md; ready for 06-04-PLAN.md
-last_updated: "2026-07-02T18:39:14.768Z"
+status: completed
+stopped_at: Completed 06-04-PLAN.md; ready for Phase 07
+last_updated: "2026-07-02T18:54:49.239Z"
 last_activity: 2026-07-02
-last_activity_desc: Phase 06 plan 06-03 complete
+last_activity_desc: Phase 06 marked complete
 progress:
   total_phases: 7
-  completed_phases: 5
-  total_plans: 20
-  completed_plans: 17
-  percent: 85
+  completed_phases: 6
+  total_plans: 18
+  completed_plans: 18
+  percent: 86
+current_phase_name: Worker and Eval Hub Refactor
 ---
 
 # Project State
@@ -25,16 +25,16 @@ See: `.planning/PROJECT.md` (updated 2026-07-02)
 
 **Core value:** Recover control of `agent-platform` through Plane-first docs,
 legacy removal, modular flow refactors, and verification gates.
-**Current focus:** Phase 06 — Worker and Eval Hub Refactor (06-03 complete; 06-04 next)
+**Current focus:** Phase 06 complete — Phase 07 Final Verification and Governance Closeout next
 
 ## Current Position
 
-Phase: 06 — Worker and Eval Hub Refactor
+Phase: 06 — COMPLETE
 Plan: 06-04 — Research Output Seams
-Status: Ready to execute
-Last activity: 2026-07-02 — Phase 06 plan 06-03 complete
+Status: Phase 06 complete
+Last activity: 2026-07-02 — Phase 06 marked complete
 
-Progress: [█████████░] 85%
+Progress: [█████████░] 86%
 
 ## Performance Metrics
 
@@ -81,6 +81,7 @@ Progress: [█████████░] 85%
 | Phase 06 P01 | 11m45s | 3 tasks | 9 files |
 | Phase 06 P02 | 9m12s | 3 tasks | 11 files |
 | Phase 06 P03 | 13m58s | 3 tasks | 11 files |
+| Phase 06 P04 | 8m18s | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -129,6 +130,8 @@ Progress: [█████████░] 85%
 - [Phase 06]: 06-02 left out-of-scope 06-01 runner Biome formatting findings untouched per plan ownership boundaries.
 - [Phase 06]: 06-03 kept runEval.ts as the CLI/report artifact facade while moving eval loader, runner, renderer, trend, and harness internals into worker-local modules. — Preserves CLI/report artifact compatibility while reducing eval hub size.
 - [Phase 06]: 06-03 preserved eval report semantics, score thresholds, worker dry-run behavior, package/schema surfaces, provider behavior, and route surfaces. — Matches Phase 6 behavior-preserving scope fences and 06-03 verification gates.
+- [Phase 06]: 06-04 kept provider request execution, policy decisions, secret requirements, and fallback behavior in existing provider modules while moving only pure research output helpers.
+- [Phase 06]: 06-04 preserved research pack headings, Landing Page Brief, limitation wording, source handling, redaction behavior, package/schema surfaces, route surfaces, deploy config, workflow labels, model aliases, and Plane behavior.
 
 ### Pending Todos
 
@@ -151,6 +154,6 @@ Progress: [█████████░] 85%
 
 ## Session Continuity
 
-Last session: 2026-07-02T18:39:04.600Z
-Stopped at: Completed 06-03-PLAN.md; ready for 06-04-PLAN.md
+Last session: 2026-07-02T18:53:29.292Z
+Stopped at: Completed 06-04-PLAN.md; ready for Phase 07
 Resume file: None
