@@ -78,10 +78,6 @@ describe('codegen selection helpers', () => {
   });
 
   it('chunks selected targets without changing order', () => {
-    expect(chunkArray(['a', 'b', 'c', 'd', 'e'], 2)).toEqual([
-      ['a', 'b'],
-      ['c', 'd'],
-      ['e'],
-    ]);
+    expect(chunkArray(['a', 'b', 'c', 'd', 'e'], 2)).toEqual([['a', 'b'], ['c', 'd'], ['e']]);
   });
 });

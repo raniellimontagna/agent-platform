@@ -36,9 +36,9 @@ describe('extractJson', () => {
   });
 
   it('includes a compact sample when the model response has no JSON object', () => {
-    expect(() =>
-      extractJson('sem json aqui\ncom quebras de linha e texto explicativo'),
-    ).toThrow('Amostra: sem json aqui com quebras de linha e texto explicativo');
+    expect(() => extractJson('sem json aqui\ncom quebras de linha e texto explicativo')).toThrow(
+      'Amostra: sem json aqui com quebras de linha e texto explicativo',
+    );
   });
 });
 

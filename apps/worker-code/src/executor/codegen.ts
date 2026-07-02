@@ -1,7 +1,5 @@
 import { type LlmClient, type TokenUsage, estimateCostUsd } from '@agent-platform/llm';
 import type { Logger } from 'pino';
-import { buildExamples, readConventions } from './context.js';
-import { buildFixCandidateFiles } from './codegenFixes.js';
 import {
   applyFiles,
   filterAllowedFiles,
@@ -10,19 +8,17 @@ import {
   readCurrentFiles,
   readWorktreeFiles,
 } from './codegenFiles.js';
+import { buildFixCandidateFiles } from './codegenFixes.js';
 import { completeJson, responseSchema } from './codegenJson.js';
+import { FIX_PROMPT, GENERATE_PROMPT, buildCoderInstructions } from './codegenPrompts.js';
 import {
-  buildCoderInstructions,
-  FIX_PROMPT,
-  GENERATE_PROMPT,
-} from './codegenPrompts.js';
-import {
+  MAX_GENERATE_FILES_PER_CALL,
   buildGenerationTargets,
   chunkArray,
-  MAX_GENERATE_FILES_PER_CALL,
   normalizeSelectedFiles,
   selectFiles,
 } from './codegenSelection.js';
+import { buildExamples, readConventions } from './context.js';
 
 export {
   buildFixCandidateFiles,

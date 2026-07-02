@@ -1,8 +1,8 @@
-import { type LlmClient, type TokenUsage } from '@agent-platform/llm';
+import type { LlmClient, TokenUsage } from '@agent-platform/llm';
 import type { Logger } from 'pino';
+import type { CodegenFile } from './codegenFiles.js';
 import { completeJson, selectSchema } from './codegenJson.js';
 import { SELECT_PROMPT } from './codegenPrompts.js';
-import type { CodegenFile } from './codegenFiles.js';
 
 export interface FileSelection {
   edit: string[];

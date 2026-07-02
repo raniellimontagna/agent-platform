@@ -98,7 +98,10 @@ export function filterAllowedFiles(
   return { files: out, dropped };
 }
 
-export function formatAvailableFiles(repoFiles: string[], generatedFiles: { path: string }[]): string {
+export function formatAvailableFiles(
+  repoFiles: string[],
+  generatedFiles: { path: string }[],
+): string {
   return [...new Set([...repoFiles, ...generatedFiles.map((file) => file.path)])]
     .slice(0, 900)
     .join('\n');
