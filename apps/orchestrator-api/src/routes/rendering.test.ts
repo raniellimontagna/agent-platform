@@ -1,10 +1,10 @@
 import { Hono } from 'hono';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { countRunsByStatus } from '../runs.js';
-import { escapeHtml, formatDate, humanizeStatus } from './rendering.js';
-import { requireRunnerAuth } from './routeAuth.js';
 import { adminRoute, renderMissionControlPage } from './admin.js';
 import { renderRegistryPage } from './registry.js';
+import { escapeHtml, formatDate, humanizeStatus } from './rendering.js';
+import { requireRunnerAuth } from './routeAuth.js';
 
 vi.mock('../env.js', () => ({ env: { RUNNER_AUTH_TOKEN: 'secret', AGENT_MAX_CONCURRENCY: 3 } }));
 

@@ -242,7 +242,9 @@ describe('renderMissionDetailPage', () => {
     expect(html).toContain('Scenario &lt;script&gt;alert(&quot;detail&quot;)&lt;/script&gt;');
     expect(html).toContain('Run &lt;script&gt;alert(&quot;detail&quot;)&lt;/script&gt;');
     expect(html).toContain('AGP-&lt;script&gt;alert(&quot;detail&quot;)&lt;/script&gt;');
-    expect(html).toContain('/artifacts/artifact-&lt;script&gt;alert(&quot;detail&quot;)&lt;/script&gt;');
+    expect(html).toContain(
+      '/artifacts/artifact-&lt;script&gt;alert(&quot;detail&quot;)&lt;/script&gt;',
+    );
     expect(html).toContain('research-&lt;script&gt;alert(&quot;detail&quot;)&lt;/script&gt;');
     expect(html).toContain('Approval &lt;script&gt;alert(&quot;detail&quot;)&lt;/script&gt;');
     expect(html).toContain(

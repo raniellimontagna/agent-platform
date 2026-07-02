@@ -176,7 +176,9 @@ describe('buildMissionDetailData', () => {
       workflow: 'other-workflow',
     } as never);
 
-    await expect(buildMissionDetailData('run-other', listE2eMissionScenarios())).resolves.toBeNull();
+    await expect(
+      buildMissionDetailData('run-other', listE2eMissionScenarios()),
+    ).resolves.toBeNull();
   });
 
   it('aggregates detail data with run-scoped artifacts and approvals', async () => {
