@@ -3,22 +3,9 @@ import { agentRolesFromCapabilities, listAgents } from '../agents.js';
 import type { Agent, Run, Tool } from '../db/schema.js';
 import { listRuns } from '../runs.js';
 import { listTools } from '../tools.js';
+import { escapeHtml, formatDate } from './rendering.js';
 
 export const registryRoute = new Hono();
-
-function escapeHtml(value: unknown): string {
-  return String(value ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
-
-function formatDate(value: Date | string | null | undefined): string {
-  if (!value) return '-';
-  return new Date(value).toISOString().replace('T', ' ').slice(0, 19);
-}
 
 function formatVersion(version: string): string {
   return version.startsWith('v') ? version : `v${version}`;
