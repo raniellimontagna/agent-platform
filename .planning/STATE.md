@@ -5,16 +5,16 @@ milestone_name: milestone
 current_phase: 05
 current_phase_name: Orchestrator Hub Refactor
 status: in_progress
-stopped_at: Completed 05-02-PLAN.md
-last_updated: "2026-07-02T15:21:01.287Z"
+stopped_at: Completed 05-03-PLAN.md
+last_updated: "2026-07-02T15:44:21.827Z"
 last_activity: 2026-07-02
-last_activity_desc: Completed 05-02-PLAN.md
+last_activity_desc: Completed 05-03-PLAN.md
 progress:
   total_phases: 7
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 14
-  completed_plans: 13
-  percent: 93
+  completed_plans: 14
+  percent: 71
 ---
 
 # Project State
@@ -25,24 +25,24 @@ See: `.planning/PROJECT.md` (updated 2026-07-02)
 
 **Core value:** Recover control of `agent-platform` through Plane-first docs,
 legacy removal, modular flow refactors, and verification gates.
-**Current focus:** Phase 05 — Orchestrator Hub Refactor
+**Current focus:** Phase 05 — Orchestrator Hub Refactor (complete; Phase 6 not started)
 
 ## Current Position
 
 Phase: 05 — Orchestrator Hub Refactor
-Plan: 2 of 3
-Status: Phase 5 in progress; 05-02 complete
-Last activity: 2026-07-02 — Completed 05-02-PLAN.md
+Plan: 3 of 3
+Status: Phase 5 complete; Phase 6 not started
+Last activity: 2026-07-02 — Completed 05-03-PLAN.md
 
-Progress: [█████████░] 93%
+Progress: [███████░░░] 71%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 13
+- Total plans completed: 14
 - Average duration: ~23 minutes
-- Total execution time: ~2.4 hours documented effort
+- Total execution time: ~2.7 hours documented effort
 
 **By Phase:**
 
@@ -52,14 +52,14 @@ Progress: [█████████░] 93%
 | 2. Living Documentation and Historical Archive | 2 | 2 | ~28m |
 | 3. Plane-Only Provider Cutover | 5 | 5 | ~14m |
 | 4. Operational Flow Reorganization | 2 | 2 | ~6m56s |
-| 5. Orchestrator Hub Refactor | 2 | 3 | ~7m32s |
+| 5. Orchestrator Hub Refactor | 3 | 3 | ~10m30s |
 | 6. Worker and Eval Hub Refactor | 0 | 3 | - |
 | 7. Final Verification and Governance Closeout | 0 | 2 | - |
 
 **Recent Trend:**
 
-- Last 5 completed plans: 03-05, 04-01, 04-02, 05-01, 05-02 all complete.
-- Trend: Phase 5 has shared route helper extraction and webhook seam extraction complete with fail-first evidence recorded.
+- Last 5 completed plans: 04-01, 04-02, 05-01, 05-02, 05-03 all complete.
+- Trend: Phase 5 is complete with shared route helpers, webhook seams, and Mission Control data/render seams all covered by fail-first evidence.
 
 **Recent Plan Metrics:**
 
@@ -74,6 +74,7 @@ Progress: [█████████░] 93%
 | Phase 04 P02 | 7m16s | 2 tasks | 7 files |
 | Phase 05 P01 | 5m19s | 2 tasks | 9 files |
 | Phase 05 P02 | 9m46s | 2 tasks | 7 files |
+| Phase 05 P03 | 16m26s | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -111,6 +112,9 @@ Progress: [█████████░] 93%
 - [Phase 05]: 05-02: Keep /webhooks/linear present and gated by CARD_EXTRA_PROVIDERS=linear; do not make Linear an active provider default.
 - [Phase 05]: 05-02: Keep cardWebhook.labelJustAdded as the transition source owner instead of duplicating label-diff semantics.
 - [Phase 05]: 05-02: Keep /webhooks/plane as active intake while moving HMAC checks, Plane parsing, and run transitions behind local seams.
+- [Phase 05]: 05-03: Split Mission Control into missionControlData.ts and missionControlRender.ts while keeping routes/admin.ts as protected route orchestration.
+- [Phase 05]: 05-03: Preserve routes/admin.ts renderer re-exports and keep Mission Control read-only with no operator controls.
+- [Phase 05]: 05-03: Apply one human-approved lint-only import-order fix in routes/rendering.test.ts to satisfy the full Phase 5 gate.
 
 ### Pending Todos
 
@@ -132,6 +136,6 @@ Progress: [█████████░] 93%
 
 ## Session Continuity
 
-Last session: 2026-07-02T15:21:01.277Z
-Stopped at: Completed 05-02-PLAN.md
+Last session: 2026-07-02T15:44:21.817Z
+Stopped at: Completed 05-03-PLAN.md
 Resume file: None

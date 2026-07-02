@@ -20,7 +20,7 @@ requirements, success criteria, and validation expectations.
 - [x] **Phase 2: Living Documentation and Historical Archive** - Consolidate current docs and separate history from operations.
 - [x] **Phase 3: Plane-Only Provider Cutover** - Remove or migrate Linear legacy behind tests and migration notes. (completed 2026-07-02)
 - [x] **Phase 4: Operational Flow Reorganization** - Make each active flow explicit, owned, and testable. (completed 2026-07-02)
-- [ ] **Phase 5: Orchestrator Hub Refactor** - Split duplicated route/provider/render/orchestration responsibilities.
+- [x] **Phase 5: Orchestrator Hub Refactor** - Split duplicated route/provider/render/orchestration responsibilities. (completed 2026-07-02)
 - [ ] **Phase 6: Worker and Eval Hub Refactor** - Split worker codegen/research/validation/eval responsibilities.
 - [ ] **Phase 7: Final Verification and Governance Closeout** - Prove the system, document remaining debt, and close the milestone.
 
@@ -130,13 +130,13 @@ modules without changing behavior.
   3. Admin/Mission Control rendering is split into focused helpers or modules with tests around output-critical behavior.
   4. Characterization tests fail before refactor when seams are broken and pass after refactor.
 
-**Plans**: 2/3 plans executed
+**Plans**: 3/3 plans complete
 
 Plans:
 
 - [x] 05-01-PLAN.md
 - [x] 05-02-PLAN.md
-- [ ] 05-03-PLAN.md
+- [x] 05-03-PLAN.md
 
 - [x] 05-01: Extract shared route/auth/render helpers with tests.
 - [x] 05-02: Refactor `routes/webhooks.ts` into Plane intake and run transition seams.
@@ -194,7 +194,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 2. Living Documentation and Historical Archive | 2/2 | Complete | 2026-07-02 |
 | 3. Plane-Only Provider Cutover | 5/5 | Complete   | 2026-07-02 |
 | 4. Operational Flow Reorganization | 2/2 | Complete   | 2026-07-02 |
-| 5. Orchestrator Hub Refactor | 2/3 | In Progress|  |
+| 5. Orchestrator Hub Refactor | 3/3 | Complete   | 2026-07-02 |
 | 6. Worker and Eval Hub Refactor | 0/3 | Not started | - |
 | 7. Final Verification and Governance Closeout | 0/2 | Not started | - |
 
