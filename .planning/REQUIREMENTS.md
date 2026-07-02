@@ -69,7 +69,7 @@ living documentation, modular flows, removed legacy, and verification gates.
   research, media, codegen, validation/self-correction, commit/push, and reporting
   seams.
 
-- [ ] **REF-04**: `codegen.ts` is split into prompt/JSON repair, file selection,
+- [x] **REF-04**: `codegen.ts` is split into prompt/JSON repair, file selection,
   apply, fix candidate selection, and agent-instruction concerns.
 
 - [ ] **REF-05**: Eval harness files are split into scenario loading, scoring,
@@ -131,7 +131,7 @@ living documentation, modular flows, removed legacy, and verification gates.
 | REF-01 | Phase 5 | Complete |
 | REF-02 | Phase 5 | Complete |
 | REF-03 | Phase 6 | Complete |
-| REF-04 | Phase 6 | Pending |
+| REF-04 | Phase 6 | Complete |
 | REF-05 | Phase 6 | Pending |
 | REF-06 | Phase 6 | Pending |
 | VER-01 | Phase 5, Phase 6 | Complete |
