@@ -1,25 +1,13 @@
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { CommandResult } from '../types.js';
-import {
-  applyCandidate,
-  initRepo,
-  listChangedFiles,
-  runCommands,
-  runShell,
-  writeFiles,
-} from './runtime.js';
-import { scoreScenario } from './scoring.js';
-import {
-  type EvalReport,
-  type EvalResult,
-  type EvalScenario,
-  type EvalTrend,
-  evalScenarioSchema,
-} from './types.js';
-import { type WorkerDryRunResult, runWorkerDryRun } from './workerDryRun.js';
+import { loadScenarios } from './scenarioLoader.js';
+import { runScenario } from './scenarioRunner.js';
+import { type EvalReport, type EvalResult, type EvalScenario, type EvalTrend } from './types.js';
+import type { WorkerDryRunResult } from './workerDryRun.js';
+
+export { normalizeScenarioFixture } from './scenarioLoader.js';
 
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
@@ -49,7 +37,12 @@ export async function runEvalSuite(args: {
   const scenarios = await loadScenarios(args.fixturesDir);
   const results: EvalResult[] = [];
   for (const scenario of scenarios) {
-    results.push(await runScenario(scenario, join(artifactRoot, scenario.id)));
+    results.push(
+      await runScenario(scenario, join(artifactRoot, scenario.id), {
+        createHarnessChecks,
+        combineScores,
+      }),
+    );
   }
 
   const passedCount = results.filter((result) => result.passed).length;
@@ -102,111 +95,6 @@ export function compareReports(
     regressed: scoreDelta < 0 || regressedScenarios.length > 0,
     regressedScenarios,
   };
-}
-
-async function runScenario(scenario: EvalScenario, artifactDir: string): Promise<EvalResult> {
-  await mkdir(artifactDir, { recursive: true });
-  const workdir = await mkdtemp(join(tmpdir(), `agent-platform-eval-${scenario.id}-`));
-  try {
-    await writeFiles(workdir, scenario.repo.files);
-    await initRepo(workdir);
-    let commands: CommandResult[];
-    let dryRun: WorkerDryRunResult | undefined;
-    if (scenario.workerDryRun) {
-      dryRun = await runWorkerDryRun({ scenario, workdir, artifactDir });
-      commands = dryRun.commands;
-    } else {
-      await applyCandidate(workdir, scenario.candidate);
-      commands = await runCommands(workdir, scenario.commands);
-    }
-    const changedFiles = dryRun ? [...dryRun.filesChanged].sort() : await listChangedFiles(workdir);
-    const scored = await scoreScenario({ scenario, workdir, changedFiles, commands });
-    const harnessChecks = createHarnessChecks(scenario, {
-      changedFiles,
-      commands,
-      dryRun,
-    });
-    const checks = [...scored.checks, ...harnessChecks];
-    const passed = scored.passed && harnessChecks.every((check) => check.passed);
-    const score = combineScores(scored.score, checks);
-    const result: EvalResult = {
-      id: scenario.id,
-      title: scenario.title,
-      passed,
-      score,
-      changedFiles,
-      commands,
-      checks,
-      artifactDir,
-      dryRun,
-    };
-    await writeFile(join(artifactDir, 'result.json'), `${JSON.stringify(result, null, 2)}\n`);
-    await writeFile(
-      join(artifactDir, 'diff.patch'),
-      dryRun?.diff ?? (await runShell('git diff', workdir)).stdout,
-    );
-    return result;
-  } finally {
-    await rm(workdir, { recursive: true, force: true });
-  }
-}
-
-async function loadScenarios(fixturesDir: string): Promise<EvalScenario[]> {
-  const entries = await readdir(fixturesDir, { withFileTypes: true });
-  const scenarios: EvalScenario[] = [];
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
-    const raw = await readFile(join(fixturesDir, entry.name, 'scenario.json'), 'utf8');
-    scenarios.push(evalScenarioSchema.parse(normalizeScenarioFixture(JSON.parse(raw))));
-  }
-  return scenarios.sort((a, b) => a.id.localeCompare(b.id));
-}
-
-export function normalizeScenarioFixture(raw: unknown): unknown {
-  const record = asRecord(raw);
-  if (!record) return raw;
-
-  const inputs = asRecord(record.inputs);
-  const fixtures = asRecord(record.fixtures);
-  const rawExpected = asRecord(record.expected);
-  const rawReview = asRecord(record.review);
-
-  const id =
-    readString(record, ['id']) ??
-    readString(record, ['scenarioId']) ??
-    readString(inputs, ['id', 'scenarioId']) ??
-    readString(fixtures, ['id', 'scenarioId']);
-
-  const repo =
-    asRecord(record.repo) ??
-    asRecord(inputs?.repo) ??
-    asRecord(fixtures?.repo) ??
-    normalizeRepoFromFixtureSources(inputs, fixtures);
-
-  const normalized = {
-    ...record,
-    ...(id ? { id } : {}),
-    version:
-      readString(record, ['version']) ??
-      readString(record, ['schemaVersion']) ??
-      readString(inputs, ['version']) ??
-      readString(fixtures, ['version']) ??
-      record.version,
-    title:
-      readString(record, ['title']) ??
-      readString(inputs, ['title']) ??
-      readString(fixtures, ['title']) ??
-      record.title,
-    repo: repo ?? record.repo,
-    candidate:
-      record.candidate ?? inputs?.candidate ?? fixtures?.candidate ?? normalizeCandidate(fixtures),
-    commands: record.commands ?? inputs?.commands ?? fixtures?.commands ?? record.commands,
-    workerDryRun:
-      record.workerDryRun ?? inputs?.workerDryRun ?? fixtures?.workerDryRun ?? record.workerDryRun,
-    expected: normalizeExpectedFixture(rawExpected, rawReview, record),
-  };
-
-  return normalized;
 }
 
 export function renderMarkdown(report: EvalReport): string {
@@ -747,112 +635,6 @@ function findAutoMergeBlockReasonFromChecks(checks: EvalResult['checks']): strin
       return check.detail;
     }
   }
-  return undefined;
-}
-
-function normalizeExpectedFixture(
-  expected: Record<string, unknown> | undefined,
-  review: Record<string, unknown> | undefined,
-  root: Record<string, unknown>,
-): Record<string, unknown> | undefined {
-  if (!expected && !review) return expected;
-
-  const expectedReview = asRecord(expected?.review);
-  const expectedAutoMerge = asRecord(expected?.autoMerge);
-  const expectedCritic = asRecord(expected?.critic);
-  const expectedCommit = asRecord(expected?.commit);
-  const expectedIsolation = asRecord(expected?.isolation);
-  const rootIsolation = asRecord(root.isolation);
-
-  return {
-    ...expected,
-    review: {
-      ...expectedReview,
-      verdict:
-        readString(expectedReview, ['verdict', 'status']) ??
-        readString(review, ['verdict', 'status']) ??
-        readString(expected, ['finalVerdict', 'verdict']),
-      outcome:
-        readString(expectedReview, ['outcome', 'action']) ??
-        readString(review, ['outcome', 'action']) ??
-        readString(expected, ['reviewOutcome']),
-    },
-    autoMerge: {
-      ...expectedAutoMerge,
-      enabled:
-        readBooleanLike(expectedAutoMerge, ['enabled', 'expected']) ??
-        readBooleanLike(expected, ['autoMergeExpected']),
-      blockReason:
-        readString(expectedAutoMerge, ['blockReason']) ?? readString(expected, ['blockReason']),
-    },
-    critic: {
-      ...expectedCritic,
-      rounds:
-        readNumberLike(expectedCritic, ['rounds']) ?? readNumberLike(expected, ['criticRounds']),
-      maxRounds:
-        readNumberLike(expectedCritic, ['maxRounds']) ??
-        readNumberLike(expected, ['maxCriticRounds']) ??
-        readNumberLike(root, ['agentMaxReviewRounds']),
-    },
-    commit: {
-      ...expectedCommit,
-      requiresRef:
-        readBooleanLike(expectedCommit, ['requiresRef']) ??
-        readBooleanLike(expected, ['commitRequiresRef']),
-      requiresCoAuthoredBy:
-        readBooleanLike(expectedCommit, ['requiresCoAuthoredBy']) ??
-        readBooleanLike(expected, ['commitRequiresCoAuthoredBy']),
-      authorName:
-        readString(expectedCommit, ['authorName']) ?? readString(expected, ['commitAuthorName']),
-      authorEmail:
-        readString(expectedCommit, ['authorEmail']) ?? readString(expected, ['commitAuthorEmail']),
-    },
-    isolation: {
-      ...rootIsolation,
-      ...expectedIsolation,
-      allowNetwork:
-        readBooleanLike(expectedIsolation, ['allowNetwork']) ??
-        readBooleanLike(rootIsolation, ['allowNetwork']),
-      allowGitHub:
-        readBooleanLike(expectedIsolation, ['allowGitHub']) ??
-        readBooleanLike(rootIsolation, ['allowGitHub']),
-      allowLinear:
-        readBooleanLike(expectedIsolation, ['allowLinear']) ??
-        readBooleanLike(rootIsolation, ['allowLinear']),
-      allowLiteLLM:
-        readBooleanLike(expectedIsolation, ['allowLiteLLM']) ??
-        readBooleanLike(rootIsolation, ['allowLiteLLM']),
-      externalCallsEmpty:
-        readBooleanLike(expectedIsolation, ['externalCallsEmpty']) ??
-        (Array.isArray(expectedIsolation?.externalCalls)
-          ? expectedIsolation.externalCalls.length === 0
-          : undefined),
-    },
-  };
-}
-
-function normalizeRepoFromFixtureSources(
-  inputs: Record<string, unknown> | undefined,
-  fixtures: Record<string, unknown> | undefined,
-): Record<string, unknown> | undefined {
-  const repo = asRecord(inputs?.repo) ?? asRecord(fixtures?.repo);
-  if (repo) return repo;
-
-  const files = Array.isArray(fixtures?.files)
-    ? fixtures.files
-    : Array.isArray(inputs?.files)
-      ? inputs.files
-      : undefined;
-
-  if (!files) return undefined;
-  return { files };
-}
-
-function normalizeCandidate(fixtures: Record<string, unknown> | undefined): unknown {
-  if (!fixtures) return undefined;
-  if (fixtures.candidate !== undefined) return fixtures.candidate;
-  if (Array.isArray(fixtures.patch)) return fixtures.patch;
-  if (typeof fixtures.patch === 'string') return fixtures.patch;
   return undefined;
 }
 
