@@ -100,4 +100,26 @@ describe('env Plane-only deploy', () => {
       vi.resetModules();
     }
   });
+
+  it('rejects Linear as the active primary provider even when legacy secrets exist', async () => {
+    const previous = { ...process.env };
+    vi.resetModules();
+    try {
+      process.env = {
+        ...previous,
+        CARD_PRIMARY_PROVIDER: 'linear',
+        CARD_EXTRA_PROVIDERS: '',
+        LINEAR_API_KEY: 'linear-key',
+        LINEAR_WEBHOOK_SECRET: 'linear-secret',
+        LINEAR_TEAM_ID: 'team-1',
+      };
+
+      await expect(import('./env.js')).rejects.toThrow(
+        'CARD_PRIMARY_PROVIDER=linear is not supported',
+      );
+    } finally {
+      process.env = previous;
+      vi.resetModules();
+    }
+  });
 });
