@@ -55,7 +55,20 @@ describe('migrateLinearCardsToPlane', () => {
     expect(result.created).toBe(1);
     expect(result.commented).toBe(1);
     expect(result.failed).toEqual([]);
-    expect(plane.createCard).toHaveBeenCalledWith(expect.objectContaining({ externalId: 'MAC-2' }));
+    expect(plane.listCardsByExternal).toHaveBeenNthCalledWith(1, {
+      externalSource: 'linear',
+      externalId: 'MAC-1',
+    });
+    expect(plane.listCardsByExternal).toHaveBeenNthCalledWith(2, {
+      externalSource: 'linear',
+      externalId: 'MAC-2',
+    });
+    expect(plane.createCard).toHaveBeenCalledWith(
+      expect.objectContaining({
+        externalSource: 'linear',
+        externalId: 'MAC-2',
+      }),
+    );
     expect(plane.comment).toHaveBeenCalledTimes(1);
     expect(plane.comment).toHaveBeenNthCalledWith(
       1,
@@ -300,6 +313,7 @@ describe('migrateLinearCardsToPlane', () => {
     expect(plane.createCard).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
+        externalSource: 'linear',
         externalId: 'MAC-11',
         labelIds: ['label-ai-ready', 'label-customer-escalation'],
         stateId: 'state-backlog',
@@ -308,6 +322,7 @@ describe('migrateLinearCardsToPlane', () => {
     expect(plane.createCard).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({
+        externalSource: 'linear',
         externalId: 'MAC-12',
         labelIds: ['label-feature'],
         stateId: 'state-unstarted',
@@ -316,6 +331,7 @@ describe('migrateLinearCardsToPlane', () => {
     expect(plane.createCard).toHaveBeenNthCalledWith(
       3,
       expect.objectContaining({
+        externalSource: 'linear',
         externalId: 'MAC-13',
         labelIds: [],
         stateId: 'state-started',

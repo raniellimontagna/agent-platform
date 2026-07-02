@@ -53,6 +53,20 @@ describe('resolveRunCardFields', () => {
       cardIdentifier: 'AGP-1',
     });
   });
+
+  it('preserves explicit legacy Linear card fields as compatibility data', () => {
+    expect(
+      resolveRunCardFields({
+        cardProvider: 'linear',
+        cardId: 'issue-legacy',
+        cardIdentifier: 'MAC-121',
+      }),
+    ).toEqual({
+      cardProvider: 'linear',
+      cardId: 'issue-legacy',
+      cardIdentifier: 'MAC-121',
+    });
+  });
 });
 
 describe('cancelActiveRunsForCard', () => {
