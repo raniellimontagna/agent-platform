@@ -85,7 +85,7 @@ living documentation, modular flows, removed legacy, and verification gates.
 - [x] **VER-03**: Evals remain at 14/14 with no score regression after provider and
   flow cleanup.
 
-- [ ] **VER-04**: Final milestone audit includes remaining debt, accepted gaps, and
+- [x] **VER-04**: Final milestone audit includes remaining debt, accepted gaps, and
   next cleanup candidates.
 
 ## v2 Requirements
@@ -137,7 +137,7 @@ living documentation, modular flows, removed legacy, and verification gates.
 | VER-01 | Phase 5, Phase 6 | Complete |
 | VER-02 | Phase 7 | Complete |
 | VER-03 | Phase 7 | Complete |
-| VER-04 | Phase 7 | Pending |
+| VER-04 | Phase 7 | Complete |
 
 **Coverage:**
 
