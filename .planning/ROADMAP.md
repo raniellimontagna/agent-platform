@@ -200,8 +200,12 @@ the project with a stable governance loop for future work.
 **Plans**: 2 plans
 
 Plans:
+**Wave 1**
 
 - [ ] 07-01: Run full verification, fix regressions, and update final governance docs.
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 07-02: Produce milestone closeout with remaining debt and next-phase recommendations.
 
 ## Progress

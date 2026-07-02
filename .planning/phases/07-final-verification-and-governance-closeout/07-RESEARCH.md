@@ -355,27 +355,27 @@ Source: Phase 07 context requires the final artifacts to cover VER-02, VER-03, V
 |---|-------|---------|---------------|
 | A1 | Live external Plane/Tailscale/Linear state could have drifted after the Phase 03 checkpoint. [ASSUMED] | Open Questions; Sources | If Phase 07 docs make current live-state claims beyond recorded Phase 03 evidence, they could be stale without a fresh live check. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Should Phase 07 create a dedicated audit artifact or only update docs?**  
-   What we know: Phase context requires a self-contained milestone audit and roadmap success criteria require final docs to name debt, removed legacy, accepted gaps, and next phases. [VERIFIED: 07-CONTEXT.md; .planning/ROADMAP.md]  
-   What's unclear: The exact filename is not locked. [VERIFIED: 07-CONTEXT.md]  
-   Recommendation: Default to `.planning/phases/07-final-verification-and-governance-closeout/07-MILESTONE-AUDIT.md` and link/summarize it from `docs/CURRENT.md` or `docs/HISTORICAL.md`. [VERIFIED: existing phase artifact pattern; 07-CONTEXT.md]
+1. **RESOLVED: Should Phase 07 create a dedicated audit artifact or only update docs?**
+   What we know: Phase context requires a self-contained milestone audit and roadmap success criteria require final docs to name debt, removed legacy, accepted gaps, and next phases. [VERIFIED: 07-CONTEXT.md; .planning/ROADMAP.md]
+   What's unclear: The exact filename is not locked. [VERIFIED: 07-CONTEXT.md]
+   Resolution: Create `.planning/phases/07-final-verification-and-governance-closeout/07-MILESTONE-AUDIT.md` and link/summarize it from current/historical docs as needed. [VERIFIED: existing phase artifact pattern; 07-CONTEXT.md]
 
-2. **Should live Plane/Tailscale/Linear exposure be rechecked in Phase 07?**  
-   What we know: Phase 03 checkpoint resolved live Linear exposure on 2026-07-02, and Phase 07 scope fences forbid live deploy/provider changes unless a final regression requires them. [VERIFIED: 03-04-CHECKPOINT.md; 07-CONTEXT.md]  
-   What's unclear: Live external state could drift after the checkpoint. [ASSUMED]  
-   Recommendation: Treat Phase 03 checkpoint as source evidence and do not require live external mutation/checks for Phase 07 unless final docs explicitly claim current live state beyond the recorded checkpoint. [VERIFIED: 03-04-CHECKPOINT.md; 07-CONTEXT.md]
+2. **RESOLVED: Should live Plane/Tailscale/Linear exposure be rechecked in Phase 07?**
+   What we know: Phase 03 checkpoint resolved live Linear exposure on 2026-07-02, and Phase 07 scope fences forbid live deploy/provider changes unless a final regression requires them. [VERIFIED: 03-04-CHECKPOINT.md; 07-CONTEXT.md]
+   What's unclear: Live external state could drift after the checkpoint. [ASSUMED]
+   Resolution: Treat Phase 03 checkpoint as source evidence and do not require live external mutation/checks for Phase 07 unless final docs explicitly claim current live state beyond the recorded checkpoint. [VERIFIED: 03-04-CHECKPOINT.md; 07-CONTEXT.md]
 
-3. **What if final `verify` fails?**  
-   What we know: Context says stop and diagnose before writing closeout docs if eval regression is not 14/14 score 100 delta 0. [VERIFIED: 07-CONTEXT.md]  
-   What's unclear: The failing surface cannot be known until the command runs. [VERIFIED: no final command run in research]  
-   Recommendation: Use focused reruns from `package.json` and existing validation maps, fix only the proven regression, then rerun `rtk corepack pnpm verify`. [VERIFIED: package.json; 05-VALIDATION.md; 06-VALIDATION.md]
+3. **RESOLVED: What if final `verify` fails?**
+   What we know: Context says stop and diagnose before writing closeout docs if eval regression is not 14/14 score 100 delta 0. [VERIFIED: 07-CONTEXT.md]
+   What's unclear: The failing surface cannot be known until the command runs. [VERIFIED: no final command run in research]
+   Resolution: Use focused reruns from `package.json` and existing validation maps, fix only the proven regression, then rerun `rtk corepack pnpm verify`; if no narrow fix is justified, record a blocker and do not complete closeout docs. [VERIFIED: package.json; 05-VALIDATION.md; 06-VALIDATION.md]
 
-4. **Should remaining Linear columns be removed if final verification is green?**  
-   What we know: Phase 07 explicitly forbids removing or renaming remaining legacy Linear schema columns. [VERIFIED: 07-CONTEXT.md]  
-   What's unclear: No open decision is needed for Phase 07. [VERIFIED: 07-CONTEXT.md]  
-   Recommendation: Document as a future destructive cleanup candidate requiring separate confirmation. [VERIFIED: 03-05-SUMMARY.md; 07-CONTEXT.md]
+4. **RESOLVED: Should remaining Linear columns be removed if final verification is green?**
+   What we know: Phase 07 explicitly forbids removing or renaming remaining legacy Linear schema columns. [VERIFIED: 07-CONTEXT.md]
+   What's unclear: No open decision is needed for Phase 07. [VERIFIED: 07-CONTEXT.md]
+   Resolution: Do not remove columns in Phase 07; document them as a future destructive cleanup candidate requiring separate confirmation. [VERIFIED: 03-05-SUMMARY.md; 07-CONTEXT.md]
 
 ## Environment Availability
 
