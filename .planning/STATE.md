@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 04
-current_phase_name: Operational Flow Reorganization
+current_phase: 05
 status: in_progress
-stopped_at: Completed 04-02-PLAN.md
-last_updated: "2026-07-02T13:58:15.447Z"
+stopped_at: Completed 05-01-PLAN.md
+last_updated: "2026-07-02T15:01:58.270Z"
 last_activity: 2026-07-02
-last_activity_desc: Completed 04-02-PLAN.md
+last_activity_desc: Completed 05-01-PLAN.md
 progress:
   total_phases: 7
   completed_phases: 4
-  total_plans: 11
-  completed_plans: 11
-  percent: 57
+  total_plans: 14
+  completed_plans: 12
+  percent: 86
+current_phase_name: Orchestrator Hub Refactor
 ---
 
 # Project State
@@ -25,22 +25,22 @@ See: `.planning/PROJECT.md` (updated 2026-07-02)
 
 **Core value:** Recover control of `agent-platform` through Plane-first docs,
 legacy removal, modular flow refactors, and verification gates.
-**Current focus:** Phase 04 — Operational Flow Reorganization
+**Current focus:** Phase 05 — Orchestrator Hub Refactor
 
 ## Current Position
 
-Phase: 04 — COMPLETE
-Plan: 2 of 2
-Status: Phase 4 complete; Phase 5 not started
-Last activity: 2026-07-02 — Completed 04-02-PLAN.md
+Phase: 05 — Orchestrator Hub Refactor
+Plan: 1 of 3
+Status: Phase 5 in progress; 05-01 complete
+Last activity: 2026-07-02 — Completed 05-01-PLAN.md
 
-Progress: [██████░░░░] 57%
+Progress: [█████████░] 86%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 11
+- Total plans completed: 12
 - Average duration: ~23 minutes
 - Total execution time: ~2.2 hours documented effort
 
@@ -52,14 +52,14 @@ Progress: [██████░░░░] 57%
 | 2. Living Documentation and Historical Archive | 2 | 2 | ~28m |
 | 3. Plane-Only Provider Cutover | 5 | 5 | ~14m |
 | 4. Operational Flow Reorganization | 2 | 2 | ~6m56s |
-| 5. Orchestrator Hub Refactor | 0 | 3 | - |
+| 5. Orchestrator Hub Refactor | 1 | 3 | 5m19s |
 | 6. Worker and Eval Hub Refactor | 0 | 3 | - |
 | 7. Final Verification and Governance Closeout | 0 | 2 | - |
 
 **Recent Trend:**
 
-- Last 5 completed plans: 03-03, 03-04, 03-05, 04-01, 04-02 all complete.
-- Trend: Phase 4 operational flow reorganization is complete with source-owner docs, registry compatibility tests, and full verification evidence recorded.
+- Last 5 completed plans: 03-04, 03-05, 04-01, 04-02, 05-01 all complete.
+- Trend: Phase 5 has started with shared route helper extraction complete and fail-first evidence recorded.
 
 **Recent Plan Metrics:**
 
@@ -72,6 +72,7 @@ Progress: [██████░░░░] 57%
 | Phase 03 P05 | 14m03s | 3 tasks | 17 files |
 | Phase 04 P01 | 6m37s | 3 tasks | 10 files |
 | Phase 04 P02 | 7m16s | 2 tasks | 7 files |
+| Phase 05 P01 | 5m19s | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -103,6 +104,9 @@ Progress: [██████░░░░] 57%
 - [Phase 04]: 04-01 treats apps/worker-code/src/routes/jobs.ts as a static Worker API anchor while runJob.test.ts covers runner behavior.
 - [Phase 04]: 04-02 uses existing owner files instead of adding a new constants package for workflow labels, agent keys, skills, models, env, runner paths, or artifacts.
 - [Phase 04]: 04-02 keeps coder-agent as compatibility alias and documents software-delivery-pipeline as the current clearer identity.
+- [Phase 05]: 05-01: Use one local requireRunnerAuth helper instead of Hono bearerAuth so exact 401 JSON remains unchanged.
+- [Phase 05]: 05-01: Extract only escapeHtml, formatDate, and humanizeStatus; keep route-specific status-class mappings local.
+- [Phase 05]: 05-01: Keep Task 1 and Task 2 RED/GREEN commits separate to preserve fail-first evidence.
 
 ### Pending Todos
 
@@ -124,6 +128,6 @@ Progress: [██████░░░░] 57%
 
 ## Session Continuity
 
-Last session: 2026-07-02T13:58:15.436Z
-Stopped at: Completed 04-02-PLAN.md
+Last session: 2026-07-02T15:01:58.261Z
+Stopped at: Completed 05-01-PLAN.md
 Resume file: None
