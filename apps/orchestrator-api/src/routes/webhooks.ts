@@ -1,23 +1,14 @@
 import { Hono } from 'hono';
-import { DATA_COLLECTOR_AGENT_KEY, agentKeyFromLabels, resolveAgentByKey } from '../agents.js';
 import { labelJustAdded } from '../cardWebhook.js';
-import { isUniqueViolation } from '../db/pgError.js';
 import { env } from '../env.js';
 import { hasRepoCreateLabel } from '../generatedRepos.js';
-import { isPaused } from '../killswitch.js';
 import { logger } from '../logger.js';
 import { type PlanePayload, normalizePlaneWebhook } from '../planeWebhook.js';
-import { JOB_PRIORITY, agentQueue } from '../queue.js';
 import {
-  cancelActiveRunsForCard,
-  costLast24hUsd,
-  createRun,
-  findAwaitingApprovalRunForCard,
-  hasActiveRunForCard,
-  resolveApproval,
-  updateRunStatus,
-} from '../runs.js';
-import { workflowFromLabels } from '../workflows.js';
+  handleAiReadyCard,
+  handleApprovalCard,
+  handleRemovedPlaneCard,
+} from '../webhookRunActions.js';
 import { verifyPlaneSignature, verifySignature } from '../webhookSignature.js';
 
 export const webhooks = new Hono();
@@ -25,7 +16,6 @@ export const webhooks = new Hono();
 const AI_READY_LABEL = 'ai-ready';
 const APPROVED_LABEL = 'approved';
 const AUTO_MERGE_LABEL = 'auto-merge';
-const PLANE_REMOVED_REASON = 'plane work item removed';
 
 interface IssueData {
   id?: string;
@@ -74,88 +64,6 @@ function skipPlaneWebhook(
 ) {
   logger.info({ provider: 'plane', reason, ...context }, 'Plane webhook skipped');
   return { ok: true, skipped: true, reason } as const;
-}
-
-async function handleAiReadyCard(input: {
-  provider: 'plane' | 'linear';
-  cardId: string;
-  cardIdentifier: string;
-  cardProjectId?: string;
-  title: string;
-  labels: string[];
-  hasAutoMerge: boolean;
-  targetRepoCreate: boolean;
-}) {
-  if (await hasActiveRunForCard(input.provider, input.cardId)) {
-    logger.warn(
-      { provider: input.provider, card: input.cardIdentifier },
-      'run ativo já existe; ignorando duplicata',
-    );
-    return { skipped: true, reason: 'active run already exists' } as const;
-  }
-
-  if (await isPaused()) {
-    logger.warn(
-      { provider: input.provider, card: input.cardIdentifier },
-      'agents paused; ai-ready ignorado',
-    );
-    return { skipped: true, reason: 'agents paused' } as const;
-  }
-
-  const spent = await costLast24hUsd();
-  if (spent >= env.AGENT_MAX_COST_PER_DAY_USD) {
-    logger.warn({ spent, limit: env.AGENT_MAX_COST_PER_DAY_USD }, 'orçamento diário estourado');
-    return { skipped: true, reason: 'daily cost budget exceeded' } as const;
-  }
-
-  const workflow = workflowFromLabels(input.labels);
-  const agentKey = workflow ? DATA_COLLECTOR_AGENT_KEY : agentKeyFromLabels(input.labels);
-  const agent = await resolveAgentByKey(agentKey);
-
-  let runId: string;
-  try {
-    runId = await createRun({
-      ...(input.provider === 'linear'
-        ? { linearIssueId: input.cardId, linearIssueIdentifier: input.cardIdentifier }
-        : {}),
-      cardProvider: input.provider,
-      cardId: input.cardId,
-      cardIdentifier: input.cardIdentifier,
-      cardProjectId: input.cardProjectId,
-      title: input.title,
-      autoMerge: input.hasAutoMerge,
-      agentId: agent?.id,
-      workflow,
-      targetRepoCreate: input.targetRepoCreate,
-    });
-  } catch (err) {
-    if (isUniqueViolation(err)) {
-      logger.warn(
-        { provider: input.provider, card: input.cardIdentifier },
-        'run ativo já existe (índice); ignorando duplicata',
-      );
-      return { skipped: true, reason: 'active run exists' } as const;
-    }
-    throw err;
-  }
-
-  await agentQueue.add(
-    'plan',
-    {
-      kind: 'plan',
-      runId,
-      cardProvider: input.provider,
-      cardId: input.cardId,
-      ...(input.provider === 'linear' ? { issueId: input.cardId } : {}),
-    },
-    { priority: JOB_PRIORITY.plan },
-  );
-
-  logger.info(
-    { runId, provider: input.provider, card: input.cardIdentifier },
-    'ai-ready card enqueued',
-  );
-  return { queued: true, runId } as const;
 }
 
 webhooks.post('/webhooks/linear', async (c) => {
@@ -211,19 +119,12 @@ webhooks.post('/webhooks/linear', async (c) => {
       id: env.LINEAR_APPROVED_LABEL_ID,
     })
   ) {
-    const run = await findAwaitingApprovalRunForCard('linear', issueId);
-    if (!run) {
-      return c.json({ ok: true, skipped: true, reason: 'nenhum run aguardando aprovação' });
-    }
-    await resolveApproval(run.id, 'approved', 'linear');
-    await updateRunStatus(run.id, 'executing');
-    await agentQueue.add(
-      'resume',
-      { kind: 'resume', runId: run.id },
-      { priority: JOB_PRIORITY.resume },
-    );
-    logger.info({ runId: run.id, issue: identifier }, 'run approved via Linear, resuming');
-    return c.json({ ok: true, resumed: true, runId: run.id });
+    const result = await handleApprovalCard({
+      provider: 'linear',
+      cardId: issueId,
+      cardIdentifier: identifier,
+    });
+    return c.json({ ok: true, ...result });
   }
 
   // ai-ready: dispara um novo run — só quando a label é ADICIONADA (não em toda edição).
@@ -292,19 +193,13 @@ webhooks.post('/webhooks/plane', async (c) => {
   }
 
   if (planeEvent.removal) {
-    const cancelled = await cancelActiveRunsForCard('plane', cardId, PLANE_REMOVED_REASON);
-    logger.info(
-      {
-        provider: 'plane',
-        action: planeEvent.action,
-        event: planeEvent.event,
-        cardId,
-        cardIdentifier: planeEvent.cardIdentifier,
-        cancelled,
-      },
-      'Plane work item removed; active runs cancelled',
-    );
-    return c.json({ ok: true, cancelled, reason: PLANE_REMOVED_REASON });
+    const result = await handleRemovedPlaneCard({
+      cardId,
+      cardIdentifier: planeEvent.cardIdentifier,
+      action: planeEvent.action,
+      event: planeEvent.event,
+    });
+    return c.json({ ok: true, ...result });
   }
 
   const currentNames = planeEvent.currentNames;
@@ -323,10 +218,14 @@ webhooks.post('/webhooks/plane', async (c) => {
       id: env.PLANE_APPROVED_LABEL_ID,
     })
   ) {
-    const run = await findAwaitingApprovalRunForCard('plane', cardId);
-    if (!run) {
+    const result = await handleApprovalCard({
+      provider: 'plane',
+      cardId,
+      cardIdentifier: planeEvent.cardIdentifier ?? cardId,
+    });
+    if ('skipped' in result) {
       return c.json(
-        skipPlaneWebhook('nenhum run aguardando aprovação', {
+        skipPlaneWebhook(result.reason, {
           action: planeEvent.action,
           event: planeEvent.event,
           cardId,
@@ -338,18 +237,7 @@ webhooks.post('/webhooks/plane', async (c) => {
         }),
       );
     }
-    await resolveApproval(run.id, 'approved', 'plane');
-    await updateRunStatus(run.id, 'executing');
-    await agentQueue.add(
-      'resume',
-      { kind: 'resume', runId: run.id },
-      { priority: JOB_PRIORITY.resume },
-    );
-    logger.info(
-      { runId: run.id, issue: planeEvent.cardIdentifier },
-      'run approved via Plane, resuming',
-    );
-    return c.json({ ok: true, resumed: true, runId: run.id });
+    return c.json({ ok: true, ...result });
   }
 
   if (
@@ -365,7 +253,9 @@ webhooks.post('/webhooks/plane', async (c) => {
   ) {
     return c.json(
       skipPlaneWebhook(
-        planeEvent.previousLabelsPresent ? 'no relevant label transition' : 'previous labels missing',
+        planeEvent.previousLabelsPresent
+          ? 'no relevant label transition'
+          : 'previous labels missing',
         {
           action: planeEvent.action,
           event: planeEvent.event,
