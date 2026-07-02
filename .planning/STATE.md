@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 07
-status: verifying
+current_phase: 0
+status: Awaiting next milestone
 stopped_at: Completed 07-02-PLAN.md
-last_updated: "2026-07-02T20:08:40.487Z"
+last_updated: "2026-07-02T20:17:25.166Z"
 last_activity: 2026-07-02
-last_activity_desc: Phase 07 complete
+last_activity_desc: Milestone v1.0 completed and archived
 progress:
   total_phases: 7
   completed_phases: 7
   total_plans: 20
   completed_plans: 20
   percent: 100
-current_phase_name: final-verification-and-governance-closeout
+current_phase_name: milestone-complete
 ---
 
 # Project State
@@ -25,16 +25,14 @@ See: `.planning/PROJECT.md` (updated 2026-07-02)
 
 **Core value:** Recover control of `agent-platform` through Plane-first docs,
 legacy removal, modular flow refactors, and verification gates.
-**Current focus:** Phase 07 complete — ready for final verification review
+**Current focus:** Milestone v1.0 archived — awaiting next milestone planning
 
 ## Current Position
 
-Phase: 07
-Plan: Not started
-Status: Phase 07 plans complete; ready for final verification/governance review
-Last activity: 2026-07-02 — Phase 07 complete
-
-Progress: [██████████] 100%
+Phase: Milestone v1.0 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-07-02 — Milestone v1.0 completed and archived
 
 ## Performance Metrics
 
@@ -160,9 +158,17 @@ Progress: [██████████] 100%
 | Provider deletion | Runtime Linear removal until schema/env/test gates pass | Deferred to Phase 3 | 2026-07-02 |
 | File moves/deletion | Historical docs remain in place until index is reviewed | Deferred to later cleanup | 2026-07-02 |
 | Full verify formatting | `rtk corepack pnpm verify` is blocked by 06-01 runner Biome formatting/import findings outside 06-02 scope | Deferred to Phase 06 cleanup | 2026-07-02 |
+| Linear destructive cleanup | `linear_issue_*`, `/webhooks/linear`, `packages/linear`, and `@linear/sdk` require separate confirmation before removal | Accepted milestone tech debt | 2026-07-02 |
+| Operator controls | Mission Control remains read-only; replay/approve/retry/cancel/deploy controls are future work | Accepted milestone tech debt | 2026-07-02 |
+| Scheduler hardening | Duplicate-fire prevention needs a DB or queue-level concurrency guard | Accepted milestone tech debt | 2026-07-02 |
+| Eval/docs hardening | Broader eval role/workflow coverage and stale-doc scanning remain future work | Accepted milestone tech debt | 2026-07-02 |
 
 ## Session Continuity
 
 Last session: 2026-07-02T19:58:56.103Z
 Stopped at: Completed 07-02-PLAN.md
 Resume file: None
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone
