@@ -5,6 +5,15 @@ GitHub, Plane, Linear ou produção. Cada fixture cria um repositório temporár
 aplica uma mudança candidata versionada, roda comandos permitidos e compara o
 resultado com critérios objetivos.
 
+## Status e propriedade
+
+| Superficie | Status | Fonte de verdade | Evidencia local |
+|------------|--------|------------------|-----------------|
+| Eval CLI e reports | Ativo | `apps/worker-code/src/eval/runEval.ts` | `apps/worker-code/src/eval/runEval.test.ts` |
+| Role quality checks | Ativo | `apps/worker-code/src/eval/roleQuality.ts` | `apps/worker-code/src/eval/roleQuality.test.ts` |
+| Worker dry-run fixtures | Ativo | `apps/worker-code/evals/fixtures/*` | `rtk corepack pnpm eval:regression` |
+| Live Plane/GitHub/LLM calls | Nao permitido no harness | Fixture-local fake repos and fake LLM responses | Covered by normal eval commands |
+
 Rodar todos os cenários:
 
 ```bash
