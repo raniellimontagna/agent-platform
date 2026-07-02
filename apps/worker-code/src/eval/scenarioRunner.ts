@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { CommandResult } from '../types.js';
+import { combineScores, createHarnessChecks } from './harnessChecks.js';
 import {
   applyCandidate,
   initRepo,
@@ -14,27 +15,9 @@ import { scoreScenario } from './scoring.js';
 import type { EvalResult, EvalScenario } from './types.js';
 import { type WorkerDryRunResult, runWorkerDryRun } from './workerDryRun.js';
 
-export interface ScenarioRunnerHooks {
-  createHarnessChecks: (
-    scenario: EvalScenario,
-    result: {
-      changedFiles: string[];
-      commands: CommandResult[];
-      dryRun?: WorkerDryRunResult;
-    },
-  ) => EvalResult['checks'];
-  combineScores: (baseScore: number, checks: EvalResult['checks']) => number;
-}
-
-const defaultHooks: ScenarioRunnerHooks = {
-  createHarnessChecks: () => [],
-  combineScores: (baseScore) => baseScore,
-};
-
 export async function runScenario(
   scenario: EvalScenario,
   artifactDir: string,
-  hooks: ScenarioRunnerHooks = defaultHooks,
 ): Promise<EvalResult> {
   await mkdir(artifactDir, { recursive: true });
   const workdir = await mkdtemp(join(tmpdir(), `agent-platform-eval-${scenario.id}-`));
@@ -52,14 +35,14 @@ export async function runScenario(
     }
     const changedFiles = dryRun ? [...dryRun.filesChanged].sort() : await listChangedFiles(workdir);
     const scored = await scoreScenario({ scenario, workdir, changedFiles, commands });
-    const harnessChecks = hooks.createHarnessChecks(scenario, {
+    const harnessChecks = createHarnessChecks(scenario, {
       changedFiles,
       commands,
       dryRun,
     });
     const checks = [...scored.checks, ...harnessChecks];
     const passed = scored.passed && harnessChecks.every((check) => check.passed);
-    const score = hooks.combineScores(scored.score, checks);
+    const score = combineScores(scored.score, checks);
     const result: EvalResult = {
       id: scenario.id,
       title: scenario.title,

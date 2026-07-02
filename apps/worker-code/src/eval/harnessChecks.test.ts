@@ -29,8 +29,7 @@ describe('createHarnessChecks', () => {
       {
         passed: true,
         name: 'isolation policy',
-        detail:
-          'allowNetwork=no; allowGitHub=no; allowLinear=no; allowLiteLLM=no; externalCalls=0',
+        detail: 'allowNetwork=no; allowGitHub=no; allowLinear=no; allowLiteLLM=no; externalCalls=0',
       },
     ]);
   });

@@ -19,19 +19,15 @@ describe('renderMarkdown', () => {
             reviewVerdict: 'APROVADO COM RESSALVAS',
             reviewOutcome: 'recode',
             autoMergeExpected: false,
-            autoMergeBlockedBy: 'manual review required',
+            autoMergeBlockReason: 'manual review required',
             criticRounds: 3,
             maxCriticRounds: 3,
             commitMessage:
               'fix(eval): block merge\n\nRef: MAC-85\n\nCo-authored-by: Codex <noreply@openai.com>',
-            commitAuthor: {
-              name: 'Ranielli Montagna',
-              email: 'raniellimontagna@hotmail.com',
-            },
+            commitAuthorName: 'Ranielli Montagna',
+            commitAuthorEmail: 'raniellimontagna@hotmail.com',
           },
-          checks: [
-            check(false, 'isolation policy', 'allowNetwork=no; externalCalls=1'),
-          ],
+          checks: [check(false, 'isolation policy', 'allowNetwork=no; externalCalls=1')],
         }),
       ]),
     );
