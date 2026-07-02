@@ -29,6 +29,12 @@ function parseProviders(raw: string): CardProvider[] {
 }
 
 export function createRuntimeCards(env: RuntimeCardEnv): CardGatewayRegistry {
+  if (env.CARD_PRIMARY_PROVIDER === 'linear') {
+    throw new Error(
+      'CARD_PRIMARY_PROVIDER=linear is not supported; use CARD_EXTRA_PROVIDERS=linear for explicit legacy compatibility',
+    );
+  }
+
   const extraProviders = parseProviders(env.CARD_EXTRA_PROVIDERS);
   const enabled = new Set<CardProvider>([env.CARD_PRIMARY_PROVIDER, ...extraProviders]);
   const gateways: CardGateway[] = [];
