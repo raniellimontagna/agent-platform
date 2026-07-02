@@ -1,3 +1,6 @@
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import type { LlmClient } from '@agent-platform/llm';
 import type { Logger } from 'pino';
 import { describe, expect, it } from 'vitest';
@@ -10,8 +13,10 @@ import {
   filterAllowedFiles,
   filterDocumentationTargets,
   filterReviewCreates,
+  generateAndApplyCode,
   selectFixCandidateFiles,
 } from './codegen.js';
+import { runCommand } from './worktree.js';
 
 /** LlmClient fake: devolve as respostas da fila em ordem (repete a última). */
 function fakeLlm(responses: string[]): {
@@ -300,5 +305,68 @@ describe('filterAllowedFiles', () => {
       { path: 'src/b.ts', content: 'b' },
     ]);
     expect(result.dropped).toEqual(['tests/generated.test.ts']);
+  });
+});
+
+describe('generateAndApplyCode patch fallback', () => {
+  it('falls back to exact search/replace when full-file JSON is truncated', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'codegen-patch-fallback-'));
+    try {
+      await mkdir(join(dir, 'docs/runbooks'), { recursive: true });
+      const targetPath = 'docs/runbooks/litellm-guardrails.md';
+      const original = [
+        '# LiteLLM Guardrails',
+        '',
+        '## Validar acesso por chave',
+        '',
+        'Substitua `sk-...` pela chave virtual gerada.',
+        '',
+      ].join('\n');
+      await writeFile(join(dir, targetPath), original, 'utf8');
+
+      expect((await runCommand('git init -b main', dir)).exitCode).toBe(0);
+      expect((await runCommand(`git add ${targetPath}`, dir)).exitCode).toBe(0);
+
+      const patchResponse = {
+        prTitle: 'docs(runbooks): add gateway validation note',
+        summary: 'Adiciona nota de validacao pos-deploy do gateway.',
+        patches: [
+          {
+            path: targetPath,
+            search: '## Validar acesso por chave\n\nSubstitua `sk-...` pela chave virtual gerada.',
+            replace:
+              '## Validar acesso por chave\n\nApós deploy do gateway, valide ao menos um alias primário e um fallback direto antes de rodar um E2E real.\n\nSubstitua `sk-...` pela chave virtual gerada.',
+          },
+        ],
+      };
+
+      const { llm, calls } = fakeLlm([
+        JSON.stringify({ edit: [targetPath], create: [] }),
+        '{"prTitle":"docs(runbooks): add gateway validation note","files":[{"path":"docs/runbooks/litellm-guardrails.md","content":"# LiteLLM',
+        '{"prTitle":"docs(runbooks): add gateway validation note","files":[{"path":"docs/runbooks/litellm-guardrails.md","content":"# LiteLLM Guardrails',
+        'yaml\nlitellm_settings:\n request_timeout: 700\n',
+        JSON.stringify(patchResponse),
+      ]);
+
+      const result = await generateAndApplyCode({
+        llm,
+        dir,
+        title: 'Documentar validacao do gateway',
+        description: 'Adicione uma nota curta em docs/runbooks/litellm-guardrails.md.',
+        plan: 'Adicionar uma nota na secao de validacao.',
+        log: noopLog,
+      });
+
+      await expect(readFile(join(dir, targetPath), 'utf8')).resolves.toContain(
+        'valide ao menos um alias primário e um fallback direto',
+      );
+      expect(result).toMatchObject({
+        filesChanged: [targetPath],
+        prTitle: 'docs(runbooks): add gateway validation note',
+      });
+      expect(calls()).toBe(5);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
   });
 });

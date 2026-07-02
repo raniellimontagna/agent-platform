@@ -51,6 +51,31 @@ Regras CRÍTICAS:
   A resposta deve conter arquivos completos em JSON, não comandos como "pnpm test".
 - Não escreva nada fora do JSON.`;
 
+export const PATCH_PROMPT = `Você é um agente de engenharia de software aplicando uma edição pequena.
+Recebe o conteúdo ATUAL dos arquivos a modificar. Em vez de reescrever arquivos
+inteiros, devolva patches exatos de busca/substituição.
+
+Responda APENAS com um objeto JSON válido, sem markdown:
+{
+  "prTitle": "Conventional Commits subject in ENGLISH, imperative, <= 72 chars",
+  "summary": "resumo curto das alterações (1-2 linhas)",
+  "patches": [
+    {
+      "path": "caminho/relativo",
+      "search": "trecho EXATO que existe no arquivo atual",
+      "replace": "trecho final que deve substituir search"
+    }
+  ]
+}
+
+Regras CRÍTICAS:
+- Use patches pequenos e cirúrgicos.
+- "search" precisa existir literalmente uma única vez no arquivo atual.
+- Preserve todo conteúdo não relacionado.
+- Inclua só patches para os arquivos listados para ESTE lote.
+- NÃO devolva diff unified, comandos shell, markdown ou explicação.
+- Não escreva nada fora do JSON.`;
+
 export const FIX_PROMPT = `Você é um agente de engenharia de software corrigindo uma falha de validação.
 Recebe os arquivos que você acabou de escrever e a saída do comando que FALHOU (build/test/lint).
 Corrija a CAUSA do erro preservando todo o código correto.
