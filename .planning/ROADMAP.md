@@ -18,7 +18,7 @@ requirements, success criteria, and validation expectations.
 
 - [x] **Phase 1: Bootstrap and Architectural Inventory** - Build the factual baseline before destructive cleanup.
 - [x] **Phase 2: Living Documentation and Historical Archive** - Consolidate current docs and separate history from operations.
-- [ ] **Phase 3: Plane-Only Provider Cutover** - Remove or migrate Linear legacy behind tests and migration notes.
+- [x] **Phase 3: Plane-Only Provider Cutover** - Remove or migrate Linear legacy behind tests and migration notes. (completed 2026-07-02)
 - [ ] **Phase 4: Operational Flow Reorganization** - Make each active flow explicit, owned, and testable.
 - [ ] **Phase 5: Orchestrator Hub Refactor** - Split duplicated route/provider/render/orchestration responsibilities.
 - [ ] **Phase 6: Worker and Eval Hub Refactor** - Split worker codegen/research/validation/eval responsibilities.
@@ -81,7 +81,7 @@ current usage, while preserving explicit migration/compatibility handling for ol
   3. Database legacy fields have a documented compatibility/removal strategy and tests for existing rows if retained.
   4. `corepack pnpm verify` and eval regression pass after the cutover.
 
-**Plans**: 4/5 plans executed
+**Plans**: 5/5 plans complete
 
 Plans:
 
@@ -89,13 +89,13 @@ Plans:
 - [x] 03-02-PLAN.md
 - [x] 03-03-PLAN.md
 - [x] 03-04-PLAN.md
-- [ ] 03-05-PLAN.md
+- [x] 03-05-PLAN.md
 
 - [x] 03-01: Add characterization tests for current Plane behavior and legacy data handling.
 - [x] 03-02: Cut provider registry, env validation, and graph enablement to Plane-only defaults.
 - [x] 03-03: Cut queue, worker, and scheduler provider resolution with old BullMQ compatibility checkpoint.
 - [x] 03-04: Gate legacy webhook behavior and update Plane-only env examples.
-- [ ] 03-05: Handle schema compatibility, dashboards, docs, migration notes, and final verification.
+- [x] 03-05: Handle schema compatibility, dashboards, docs, migration notes, and final verification.
 
 ### Phase 4: Operational Flow Reorganization
 
@@ -188,7 +188,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 |-------|----------------|--------|-----------|
 | 1. Bootstrap and Architectural Inventory | 2/2 | Complete | 2026-07-02 |
 | 2. Living Documentation and Historical Archive | 2/2 | Complete | 2026-07-02 |
-| 3. Plane-Only Provider Cutover | 2/5 | In Progress | - |
+| 3. Plane-Only Provider Cutover | 5/5 | Complete   | 2026-07-02 |
 | 4. Operational Flow Reorganization | 0/2 | Not started | - |
 | 5. Orchestrator Hub Refactor | 0/3 | Not started | - |
 | 6. Worker and Eval Hub Refactor | 0/3 | Not started | - |

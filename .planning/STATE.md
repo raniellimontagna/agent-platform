@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_phase: 03
-current_phase_name: Plane-Only Provider Cutover
-status: executing
-stopped_at: Completed 03-04-PLAN.md
-last_updated: "2026-07-02T05:38:00Z"
+status: completed
+stopped_at: Completed 03-05-PLAN.md
+last_updated: "2026-07-02T12:40:45.838Z"
 last_activity: 2026-07-02
-last_activity_desc: Phase 03 Plan 04 completed after removing live Linear exposure
+last_activity_desc: Phase 03 marked complete
 progress:
   total_phases: 7
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 9
-  completed_plans: 8
-  percent: 80
+  completed_plans: 9
+  percent: 43
+current_phase_name: Plane-Only Provider Cutover
 ---
 
 # Project State
@@ -29,20 +29,20 @@ legacy removal, modular flow refactors, and verification gates.
 
 ## Current Position
 
-Phase: 03 (Plane-Only Provider Cutover) — EXECUTING
-Plan: 4 of 5
-Status: Ready to execute
-Last activity: 2026-07-02 — Plan 04 completed after removing live Linear exposure
+Phase: 03 — COMPLETE
+Plan: 5 of 5
+Status: Phase 03 complete
+Last activity: 2026-07-02 — Phase 03 marked complete
 
-Progress: [████████░░] 80%
+Progress: [████░░░░░░] 43%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 8
-- Average duration: ~24 minutes
-- Total execution time: ~2.0 hours documented effort
+- Total plans completed: 9
+- Average duration: ~23 minutes
+- Total execution time: ~2.2 hours documented effort
 
 **By Phase:**
 
@@ -50,7 +50,7 @@ Progress: [████████░░] 80%
 |-------|-------|-------|----------|
 | 1. Bootstrap and Architectural Inventory | 2 | 2 | ~28m |
 | 2. Living Documentation and Historical Archive | 2 | 2 | ~28m |
-| 3. Plane-Only Provider Cutover | 4 | 5 | ~14m |
+| 3. Plane-Only Provider Cutover | 5 | 5 | ~14m |
 | 4. Operational Flow Reorganization | 0 | 2 | - |
 | 5. Orchestrator Hub Refactor | 0 | 3 | - |
 | 6. Worker and Eval Hub Refactor | 0 | 3 | - |
@@ -58,8 +58,8 @@ Progress: [████████░░] 80%
 
 **Recent Trend:**
 
-- Last 5 completed plans: 02-02, 03-01, 03-02, 03-03, 03-04 all complete.
-- Trend: Documentation/inventory phases complete; Phase 3 repository and live webhook cutover are complete except final schema/docs/dashboard verification.
+- Last 5 completed plans: 03-01, 03-02, 03-03, 03-04, 03-05 all complete.
+- Trend: Phase 3 Plane-only provider cutover is complete with schema defaults, dashboards, docs, live webhook exposure, and production row audit evidence recorded.
 
 **Recent Plan Metrics:**
 
@@ -69,6 +69,7 @@ Progress: [████████░░] 80%
 | Phase 03 P02 | 6m19s | 2 tasks | 6 files |
 | Phase 03 P03 | 16m10s | 3 tasks | 6 files |
 | Phase 03 P04 | 24m29s | 2 tasks | 4 files |
+| Phase 03 P05 | 14m03s | 3 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -92,6 +93,9 @@ Progress: [████████░░] 80%
 - [Phase 03]: 03-03: Deployed BullMQ inspection found no waiting/delayed/paused missing-provider plan jobs; two failed legacy jobs had persisted Linear provider/card rows.
 - [Phase 03]: 03-04: Repository webhook gating is implemented; legacy Linear webhook route is disabled unless explicit compatibility config is present.
 - [Phase 03]: 03-04: Deployed env no longer sets CARD_EXTRA_PROVIDERS=linear, Tailscale Funnel exposes only /webhooks/plane, and the Linear webhook pointing at /webhooks/linear is disabled.
+- [Phase 03]: 03-05: New generic run/card identity defaults to Plane while legacy-only Linear identity remains readable.
+- [Phase 03]: 03-05: Legacy Linear columns are retained; only the card_provider default changed.
+- [Phase 03]: 03-05: Production audit found no legacy-only run rows, but destructive column cleanup still requires a separate confirmation.
 
 ### Pending Todos
 
@@ -100,9 +104,9 @@ Progress: [████████░░] 80%
 
 ### Phase 3 Gates
 
-- Confirm production data and dashboards can tolerate migration away from `linear_issue_*` fields in 03-05.
-- Add or update Plane-only characterization tests before deleting Linear runtime code.
-- Keep GSD Core loaded in Codex before invoking `$gsd-autonomous --from 3`.
+- Phase 3 provider cutover gates are complete.
+- Future destructive cleanup still requires separate confirmation before dropping or renaming `linear_issue_*` fields.
+- Keep GSD Core loaded in Codex before invoking the next autonomous phase.
 
 ## Deferred Items
 
@@ -113,6 +117,6 @@ Progress: [████████░░] 80%
 
 ## Session Continuity
 
-Last session: 2026-07-02T05:38:00Z
-Stopped at: Completed 03-04-PLAN.md
+Last session: 2026-07-02T12:40:08.088Z
+Stopped at: Completed 03-05-PLAN.md
 Resume file: None
