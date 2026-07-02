@@ -52,6 +52,21 @@ Evidence anchors:
 | Artifact store | `apps/orchestrator-api/src/artifacts.ts`, `apps/orchestrator-api/src/routes/artifacts.ts` | Active run artifact persistence and read API for plan, patch, review, validation, summary, and research outputs. |
 | Registry and skills | `apps/orchestrator-api/src/agents.ts`, `agent-skills/registry.json`, `apps/worker-code/src/executor/agentSkills.ts` | Active agent-key and prompt-skill ownership; `coder-agent` remains compatibility while specialized agents use explicit keys. |
 
+## Canonical Source Owners
+
+Docs should link to these owners instead of copying mutable runtime values.
+
+| Concept | Canonical owner | Current terminology |
+|---------|-----------------|---------------------|
+| Workflow labels and persisted workflow values | `apps/orchestrator-api/src/workflows.ts` | `workflow:landing-page` selects the research-to-landing workflow. |
+| Plane label IDs | `docs/runbooks/plane-migration-2026-06-20.md`, `apps/orchestrator-api/.env.example` | Plane labels are active Plane intake config; Linear labels are legacy/migration-only. |
+| Agent keys and role names | `apps/orchestrator-api/src/agents.ts` | `software-delivery-pipeline` is the current conceptual identity; `coder-agent` remains the compatibility key. |
+| Skill bundles | `agent-skills/registry.json`, `apps/worker-code/src/executor/agentSkills.ts` | Local reviewed skills are injected by agent key; specialized landing/research agents keep dedicated bundles. |
+| Model aliases and role defaults | `packages/llm/src/index.ts`, `packages/graph/src/roleModels.ts` | Role docs use aliases, not provider-specific model names. |
+| Runner paths and runner artifacts | `apps/worker-code/.env.example`, `RUNNER_ARTIFACTS_DIR`, `apps/worker-code/src/executor/runJob.ts` | Worker execution owns worktrees, generated media paths, validation outputs, and callback payloads. |
+| Stored run artifacts | `apps/orchestrator-api/src/artifacts.ts`, `apps/orchestrator-api/src/routes/artifacts.ts` | The orchestrator stores plan, patch, review, validation, summary, and research artifacts. |
+| Env and secrets | `apps/orchestrator-api/.env.example`, `apps/worker-code/.env.example`, `docs/runbooks/secrets.md` | Docs name env owners and secret rotation paths, not live secret values. |
+
 ## Operational Surface Status
 
 | Surface | Status | Current owner | Runbook / evidence |
@@ -59,7 +74,7 @@ Evidence anchors:
 | Scheduler | Active | `apps/orchestrator-api/src/scheduleWorker.ts` | [scheduler](runbooks/scheduler.md), `apps/orchestrator-api/src/scheduleWorker.test.ts`, `apps/orchestrator-api/src/routes/schedules.test.ts` |
 | Mission Control | Active read-only; actions deferred | `apps/orchestrator-api/src/routes/admin.ts` | [mission-control](runbooks/mission-control.md), `apps/orchestrator-api/src/routes/admin.test.ts` |
 | Eval harness | Active local verification | `apps/worker-code/src/eval/runEval.ts` | [eval-harness](runbooks/eval-harness.md), `apps/worker-code/src/eval/runEval.test.ts`, `apps/worker-code/src/eval/roleQuality.test.ts` |
-| Registry / skills | Active, source-owner normalization continues in 04-02 | `agent-skills/registry.json`, `apps/worker-code/src/executor/agentSkills.ts` | [agent-skills](runbooks/agent-skills.md), `apps/worker-code/src/executor/agentSkills.test.ts` |
+| Registry / skills | Active | `agent-skills/registry.json`, `apps/worker-code/src/executor/agentSkills.ts` | [agent-skills](runbooks/agent-skills.md), `apps/worker-code/src/executor/agentSkills.test.ts` |
 | Artifact store | Active read API; richer Mission Control display deferred | `apps/orchestrator-api/src/artifacts.ts`, `apps/orchestrator-api/src/routes/artifacts.ts` | `apps/orchestrator-api/src/artifacts.test.ts`, `apps/orchestrator-api/src/routes/artifacts.test.ts`, [research-to-landing-workflow](runbooks/research-to-landing-workflow.md) |
 | Linear intake | Legacy/migration-only | `/webhooks/linear`, legacy `linear_issue_*` columns | Disabled unless explicit rollback compatibility config is present. |
 
