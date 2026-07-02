@@ -5,6 +5,16 @@ workflows and recent runs. The first version is intentionally read-only: it
 describes scenarios, shows mission state, and helps an operator rehearse a safe
 manual launch without triggering Plane, webhooks, GitHub, or live agent runs.
 
+## Status And Owners
+
+| Surface | Status | Source of truth | Focused evidence |
+|---------|--------|-----------------|------------------|
+| Mission Control admin routes | Active read-only | `apps/orchestrator-api/src/routes/admin.ts` | `apps/orchestrator-api/src/routes/admin.test.ts` |
+| Research-to-landing scenario contract | Active | `apps/orchestrator-api/src/missionScenarios.ts` | `apps/orchestrator-api/src/missionScenarios.test.ts` |
+| Mission timeline stages | Active | `apps/orchestrator-api/src/missionTimeline.ts` | `apps/orchestrator-api/src/missionTimeline.test.ts` |
+| Artifact inspection links | Active read-only | `apps/orchestrator-api/src/artifacts.ts`, `apps/orchestrator-api/src/routes/artifacts.ts` | `apps/orchestrator-api/src/artifacts.test.ts`, `apps/orchestrator-api/src/routes/artifacts.test.ts` |
+| Launch, replay, approval, retry, cancel controls | Deferred | Phase 5/mission-control follow-up | Not exposed from this runbook |
+
 ## Scope
 
 Use Mission Control to:
@@ -17,6 +27,11 @@ Use Mission Control to:
 Do not use this version to start or replay work. Any real E2E run still starts
 from Plane labels and the existing webhook/scheduler path described in
 [`research-to-landing-workflow.md`](research-to-landing-workflow.md).
+
+Mission Control can confirm the composed workflow after it starts: first run
+`research_landing_page`, artifact `research`, landing continuation run,
+approval state, PR/deploy metadata, and artifact links. It must not be treated
+as a privileged operator action panel in this phase.
 
 ## Access
 

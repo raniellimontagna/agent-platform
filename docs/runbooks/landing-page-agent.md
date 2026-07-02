@@ -5,6 +5,15 @@ agent-platform. Ele usa o mesmo LangGraph do pipeline de entrega
 (`software-delivery-pipeline` / `coder-agent` compatível), mas recebe skills
 versionadas no codegen para construir landing pages prontas em pouco tempo.
 
+## Status e propriedade
+
+| Superficie | Status | Fonte de verdade | Evidencia local |
+|------------|--------|------------------|-----------------|
+| Selecao direta `agent:landing-page` | Ativo | `apps/orchestrator-api/src/agents.ts`, `apps/orchestrator-api/src/routes/webhooks.ts` | `apps/orchestrator-api/src/routes/webhooks.test.ts` |
+| Continuacao do `workflow:landing-page` | Ativo | `apps/orchestrator-api/src/worker.ts`, `apps/orchestrator-api/src/workflows.ts` | `apps/orchestrator-api/src/worker.test.ts`, `apps/orchestrator-api/src/workflows.test.ts` |
+| Execucao de codigo, validacao e PR | Ativo | `apps/worker-code/src/executor/runJob.ts`, `packages/graph/src/nodes/coder.ts` | `apps/worker-code/src/executor/runJob.test.ts`, `packages/graph/src/nodes/coder.test.ts` |
+| Skill bundle | Ativo | `agent-skills/registry.json`, `apps/worker-code/src/executor/agentSkills.ts` | `apps/worker-code/src/executor/agentSkills.test.ts` |
+
 ## Como selecionar
 
 Em um card Plane:
@@ -16,6 +25,11 @@ Em um card Plane:
 Sem `agent:landing-page`, o fluxo continua usando a chave compatível
 `coder-agent` do pipeline padrão.
 Cards Linear ainda são aceitos apenas no provider legado/opcional.
+
+No workflow composto, nao selecione este agente manualmente. A label
+`workflow:landing-page` faz o primeiro run com `data-collector-agent` e o
+orchestrator cria a continuacao com `landing-page-agent` depois que o artifact
+`research` existe.
 
 ## Skills atuais
 
@@ -70,6 +84,30 @@ Veja também `docs/runbooks/agent-skills.md`.
 - A skill `landing-page-production` é a orquestradora do pacote: ela deve
   equilibrar impacto visual, UX, acessibilidade, SEO, motion e validação.
 
+## Contrato de entrada e saida
+
+Entrada esperada:
+
+- plano aprovado ou auto-aprovado pelo grafo;
+- contexto do card Plane;
+- research pack quando o run vier de `workflow:landing-page`;
+- `Landing Page Brief` priorizado antes do research pack completo quando a
+  pesquisa o produziu;
+- repo destino definido pelo card, pelo workflow ou pelo default de deploy.
+
+Saida esperada:
+
+- mudancas de landing page com validacao local;
+- Draft PR ou PR pronto conforme regras de auto-merge;
+- artifacts de plano, patch, validacao, review e summary quando produzidos pelo
+  pipeline;
+- report final no Plane com PR, limitacoes e proximas acoes.
+
+Se a pesquisa estiver incompleta, o agente deve usar apenas claims com fonte e
+registrar lacunas. Falhas de validacao seguem o self-correction de
+`apps/worker-code/src/executor/runJob.ts`; falhas finais ficam no report, sem
+inventar evidencias para abrir PR.
+
 ## Próximas evoluções
 
 - Criar eval específico para landing pages verificando estrutura mínima de LP.
@@ -78,3 +116,9 @@ Veja também `docs/runbooks/agent-skills.md`.
 - Criar integração runtime para Higgsfield: autenticação OAuth persistida no
   runner, comandos/MCP controlados por policy, artifact store para mídia gerada
   e possível `media-generation-agent` dedicado para imagens/vídeos/animações.
+
+## Verificacao local
+
+```bash
+rtk corepack pnpm vitest run apps/orchestrator-api/src/workflows.test.ts apps/orchestrator-api/src/worker.test.ts packages/graph/src/nodes/coder.test.ts apps/worker-code/src/executor/agentSkills.test.ts
+```

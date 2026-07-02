@@ -3,6 +3,15 @@
 `data-collector-agent` é o agente planejado para pesquisa e coleta de dados
 públicos que alimentam outros agentes, especialmente o `landing-page-agent`.
 
+## Status e propriedade
+
+| Superficie | Status | Fonte de verdade | Evidencia local |
+|------------|--------|------------------|-----------------|
+| Selecao por label `agent:data-collector` | Ativo | `apps/orchestrator-api/src/agents.ts`, `apps/orchestrator-api/src/routes/webhooks.ts` | `apps/orchestrator-api/src/routes/webhooks.test.ts` |
+| Primeiro passo do `workflow:landing-page` | Ativo | `apps/orchestrator-api/src/workflows.ts`, `apps/orchestrator-api/src/worker.ts` | `apps/orchestrator-api/src/workflows.test.ts`, `apps/orchestrator-api/src/worker.test.ts` |
+| Execucao de pesquisa e artifact `research` | Ativo | `apps/worker-code/src/executor/runJob.ts`, `apps/orchestrator-api/src/artifacts.ts` | `apps/worker-code/src/executor/runJob.test.ts`, `apps/orchestrator-api/src/artifacts.test.ts` |
+| Skill bundle | Ativo | `agent-skills/registry.json`, `apps/worker-code/src/executor/agentSkills.ts` | `apps/worker-code/src/executor/agentSkills.test.ts` |
+
 ## Como selecionar
 
 Em um card Plane:
@@ -14,6 +23,10 @@ Em um card Plane:
 Para o fluxo completo coleta → landing page, use `workflow:landing-page` em vez
 de `agent:data-collector`. Nesse modo o orchestrator roda a coleta primeiro e
 encadeia automaticamente o `landing-page-agent` com o artifact `research`.
+
+`coder-agent` continua existindo como chave de compatibilidade para o pipeline
+geral. Este agente e uma especializacao de pesquisa dentro da identidade
+operacional `software-delivery-pipeline`.
 
 ## Planner de pesquisa
 
@@ -182,6 +195,24 @@ evita habilitar execução ampla fora da policy de coleta.
 
 Cards Linear ainda podem ser usados apenas no provider legado/opcional.
 
+## Contrato de saida
+
+Um run de `data-collector-agent` bem-sucedido deve:
+
+- terminar sem Draft PR quando estiver atuando como primeiro passo do
+  `workflow:landing-page`;
+- salvar artifact `research` com fontes, metodo, status, achados, limitacoes e
+  `## Landing Page Brief`;
+- registrar qualquer fonte inacessivel como limitacao em vez de inventar
+  evidencia;
+- deixar o card Plane pronto para a continuacao automatica criada por
+  `apps/orchestrator-api/src/worker.ts`.
+
+Falhas de provider externo, scraping policy, token ausente ou fonte bloqueada
+sao tratadas como limitacoes auditaveis quando o restante da pesquisa ainda e
+util. Falhas bloqueantes devem aparecer no report do run e nao devem disparar
+uma landing sem artifact confiavel.
+
 ## Política
 
 - Preferir páginas públicas e APIs oficiais.
@@ -211,3 +242,9 @@ compliance com termos do site.
   confirmando que o run de coleta salva o artifact `research` com
   `Landing Page Brief` e que o segundo run recebe esse briefing priorizado como
   contexto do `landing-page-agent`.
+
+## Verificacao local
+
+```bash
+rtk corepack pnpm vitest run apps/orchestrator-api/src/workflows.test.ts apps/orchestrator-api/src/worker.test.ts apps/worker-code/src/executor/runJob.test.ts apps/worker-code/src/executor/agentSkills.test.ts
+```
