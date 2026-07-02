@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const originalEnv = { ...process.env };
 
-function seedAgentEnv() {
+function seedAgentEnv(input: { extraProviders?: string } = {}) {
   process.env.PORT = '3000';
   process.env.NODE_ENV = 'test';
   process.env.LOG_LEVEL = 'info';
@@ -13,7 +13,7 @@ function seedAgentEnv() {
   process.env.LINEAR_API_KEY = 'linear-key';
   process.env.LINEAR_WEBHOOK_SECRET = 'linear-secret';
   process.env.CARD_PRIMARY_PROVIDER = 'plane';
-  process.env.CARD_EXTRA_PROVIDERS = 'linear';
+  process.env.CARD_EXTRA_PROVIDERS = input.extraProviders ?? '';
   process.env.PLANE_BASE_URL = 'https://example.com/plane';
   process.env.PLANE_API_KEY = 'plane-key';
   process.env.PLANE_WORKSPACE_SLUG = 'workspace';
@@ -28,13 +28,67 @@ function seedAgentEnv() {
 }
 
 afterEach(() => {
+  vi.doUnmock('@agent-platform/graph');
   vi.resetModules();
   process.env = { ...originalEnv };
 });
 
+async function importAgentWithGraphMock() {
+  const buildAgentGraph = vi.fn((deps: { cards: { provider: string }; doneStateId: string }) => ({
+    provider: deps.cards.provider,
+    doneStateId: deps.doneStateId,
+  }));
+  const createCheckpointer = vi.fn(async () => ({ mocked: true }));
+
+  vi.doMock('@agent-platform/graph', () => ({
+    buildAgentGraph,
+    createCheckpointer,
+  }));
+
+  const agent = await import('./agent.js');
+
+  return { ...agent, buildAgentGraph, createCheckpointer };
+}
+
+describe('getAgent graph provider enablement', () => {
+  it('builds only the Plane graph for default runtime config', async () => {
+    seedAgentEnv();
+    const { getAgent, buildAgentGraph } = await importAgentWithGraphMock();
+
+    const agent = await getAgent();
+
+    expect(Object.keys(agent.graphs)).toEqual(['plane']);
+    expect(agent.graph).toBe(agent.graphs.plane);
+    expect(buildAgentGraph).toHaveBeenCalledTimes(1);
+    expect(buildAgentGraph.mock.calls[0]?.[0]).toMatchObject({
+      cards: { provider: 'plane' },
+      doneStateId: 'plane-done',
+    });
+  });
+
+  it('builds a Linear graph only for explicit legacy extra-provider config', async () => {
+    seedAgentEnv({ extraProviders: 'linear' });
+    const { getAgent, buildAgentGraph } = await importAgentWithGraphMock();
+
+    const agent = await getAgent();
+
+    expect(Object.keys(agent.graphs).sort()).toEqual(['linear', 'plane']);
+    expect(agent.graph).toBe(agent.graphs.plane);
+    expect(buildAgentGraph).toHaveBeenCalledTimes(2);
+    expect(buildAgentGraph.mock.calls.map(([deps]) => deps.cards.provider)).toEqual([
+      'plane',
+      'linear',
+    ]);
+    expect(buildAgentGraph.mock.calls.map(([deps]) => deps.doneStateId)).toEqual([
+      'plane-done',
+      'linear-done',
+    ]);
+  });
+});
+
 describe('resolveGraphBinding', () => {
   it('uses provider-specific gateway and done state for Plane and Linear graphs', async () => {
-    seedAgentEnv();
+    seedAgentEnv({ extraProviders: 'linear' });
     const { resolveGraphBinding } = await import('./agent.js');
 
     const cards = {
