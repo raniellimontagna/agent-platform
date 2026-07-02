@@ -17,6 +17,19 @@ Use them to understand why a feature exists or to recover implementation
 details. Do not treat them as current source of truth without checking
 `docs/CURRENT.md` and `docs/ARCHITECTURE.md`.
 
+## Milestone Governance Records
+
+- `.planning/phases/07-final-verification-and-governance-closeout/07-MILESTONE-AUDIT.md`
+  is the final cleanup milestone audit for VER-04. It names removed legacy,
+  accepted gaps, remaining debt, and next cleanup candidates with source
+  evidence.
+- `.planning/phases/07-final-verification-and-governance-closeout/07-FINAL-GATE-EVIDENCE.md`
+  records the final VER-02 full gate and VER-03 eval regression evidence.
+
+These records are historical governance evidence. Use them to understand the
+cleanup milestone closeout, then return to `docs/CURRENT.md` and active runbooks
+for current operating guidance.
+
 ## Migration Records
 
 - `docs/runbooks/plane-migration-2026-06-20.md` — one-time Linear-to-Plane

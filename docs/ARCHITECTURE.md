@@ -16,6 +16,13 @@ explícito, sem exposição pública por default.
 > Para separar documentação viva de histórico, comece pelo mapa em
 > [`README.md`](./README.md), o estado atual em [`CURRENT.md`](./CURRENT.md) e
 > o índice histórico em [`HISTORICAL.md`](./HISTORICAL.md).
+>
+> A limpeza arquitetural GSD foi fechada na Phase 07: VER-02 e VER-03 estão em
+> [`07-FINAL-GATE-EVIDENCE.md`](../.planning/phases/07-final-verification-and-governance-closeout/07-FINAL-GATE-EVIDENCE.md),
+> e VER-04 está no audit
+> [`07-MILESTONE-AUDIT.md`](../.planning/phases/07-final-verification-and-governance-closeout/07-MILESTONE-AUDIT.md).
+> O audit lista removed legacy, accepted gaps, remaining debt e next cleanup
+> candidates; Plane continua primary e Linear continua legacy/migration-only.
 
 ---
 

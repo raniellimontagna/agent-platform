@@ -7,6 +7,14 @@ workspace `attodev`, project `Agent Platform` (`AGP`), are the current
 operational intake surface. Linear remains legacy/migration-only compatibility
 and migration history; it is not an active provider path for new work.
 
+Phase 07 closed the cleanup milestone with source-backed governance evidence:
+VER-02 passed the final `rtk corepack pnpm verify` gate, VER-03 remained 14/14
+with score 100 and score delta 0, and VER-04 is recorded in
+[`07-MILESTONE-AUDIT.md`](../.planning/phases/07-final-verification-and-governance-closeout/07-MILESTONE-AUDIT.md).
+Use that audit, plus
+[`07-FINAL-GATE-EVIDENCE.md`](../.planning/phases/07-final-verification-and-governance-closeout/07-FINAL-GATE-EVIDENCE.md),
+for removed legacy, accepted gaps, remaining debt, and next cleanup candidates.
+
 ## Canonical Flow
 
 ```text
@@ -88,6 +96,11 @@ rtk corepack pnpm verify
 
 This runs lint, build, tests, worker eval, and eval regression.
 
+The latest cleanup milestone evidence for this gate is in
+`.planning/phases/07-final-verification-and-governance-closeout/07-FINAL-GATE-EVIDENCE.md`.
+That file is evidence, not a replacement for rerunning the command before new
+runtime changes.
+
 ## Provider Cutover Status
 
 - New run/card identity defaults to Plane.
@@ -99,6 +112,8 @@ This runs lint, build, tests, worker eval, and eval regression.
 - Do not drop or rename `linear_issue_id` or `linear_issue_identifier` until a
   read-only production row audit is recorded and a separate destructive cleanup
   confirmation exists.
+- The final audit keeps Linear destructive cleanup as remaining debt and next
+  cleanup work; Phase 07 did not change Linear compatibility behavior.
 
 ## Active Runbooks
 
@@ -125,4 +140,7 @@ refactor effort:
 - Phase 4: flow and naming normalization.
 - Phase 5: orchestrator hub refactor.
 - Phase 6: worker/eval hub refactor.
-- Phase 7: final verification and governance closeout.
+- Phase 7: final verification and governance closeout. VER-02 and VER-03 are
+  proven by final gate evidence; VER-04 is closed by the source-backed milestone
+  audit. Remaining debt and next cleanup candidates live in
+  `.planning/phases/07-final-verification-and-governance-closeout/07-MILESTONE-AUDIT.md`.
