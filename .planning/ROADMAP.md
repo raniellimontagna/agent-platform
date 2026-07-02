@@ -155,13 +155,28 @@ while preserving validation, self-correction, and eval behavior.
   3. Eval harness is split into scenario loading, scoring, report rendering, and CLI orchestration without changing reports.
   4. Firecrawl/Playwright/Instagram/Apify research paths share policy, sanitization, and output helpers where safe.
 
-**Plans**: 3 plans
+**Plans**: 4 plans
 
 Plans:
+**Wave 1**
 
 - [ ] 06-01: Refactor `runJob.ts` around execution seams and characterization tests.
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 06-02: Refactor `codegen.ts` around prompt, JSON, file, apply, and fix modules.
-- [ ] 06-03: Refactor eval harness and data-collector helper duplication.
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 06-03: Refactor eval harness around scenario loading, scenario running, report, trend, and harness helpers.
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 06-04: Refactor data-collector research output helpers and run the full phase gate.
+
+**Cross-cutting constraints:**
+
+- VER-01/D-02: characterization tests exist and fail before helper extraction, then pass after moves.
 
 ### Phase 7: Final Verification and Governance Closeout
 
@@ -195,7 +210,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 3. Plane-Only Provider Cutover | 5/5 | Complete    | 2026-07-02 |
 | 4. Operational Flow Reorganization | 2/2 | Complete    | 2026-07-02 |
 | 5. Orchestrator Hub Refactor | 3/3 | Complete    | 2026-07-02 |
-| 6. Worker and Eval Hub Refactor | 0/3 | Not started | - |
+| 6. Worker and Eval Hub Refactor | 0/4 | Not started | - |
 | 7. Final Verification and Governance Closeout | 0/2 | Not started | - |
 
 ## Autonomous Execution Notes
