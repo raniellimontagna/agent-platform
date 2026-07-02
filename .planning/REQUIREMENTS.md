@@ -75,7 +75,7 @@ living documentation, modular flows, removed legacy, and verification gates.
 - [x] **REF-05**: Eval harness files are split into scenario loading, scoring,
   reporting, and CLI orchestration.
 
-- [ ] **REF-06**: Data collection research modules share policy/sanitization/output
+- [x] **REF-06**: Data collection research modules share policy/sanitization/output
   helpers instead of duplicating provider-specific plumbing.
 
 ### Verification
@@ -133,7 +133,7 @@ living documentation, modular flows, removed legacy, and verification gates.
 | REF-03 | Phase 6 | Complete |
 | REF-04 | Phase 6 | Complete |
 | REF-05 | Phase 6 | Complete |
-| REF-06 | Phase 6 | Pending |
+| REF-06 | Phase 6 | Complete |
 | VER-01 | Phase 5, Phase 6 | Complete |
 | VER-02 | Phase 7 | Pending |
 | VER-03 | Phase 7 | Pending |
