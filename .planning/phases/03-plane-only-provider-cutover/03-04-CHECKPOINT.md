@@ -2,14 +2,14 @@
 phase: 03-plane-only-provider-cutover
 plan: "04"
 checkpoint: deployed-env-and-webhook-exposure
-status: blocked
+status: resolved
 recorded_at: "2026-07-02T05:20:00Z"
-resume_signal: "Type approved after deployed env and webhook exposure are confirmed, or describe the live-state difference to replan deployment notes."
+resolved_at: "2026-07-02T05:38:00Z"
 ---
 
 # Phase 03 Plan 04 Checkpoint: Deployed Env and Webhook Exposure
 
-Plan 03-04 Task 1 is complete in the repository, but Task 2 remains blocked on live deployment state. This file records the current read-only evidence without marking `03-04-PLAN.md` complete.
+Plan 03-04 Task 1 completed in the repository, and Task 2 was later resolved after explicit user approval to remove live Linear exposure. This file preserves the original checkpoint evidence and the final resolution.
 
 ## Automated Work Completed
 
@@ -51,16 +51,15 @@ The plan requires confirming deployed env and webhook exposure do not leave Line
 
 This may be valid if the operator intentionally wants legacy compatibility during the cutover, but the plan cannot infer that intent from repository state or read-only inspection.
 
-## Required Operator Decision
+## Resolution
 
-Choose one path before creating `03-04-SUMMARY.md` and advancing to Plan 03-05:
+User approved removing Linear from live exposure. The following changes were applied on LXC 201:
 
-1. Confirm the deployed Linear compatibility/exposure is intentional legacy compatibility for now, and confirm `/webhooks/plane` remains the active Plane intake path.
-2. Or remove/disable the live Linear compatibility path outside this agent:
-   - remove `CARD_EXTRA_PROVIDERS=linear` from the deployed env or secret store and restart/redeploy the orchestrator;
-   - remove `/webhooks/linear` from Tailscale Funnel or keep it only if explicitly intended as compatibility;
-   - disable the Linear webhook registration that points to `/webhooks/linear`.
+- `CARD_EXTRA_PROVIDERS=` is now empty in the deployed compose env and in the recreated `orchestrator-api-1` container.
+- Tailscale Funnel now exposes only `/webhooks/plane`.
+- Linear webhook `7876188c-7893-41e5-be1d-f2f099b6b7eb` now has `enabled=false`.
+- API health returned 200 after the API container was recreated.
 
-## Resume Signal
+## Final State
 
-Type `approved` after deployed env and webhook exposure are confirmed, or describe the intended live-state difference so Plan 03-04 can be replanned or deployment notes can be updated.
+This checkpoint is resolved. See `.planning/phases/03-plane-only-provider-cutover/03-04-SUMMARY.md` for plan completion evidence.
