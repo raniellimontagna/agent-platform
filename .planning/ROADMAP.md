@@ -114,8 +114,8 @@ entry points and no duplicated conceptual sources of truth.
 
 Plans:
 
-- [ ] 04-01: Consolidate flow documentation and align it with tests and code entry points.
-- [ ] 04-02: Normalize workflow/agent/label/source-of-truth naming across docs and code.
+- [ ] 04-01-PLAN.md — Consolidate flow documentation and align it with tests and code entry points.
+- [ ] 04-02-PLAN.md — Normalize workflow/agent/label/source-of-truth naming across docs and code.
 
 ### Phase 5: Orchestrator Hub Refactor
 
