@@ -19,7 +19,7 @@ requirements, success criteria, and validation expectations.
 - [x] **Phase 1: Bootstrap and Architectural Inventory** - Build the factual baseline before destructive cleanup.
 - [x] **Phase 2: Living Documentation and Historical Archive** - Consolidate current docs and separate history from operations.
 - [x] **Phase 3: Plane-Only Provider Cutover** - Remove or migrate Linear legacy behind tests and migration notes. (completed 2026-07-02)
-- [ ] **Phase 4: Operational Flow Reorganization** - Make each active flow explicit, owned, and testable.
+- [x] **Phase 4: Operational Flow Reorganization** - Make each active flow explicit, owned, and testable. (completed 2026-07-02)
 - [ ] **Phase 5: Orchestrator Hub Refactor** - Split duplicated route/provider/render/orchestration responsibilities.
 - [ ] **Phase 6: Worker and Eval Hub Refactor** - Split worker codegen/research/validation/eval responsibilities.
 - [ ] **Phase 7: Final Verification and Governance Closeout** - Prove the system, document remaining debt, and close the milestone.
@@ -110,12 +110,12 @@ entry points and no duplicated conceptual sources of truth.
   3. Scheduler, Mission Control, eval harness, registry, skills, and artifact store have active docs or deliberate archive status.
   4. Agent keys, skill registry, model aliases, labels, and workflow labels have a named canonical source.
 
-**Plans**: 1/2 plans executed
+**Plans**: 2/2 plans complete
 
 Plans:
 
 - [x] 04-01-PLAN.md — Consolidate flow documentation and align it with tests and code entry points.
-- [ ] 04-02-PLAN.md — Normalize workflow/agent/label/source-of-truth naming across docs and code.
+- [x] 04-02-PLAN.md — Normalize workflow/agent/label/source-of-truth naming across docs and code.
 
 ### Phase 5: Orchestrator Hub Refactor
 
@@ -189,7 +189,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 1. Bootstrap and Architectural Inventory | 2/2 | Complete | 2026-07-02 |
 | 2. Living Documentation and Historical Archive | 2/2 | Complete | 2026-07-02 |
 | 3. Plane-Only Provider Cutover | 5/5 | Complete   | 2026-07-02 |
-| 4. Operational Flow Reorganization | 1/2 | In Progress|  |
+| 4. Operational Flow Reorganization | 2/2 | Complete   | 2026-07-02 |
 | 5. Orchestrator Hub Refactor | 0/3 | Not started | - |
 | 6. Worker and Eval Hub Refactor | 0/3 | Not started | - |
 | 7. Final Verification and Governance Closeout | 0/2 | Not started | - |
