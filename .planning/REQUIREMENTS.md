@@ -59,10 +59,10 @@ living documentation, modular flows, removed legacy, and verification gates.
 
 ### Refactor
 
-- [ ] **REF-01**: Shared route/auth/render helpers replace duplicated `requireAuth`,
+- [x] **REF-01**: Shared route/auth/render helpers replace duplicated `requireAuth`,
   `escapeHtml`, `formatDate`, and similar local copies where appropriate.
 
-- [ ] **REF-02**: Webhook handling is split into provider-neutral intake and
+- [x] **REF-02**: Webhook handling is split into provider-neutral intake and
   Plane-specific parsing/transition logic.
 
 - [ ] **REF-03**: Worker `runJob` responsibilities are separated into dispatch,
@@ -80,7 +80,7 @@ living documentation, modular flows, removed legacy, and verification gates.
 
 ### Verification
 
-- [ ] **VER-01**: Characterization tests protect behavior before each risky refactor.
+- [x] **VER-01**: Characterization tests protect behavior before each risky refactor.
 - [ ] **VER-02**: `corepack pnpm verify` passes at the end of each phase.
 - [ ] **VER-03**: Evals remain at 14/14 with no score regression after provider and
   flow cleanup.
@@ -128,13 +128,13 @@ living documentation, modular flows, removed legacy, and verification gates.
 | FLOW-02 | Phase 4 | Pending |
 | FLOW-03 | Phase 4 | Pending |
 | FLOW-04 | Phase 4 | Pending |
-| REF-01 | Phase 5 | Pending |
-| REF-02 | Phase 5 | Pending |
+| REF-01 | Phase 5 | Complete |
+| REF-02 | Phase 5 | Complete |
 | REF-03 | Phase 6 | Pending |
 | REF-04 | Phase 6 | Pending |
 | REF-05 | Phase 6 | Pending |
 | REF-06 | Phase 6 | Pending |
-| VER-01 | Phase 5, Phase 6 | Pending |
+| VER-01 | Phase 5, Phase 6 | Complete |
 | VER-02 | Phase 7 | Pending |
 | VER-03 | Phase 7 | Pending |
 | VER-04 | Phase 7 | Pending |
