@@ -2,7 +2,7 @@ import { createLlmClient } from '@agent-platform/llm';
 import { env } from '../env.js';
 import { logger } from '../logger.js';
 import type { CommandResult, Job, JobResult } from '../types.js';
-import { applyFix, generateAndApplyCode } from './codegen.js';
+import { generateAndApplyCode } from './codegen.js';
 import { commitAll, diffAgainst, pushBranch } from './git.js';
 import { generateHiggsfieldImage, parsePreferredModels } from './higgsfieldTool.js';
 import { isDataCollectorJob, runDataCollectorJob } from './jobDispatch.js';
@@ -19,8 +19,12 @@ import {
   commitErrorResult,
   summarizeSandbox,
 } from './jobResult.js';
+import {
+  type SelfCorrectionState,
+  fixValidationFailures,
+  retryCommitWithSelfCorrection,
+} from './jobSelfCorrection.js';
 import { runGuarded, runLandingAwareValidation } from './jobValidation.js';
-import { summarizeFailureTail } from './validation.js';
 import { cleanupWorktree, prepareWorktree } from './worktree.js';
 
 export {
@@ -148,76 +152,68 @@ export async function runJob(job: Job): Promise<JobResult> {
       // cobre falhas de hook/pre-commit no `git commit`: nesse caso o erro também
       // vira feedback para o modelo antes de desistir.
       let validation = await runLandingAwareValidation(job, dir, base.filesChanged, log);
-      let fixAttempts = 0;
-      // Acumula os arquivos tocados ao longo das tentativas — um fix pode criar um
-      // arquivo novo cujo erro só aparece na revalidação seguinte; sem isso a próxima
-      // tentativa releria só o conjunto original e ficaria cega a ele.
-      let touched = base.filesChanged;
-      const applySelfCorrection = async (failureTail: string, reason: string) => {
-        fixAttempts++;
-        log.info({ attempt: fixAttempts, reason }, 'tentando auto-correção');
-        try {
-          const fix = await applyFix({
-            llm,
-            dir,
-            filesChanged: touched,
-            failureTail,
-            plan,
-            title: job.title,
-            agentKey: job.agentKey,
-            agentCapabilities: job.agentCapabilities,
-            log,
-          });
-          base.costUsd = (base.costUsd ?? 0) + fix.costUsd;
-          touched = [...new Set([...touched, ...fix.filesChanged])];
-          if (landingMediaArtifactPath) {
-            await restoreLandingMediaAsset(dir, landingMediaArtifactPath, landingMediaAssetPath);
-            touched = [...new Set([...touched, landingMediaAssetPath])];
-          }
-          return true;
-        } catch (err) {
-          log.warn({ err, attempt: fixAttempts }, 'fix falhou — encerrando o loop');
-          return false;
-        }
+      const runValidationForTouchedFiles = (filesChanged: string[]) =>
+        runLandingAwareValidation(job, dir, filesChanged, log);
+      const correctionContext = {
+        llm,
+        dir,
+        plan,
+        title: job.title,
+        agentKey: job.agentKey,
+        agentCapabilities: job.agentCapabilities,
+        log,
+        landingMedia: landingMediaArtifactPath
+          ? { artifactPath: landingMediaArtifactPath, assetPath: landingMediaAssetPath }
+          : undefined,
       };
-      const fixValidationFailures = async () => {
-        while (!validation.passed && fixAttempts < env.AGENT_MAX_FIX_ATTEMPTS) {
-          const fixed = await applySelfCorrection(validation.failureTail, 'validation failed');
-          if (!fixed) break;
-          validation = await runLandingAwareValidation(job, dir, touched, log);
-        }
+      let correctionState: SelfCorrectionState = {
+        filesChanged: base.filesChanged,
+        fixAttempts: 0,
+        costUsd: base.costUsd,
       };
 
-      await fixValidationFailures();
-      base.fixAttempts = fixAttempts;
-      base.filesChanged = touched;
+      const validationFix = await fixValidationFailures({
+        ...correctionContext,
+        validation,
+        state: correctionState,
+        maxFixAttempts: env.AGENT_MAX_FIX_ATTEMPTS,
+        runValidation: runValidationForTouchedFiles,
+      });
+      validation = validationFix.validation;
+      correctionState = validationFix.state;
+
+      base.fixAttempts = correctionState.fixAttempts;
+      base.filesChanged = correctionState.filesChanged;
+      base.costUsd = correctionState.costUsd;
       if (!validation.passed) {
         commands.push(...validation.results);
         base.sandbox = summarizeSandbox(commands);
         base.testsPassed = false;
         base.error = validation.failureTail || 'validation failed';
-        log.warn({ fixAttempts }, 'validation still failed after self-correction');
+        log.warn(
+          { fixAttempts: correctionState.fixAttempts },
+          'validation still failed after self-correction',
+        );
         return { ...base, status: 'failed' };
       }
 
       // Commit do estado final + push único. Se hooks de commit falharem, tenta
       // corrigir usando a saída do próprio git commit como diagnóstico e revalida.
       const message = buildCommitMessage(job, gen.prTitle, gen.summary);
-      let commitFailure: CommandResult | undefined;
-      let commit = await tryCommitAll(dir, message);
-      while ('failure' in commit && fixAttempts < env.AGENT_MAX_FIX_ATTEMPTS) {
-        commitFailure = commit.failure;
-        const fixed = await applySelfCorrection(
-          summarizeFailureTail([commit.failure]),
-          'git commit failed',
-        );
-        if (!fixed) break;
-        validation = await runLandingAwareValidation(job, dir, touched, log);
-        await fixValidationFailures();
-        base.fixAttempts = fixAttempts;
-        base.filesChanged = touched;
-        commit = await tryCommitAll(dir, message);
-      }
+      const commitRetry = await retryCommitWithSelfCorrection({
+        ...correctionContext,
+        validation,
+        state: correctionState,
+        maxFixAttempts: env.AGENT_MAX_FIX_ATTEMPTS,
+        tryCommit: () => tryCommitAll(dir, message),
+        runValidation: runValidationForTouchedFiles,
+      });
+      const { commit, commitFailure } = commitRetry;
+      validation = commitRetry.validation;
+      correctionState = commitRetry.state;
+      base.fixAttempts = correctionState.fixAttempts;
+      base.filesChanged = correctionState.filesChanged;
+      base.costUsd = correctionState.costUsd;
 
       if ('failure' in commit) {
         commands.push(...validation.results, commit.failure);
@@ -233,25 +229,37 @@ export async function runJob(job: Job): Promise<JobResult> {
           for (const r of validation.results) commands.push(r);
           base.sandbox = summarizeSandbox(commands);
           base.testsPassed = validation.passed;
-          log.info({ branch: job.branch, fixAttempts }, 'review produced no commitable changes');
-          log.info({ testsPassed: validation.passed, fixAttempts }, 'validation finished');
+          log.info(
+            { branch: job.branch, fixAttempts: correctionState.fixAttempts },
+            'review produced no commitable changes',
+          );
+          log.info(
+            { testsPassed: validation.passed, fixAttempts: correctionState.fixAttempts },
+            'validation finished',
+          );
           return { ...base, status: 'succeeded' };
         }
         throw new Error('geração de código não produziu mudanças commitáveis');
       }
       if (commitFailure) {
-        log.info({ attempts: fixAttempts }, 'git commit passou após auto-correção');
+        log.info({ attempts: correctionState.fixAttempts }, 'git commit passou após auto-correção');
       }
       base.commitSha = commit.sha;
       base.diff = await diffAgainst(dir, job.baseBranch);
       await pushBranch(dir, job.branch);
       base.pushed = true;
-      log.info({ commitSha: commit.sha, branch: job.branch, fixAttempts }, 'pushed branch');
+      log.info(
+        { commitSha: commit.sha, branch: job.branch, fixAttempts: correctionState.fixAttempts },
+        'pushed branch',
+      );
 
       for (const r of validation.results) commands.push(r);
       base.sandbox = summarizeSandbox(commands);
       base.testsPassed = validation.passed;
-      log.info({ testsPassed: validation.passed, fixAttempts }, 'validation finished');
+      log.info(
+        { testsPassed: validation.passed, fixAttempts: correctionState.fixAttempts },
+        'validation finished',
+      );
 
       return { ...base, status: 'succeeded' };
     }
