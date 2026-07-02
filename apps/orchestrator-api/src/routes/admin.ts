@@ -1,5 +1,5 @@
 import type { CardProvider } from '@agent-platform/cards';
-import { type Context, Hono, type Next } from 'hono';
+import { Hono } from 'hono';
 import { getAgent } from '../agent.js';
 import { listArtifacts } from '../artifacts.js';
 import { env } from '../env.js';
@@ -24,6 +24,8 @@ import {
   listRuns,
   listRunsForCard,
 } from '../runs.js';
+import { requireRunnerAuth } from './routeAuth.js';
+import { escapeHtml, formatDate, humanizeStatus } from './rendering.js';
 
 export const adminRoute = new Hono();
 
@@ -52,14 +54,7 @@ type MissionControlArtifact = Awaited<ReturnType<typeof listArtifacts>>[number];
 type MissionControlApproval = Awaited<ReturnType<typeof listApprovals>>[number];
 
 /** Protege os controles operacionais com o token interno compartilhado. */
-async function requireAdmin(c: Context, next: Next) {
-  if (c.req.header('authorization') !== `Bearer ${env.RUNNER_AUTH_TOKEN}`) {
-    return c.json({ error: 'unauthorized' }, 401);
-  }
-  await next();
-}
-
-adminRoute.use('/admin/*', requireAdmin);
+adminRoute.use('/admin/*', requireRunnerAuth);
 
 /** Liga o kill switch: para de aceitar e adia os runs (MAC-32). */
 adminRoute.post('/admin/pause', async (c) => {
@@ -237,28 +232,6 @@ async function listMissionArtifacts(
 async function listMissionApprovals(runs: MissionControlRun[]): Promise<MissionControlApproval[]> {
   const approvalsByRun = await Promise.all(runs.map((run) => listApprovals(run.id)));
   return approvalsByRun.flat();
-}
-
-function escapeHtml(value: unknown): string {
-  return String(value ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
-
-function formatDate(value: Date | string | null | undefined): string {
-  if (!value) return '-';
-  return new Date(value).toISOString().replace('T', ' ').slice(0, 19);
-}
-
-function humanizeStatus(value: string | undefined): string {
-  if (!value) return '-';
-  return value
-    .split('_')
-    .map((part) => `${part.slice(0, 1).toUpperCase()}${part.slice(1)}`)
-    .join(' ');
 }
 
 function stageStatusClass(status: MissionTimelineStageStatus | undefined): string {
