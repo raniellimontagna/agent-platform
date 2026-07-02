@@ -249,7 +249,10 @@ describe('POST /webhooks/linear', () => {
         id: 'plane-work-1',
         sequence_id: 1,
         name: 'Plane card',
-        labels: [{ id: 'plane-ai-ready-id', name: 'ai-ready' }],
+        labels: [
+          { id: 'plane-ai-ready-id', name: 'ai-ready' },
+          { id: 'plane-auto-merge-id', name: 'auto-merge' },
+        ],
         project_id: 'plane-project',
         project_detail: { identifier: 'AGP' },
       },
@@ -269,6 +272,7 @@ describe('POST /webhooks/linear', () => {
         cardId: 'plane-work-1',
         cardIdentifier: 'AGP-1',
         cardProjectId: 'plane-project',
+        autoMerge: true,
       }),
     );
     expect(agentQueue.add).toHaveBeenCalledWith(
@@ -390,6 +394,43 @@ describe('POST /webhooks/linear', () => {
     await expect(res.json()).resolves.toEqual({
       ok: true,
       cancelled: 1,
+      reason: 'plane work item removed',
+    });
+    expect(createRun).not.toHaveBeenCalled();
+    expect(resolveApproval).not.toHaveBeenCalled();
+    expect(agentQueue.add).not.toHaveBeenCalled();
+  });
+
+  it('POST /webhooks/plane cancels active runs when work item is archived', async () => {
+    vi.mocked(cancelActiveRunsForCard).mockResolvedValue(2);
+    const body = JSON.stringify({
+      action: 'archive',
+      type: 'work_item',
+      data: {
+        id: 'plane-work-archived',
+        sequence_id: 38,
+        name: 'Archived Plane card',
+        labels: [{ id: 'plane-ai-ready-id', name: 'ai-ready' }],
+        project_id: 'plane-project',
+        project_detail: { identifier: 'AGP' },
+      },
+    });
+
+    const res = await app.request('/webhooks/plane', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-plane-signature': signed(body) },
+      body,
+    });
+
+    expect(res.status).toBe(200);
+    expect(cancelActiveRunsForCard).toHaveBeenCalledWith(
+      'plane',
+      'plane-work-archived',
+      'plane work item removed',
+    );
+    await expect(res.json()).resolves.toEqual({
+      ok: true,
+      cancelled: 2,
       reason: 'plane work item removed',
     });
     expect(createRun).not.toHaveBeenCalled();
