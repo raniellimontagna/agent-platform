@@ -178,7 +178,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 06-04: Refactor data-collector research output helpers and run the full phase gate.
+- [x] 06-04: Refactor data-collector research output helpers and run the full phase gate.
 
 **Cross-cutting constraints:**
 
@@ -216,7 +216,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 3. Plane-Only Provider Cutover | 5/5 | Complete    | 2026-07-02 |
 | 4. Operational Flow Reorganization | 2/2 | Complete    | 2026-07-02 |
 | 5. Orchestrator Hub Refactor | 3/3 | Complete    | 2026-07-02 |
-| 6. Worker and Eval Hub Refactor | 4/4 | Complete   | 2026-07-02 |
+| 6. Worker and Eval Hub Refactor | 4/4 | Complete    | 2026-07-02 |
 | 7. Final Verification and Governance Closeout | 0/2 | Not started | - |
 
 ## Autonomous Execution Notes
