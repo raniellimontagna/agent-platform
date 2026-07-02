@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 05
 current_phase_name: Orchestrator Hub Refactor
 status: executing
-stopped_at: Completed 05-03-PLAN.md
-last_updated: "2026-07-02T17:47:19.968Z"
+stopped_at: Completed 06-01-PLAN.md
+last_updated: "2026-07-02T18:03:41.159Z"
 last_activity: 2026-07-02
 last_activity_desc: Phase 04 complete, transitioned to Phase 05
 progress:
   total_phases: 7
   completed_phases: 5
-  total_plans: 14
-  completed_plans: 14
+  total_plans: 18
+  completed_plans: 15
   percent: 71
 ---
 
@@ -78,6 +78,7 @@ Progress: [███████░░░] 71%
 | Phase 05 P01 | 5m19s | 2 tasks | 9 files |
 | Phase 05 P02 | 9m46s | 2 tasks | 7 files |
 | Phase 05 P03 | 16m26s | 2 tasks | 7 files |
+| Phase 06 P01 | 11m45s | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -118,6 +119,9 @@ Progress: [███████░░░] 71%
 - [Phase 05]: 05-03: Split Mission Control into missionControlData.ts and missionControlRender.ts while keeping routes/admin.ts as protected route orchestration.
 - [Phase 05]: 05-03: Preserve routes/admin.ts renderer re-exports and keep Mission Control read-only with no operator controls.
 - [Phase 05]: 05-03: Apply one human-approved lint-only import-order fix in routes/rendering.test.ts to satisfy the full Phase 5 gate.
+- [Phase 06]: 06-01 kept runJob.ts as the public worker facade and compatibility re-export owner for existing tests and jobs routes. — Preserves route imports and public runner compatibility while moving implementation details behind local seams.
+- [Phase 06]: 06-01 kept provider, Git, worktree, sandbox, Higgsfield, and validation-policy behavior in existing owners; new runner seam modules only delegate or orchestrate. — Avoids provider behavior changes, new shell paths, package changes, and schema changes in a behavior-preserving refactor.
+- [Phase 06]: 06-01 uses dependency-injected seam helpers for characterization tests instead of changing product/runtime behavior. — Allows deterministic RED/GREEN coverage for dispatch, validation, callback, and retry behavior without live services.
 
 ### Pending Todos
 
@@ -139,6 +143,6 @@ Progress: [███████░░░] 71%
 
 ## Session Continuity
 
-Last session: 2026-07-02T15:44:21.817Z
-Stopped at: Completed 05-03-PLAN.md
+Last session: 2026-07-02T18:03:41.149Z
+Stopped at: Completed 06-01-PLAN.md
 Resume file: None

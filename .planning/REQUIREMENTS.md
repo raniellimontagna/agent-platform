@@ -65,7 +65,7 @@ living documentation, modular flows, removed legacy, and verification gates.
 - [x] **REF-02**: Webhook handling is split into provider-neutral intake and
   Plane-specific parsing/transition logic.
 
-- [ ] **REF-03**: Worker `runJob` responsibilities are separated into dispatch,
+- [x] **REF-03**: Worker `runJob` responsibilities are separated into dispatch,
   research, media, codegen, validation/self-correction, commit/push, and reporting
   seams.
 
@@ -130,7 +130,7 @@ living documentation, modular flows, removed legacy, and verification gates.
 | FLOW-04 | Phase 4 | Complete |
 | REF-01 | Phase 5 | Complete |
 | REF-02 | Phase 5 | Complete |
-| REF-03 | Phase 6 | Pending |
+| REF-03 | Phase 6 | Complete |
 | REF-04 | Phase 6 | Pending |
 | REF-05 | Phase 6 | Pending |
 | REF-06 | Phase 6 | Pending |
