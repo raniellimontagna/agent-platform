@@ -10,6 +10,9 @@ records. Use this map first; do not treat every dated plan as current guidance.
 - [Architecture](ARCHITECTURE.md) — detailed topology and system flow.
 - [Agent Workflow](decisions/FLOW-agent-workflow.md) — Plane-first agent flow.
 - [Runbooks](runbooks/README.md) — operator tasks grouped by what you need to do.
+- [Final Cleanup Milestone Audit](../.planning/phases/07-final-verification-and-governance-closeout/07-MILESTONE-AUDIT.md)
+  — source-backed VER-04 closeout. It records removed legacy, accepted gaps,
+  remaining debt, and next cleanup candidates after VER-02 and VER-03 passed.
 
 ## Historical Records
 
@@ -19,6 +22,9 @@ records. Use this map first; do not treat every dated plan as current guidance.
   created during earlier build phases.
 - [ADR-0005](decisions/ADR-0005-linear-github-agent-workflow.md) — historical
   Linear-first workflow; Plane is current.
+- [Phase 07 Final Gate Evidence](../.planning/phases/07-final-verification-and-governance-closeout/07-FINAL-GATE-EVIDENCE.md)
+  — historical verification record for the cleanup milestone's final full gate
+  and eval regression proof.
 
 ## Source Of Truth
 
@@ -40,6 +46,7 @@ records. Use this map first; do not treat every dated plan as current guidance.
 | Env and secrets handling | `apps/orchestrator-api/.env.example`, `apps/worker-code/.env.example`, `docs/runbooks/secrets.md` |
 | Research-to-landing workflow | `docs/runbooks/research-to-landing-workflow.md` |
 | Eval verification | `docs/runbooks/eval-harness.md`, `apps/worker-code/src/eval/runEval.ts` |
+| Final cleanup milestone evidence | `.planning/phases/07-final-verification-and-governance-closeout/07-MILESTONE-AUDIT.md`, `.planning/phases/07-final-verification-and-governance-closeout/07-FINAL-GATE-EVIDENCE.md` |
 | Agent skills runbook | `docs/runbooks/agent-skills.md` |
 | Historical implementation plans | `docs/HISTORICAL.md`, `docs/superpowers/**` |
 

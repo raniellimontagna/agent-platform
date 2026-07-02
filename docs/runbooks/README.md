@@ -39,6 +39,14 @@ path, or artifact path. Do not duplicate live IDs or secrets in task runbooks.
 - [litellm-guardrails](litellm-guardrails.md) — inspect LLM gateway budgets and
   rate limits.
 
+Final cleanup milestone evidence lives in planning artifacts, not in an
+operator runbook: `../../.planning/phases/07-final-verification-and-governance-closeout/07-FINAL-GATE-EVIDENCE.md`
+records VER-02 and VER-03, and
+`../../.planning/phases/07-final-verification-and-governance-closeout/07-MILESTONE-AUDIT.md`
+records VER-04, removed legacy, accepted gaps, remaining debt, destructive cleanup
+constraints, and next cleanup candidates. Plane remains primary; Linear remains
+legacy/migration-only compatibility.
+
 ## Infrastructure
 
 - [proxmox-estado-atual](proxmox-estado-atual.md) — current Proxmox state and

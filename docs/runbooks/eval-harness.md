@@ -29,6 +29,13 @@ rtk corepack pnpm verify
 Esse comando roda lint, build do monorepo, testes, eval e checagem de regressão
 do eval harness.
 
+Final cleanup closeout evidence: Phase 07 recorded VER-02 and VER-03 in
+`../../.planning/phases/07-final-verification-and-governance-closeout/07-FINAL-GATE-EVIDENCE.md`
+and closed VER-04 in
+`../../.planning/phases/07-final-verification-and-governance-closeout/07-MILESTONE-AUDIT.md`.
+The audit keeps eval hardening under remaining debt and next cleanup candidates;
+this runbook remains the active owner for how to rerun evals.
+
 Gate rápido recomendado antes de mexer em planner/coder/reviewer/merging:
 
 ```bash
