@@ -246,8 +246,8 @@ describe('runJob facade orchestration seams', () => {
       status: 'succeeded',
       pushed: true,
       testsPassed: true,
-      commitSha: undefined,
     });
+    expect(result.commitSha).toBeUndefined();
     expect(mocks.pushBranch).not.toHaveBeenCalled();
   });
 
@@ -295,7 +295,7 @@ describe('result and callback compatibility seams', () => {
 
   it('posts the unchanged callback payload through the runJob facade export', async () => {
     const originalFetch = globalThis.fetch;
-    const fetchImpl = vi.fn(async () => new Response('', { status: 204 }));
+    const fetchImpl = vi.fn(async () => new Response('', { status: 200 }));
     globalThis.fetch = fetchImpl as typeof fetch;
     try {
       const result: JobResult = {
