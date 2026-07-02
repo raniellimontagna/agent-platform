@@ -95,9 +95,7 @@ export async function buildRecentMissionSummaries(
     }),
   );
 
-  return missions.filter(
-    (mission): mission is MissionControlSummary => mission !== undefined,
-  );
+  return missions.filter((mission): mission is MissionControlSummary => mission !== undefined);
 }
 
 export async function buildMissionDetailData(
