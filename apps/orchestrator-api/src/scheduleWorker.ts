@@ -59,11 +59,7 @@ export async function startScheduleWorker(): Promise<Worker<ScheduleFireData, un
       const card = await cards.primary.createCard({
         title: schedule.title,
         description: schedule.description,
-        labelIds: env.PLANE_SCHEDULED_LABEL_ID
-          ? [env.PLANE_SCHEDULED_LABEL_ID]
-          : env.LINEAR_SCHEDULED_LABEL_ID
-            ? [env.LINEAR_SCHEDULED_LABEL_ID]
-            : undefined,
+        labelIds: env.PLANE_SCHEDULED_LABEL_ID ? [env.PLANE_SCHEDULED_LABEL_ID] : undefined,
       });
 
       const runId = await createRun({
