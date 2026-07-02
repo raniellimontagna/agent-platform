@@ -16,6 +16,7 @@ vi.mock('./db/client.js', async () => {
 });
 
 import { cancelActiveRunsForCard, resolveRunCardFields } from './runs.js';
+import { runs as runsTable } from './db/schema.js';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -25,6 +26,19 @@ beforeEach(() => {
 });
 
 describe('resolveRunCardFields', () => {
+  it('defaults new generic card fields to Plane when no provider is specified', () => {
+    expect(
+      resolveRunCardFields({
+        cardId: 'plane-work-1',
+        cardIdentifier: 'AGP-1',
+      }),
+    ).toEqual({
+      cardProvider: 'plane',
+      cardId: 'plane-work-1',
+      cardIdentifier: 'AGP-1',
+    });
+  });
+
   it('defaults generic card fields from the legacy linear inputs', () => {
     expect(
       resolveRunCardFields({
@@ -35,6 +49,20 @@ describe('resolveRunCardFields', () => {
       cardProvider: 'linear',
       cardId: 'issue-1',
       cardIdentifier: 'MAC-1',
+    });
+  });
+
+  it('keeps explicit legacy Linear fields readable as compatibility data', () => {
+    expect(
+      resolveRunCardFields({
+        cardProvider: 'linear',
+        linearIssueId: 'issue-legacy',
+        linearIssueIdentifier: 'MAC-121',
+      }),
+    ).toEqual({
+      cardProvider: 'linear',
+      cardId: 'issue-legacy',
+      cardIdentifier: 'MAC-121',
     });
   });
 
@@ -66,6 +94,42 @@ describe('resolveRunCardFields', () => {
       cardId: 'issue-legacy',
       cardIdentifier: 'MAC-121',
     });
+  });
+
+  it('rejects explicit Linear provider without a complete legacy-compatible identity', () => {
+    expect(() =>
+      resolveRunCardFields({
+        cardProvider: 'linear',
+        cardId: 'issue-legacy',
+      }),
+    ).toThrow(/requires both card id and identifier/i);
+  });
+
+  it('rejects ambiguous Linear identities when generic and legacy fields conflict', () => {
+    expect(() =>
+      resolveRunCardFields({
+        cardProvider: 'linear',
+        linearIssueId: 'issue-legacy',
+        linearIssueIdentifier: 'MAC-121',
+        cardId: 'plane-work-1',
+        cardIdentifier: 'AGP-1',
+      }),
+    ).toThrow(/ambiguous/i);
+  });
+
+  it('rejects missing card identity instead of returning empty strings', () => {
+    expect(() => resolveRunCardFields({})).toThrow(/requires card identity/i);
+  });
+});
+
+describe('runs schema card compatibility', () => {
+  it('defaults card_provider to Plane while retaining legacy Linear columns', () => {
+    expect(runsTable.cardProvider.default).toBe('plane');
+    expect(runsTable.linearIssueId.notNull).toBe(true);
+    expect(runsTable.linearIssueIdentifier.notNull).toBe(true);
+    expect(runsTable.cardId.name).toBe('card_id');
+    expect(runsTable.cardIdentifier.name).toBe('card_identifier');
+    expect(runsTable.cardProjectId.name).toBe('card_project_id');
   });
 });
 
