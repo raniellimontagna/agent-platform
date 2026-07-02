@@ -106,7 +106,7 @@ Phase 5 should be planned as three narrow behavior-preserving refactor slices: s
 
 The safest first move is an orchestrator-local helper module, not a package or dependency change. [VERIFIED: .planning/phases/05-orchestrator-hub-refactor/05-CONTEXT.md] Hono middleware can return a `Response` to stop processing or `await next()` to continue, and Hono route tests can call `app.request`, which matches the existing route test style. [CITED: https://hono.dev/docs/guides/middleware] [CITED: https://hono.dev/docs/guides/testing]
 
-**Primary recommendation:** Plan Phase 5 as characterization-first extraction with no dependency changes: `routes/http.ts` or `routes/routeHelpers.ts` for auth/render/date/status helpers, `webhooks/planePayload.ts` + `webhooks/runTransitions.ts` for Plane parsing/enqueue/resume/cancel, and `missionControl/data.ts` + `missionControl/render.ts` for admin data assembly and HTML rendering. [VERIFIED: codebase grep] [VERIFIED: .planning/phases/05-orchestrator-hub-refactor/05-CONTEXT.md]
+**Primary recommendation:** Plan Phase 5 as characterization-first extraction with no dependency changes: `routes/routeAuth.ts` for bearer auth, `routes/rendering.ts` for escape/date/status helpers, `webhookSignature.ts`, `planeWebhook.ts`, and `webhookRunActions.ts` for Plane signature/parsing/enqueue/resume/cancel, and `missionControlData.ts` plus `missionControlRender.ts` for admin data assembly and HTML rendering. [VERIFIED: codebase grep] [VERIFIED: .planning/phases/05-orchestrator-hub-refactor/05-CONTEXT.md]
 
 ## Project Constraints (from AGENTS.md)
 
@@ -221,17 +221,16 @@ Every arrow above maps to current code paths in `webhooks.ts`, `admin.ts`, `regi
 ```text
 apps/orchestrator-api/src/
 ├── routes/
-│   ├── routeHelpers.ts              # bearer auth, escapeHtml, formatDate, small HTML/status helpers
+│   ├── routeAuth.ts                 # bearer auth middleware
+│   ├── rendering.ts                 # escapeHtml, formatDate, humanizeStatus helpers
 │   ├── admin.ts                     # route registration and thin handlers
 │   ├── registry.ts                  # route registration + registry-specific renderer use
 │   └── webhooks.ts                  # route registration and provider dispatch
-├── webhooks/
-│   ├── signatures.ts                # verifySignature / verifyPlaneSignature preserving env behavior
-│   ├── planePayload.ts              # Plane event, card id, identifier, labels, removal action parsing
-│   └── runTransitions.ts            # ai-ready enqueue, approval resume, removal cancel orchestration
-└── missionControl/
-    ├── data.ts                      # recent summaries, detail data, related runs/artifacts/approvals
-    └── render.ts                    # dashboard/detail HTML renderers
+├── webhookSignature.ts              # verifySignature / verifyPlaneSignature preserving env behavior
+├── planeWebhook.ts                  # Plane event, card id, identifier, labels, removal action parsing
+├── webhookRunActions.ts             # ai-ready enqueue, approval resume, removal cancel orchestration
+├── missionControlData.ts            # recent summaries, detail data, related runs/artifacts/approvals
+└── missionControlRender.ts          # dashboard/detail HTML renderers
 ```
 
 This structure keeps modules orchestrator-local and avoids new packages, matching D-03. [VERIFIED: .planning/phases/05-orchestrator-hub-refactor/05-CONTEXT.md]
@@ -430,9 +429,9 @@ await agentQueue.add('plan', { kind: 'plan', runId, cardProvider, cardId }, { pr
 
 | Plan | Scope | Must Not Include |
 |------|-------|------------------|
-| 05-01 Shared route helpers | `routeHelpers.ts` extraction for bearer auth, `escapeHtml`, `formatDate`, status/pill helpers, and route tests. [VERIFIED: codebase grep] | Webhook behavior changes, Mission Control data moves, package installs, auth policy changes. [VERIFIED: .planning/phases/05-orchestrator-hub-refactor/05-CONTEXT.md] |
-| 05-02 Webhook seams | Plane signature/parser/transition modules and enqueue/resume/cancel helpers, with route contract preserved. [VERIFIED: apps/orchestrator-api/src/routes/webhooks.ts] | Linear removal, provider env default changes, queue payload shape changes, worker/eval refactors. [VERIFIED: .planning/phases/05-orchestrator-hub-refactor/05-CONTEXT.md] |
-| 05-03 Admin/Mission Control seams | Mission summary/detail data helpers and dashboard/detail render helpers, preserving JSON and HTML-visible copy. [VERIFIED: apps/orchestrator-api/src/routes/admin.ts] | Product UI redesign, operator actions, schema changes, artifact API changes. [VERIFIED: docs/runbooks/mission-control.md] |
+| 05-01 Shared route helpers | `routes/routeAuth.ts` for bearer auth plus `routes/rendering.ts` for `escapeHtml`, `formatDate`, `humanizeStatus`, and route tests. [VERIFIED: codebase grep] | Webhook behavior changes, Mission Control data moves, package installs, auth policy changes. [VERIFIED: .planning/phases/05-orchestrator-hub-refactor/05-CONTEXT.md] |
+| 05-02 Webhook seams | `webhookSignature.ts`, `planeWebhook.ts`, and `webhookRunActions.ts` for Plane signature/parser/transition modules and enqueue/resume/cancel helpers, with route contract preserved. [VERIFIED: apps/orchestrator-api/src/routes/webhooks.ts] | Linear removal, provider env default changes, queue payload shape changes, worker/eval refactors. [VERIFIED: .planning/phases/05-orchestrator-hub-refactor/05-CONTEXT.md] |
+| 05-03 Admin/Mission Control seams | `missionControlData.ts` and `missionControlRender.ts` for Mission summary/detail data helpers and dashboard/detail render helpers, preserving JSON and HTML-visible copy. [VERIFIED: apps/orchestrator-api/src/routes/admin.ts] | Product UI redesign, operator actions, schema changes, artifact API changes. [VERIFIED: docs/runbooks/mission-control.md] |
 
 ## Resolved Questions
 
@@ -490,11 +489,12 @@ All claims in this research were verified or cited in this session; no user conf
 
 ### Wave 0 Gaps
 
-- [ ] `apps/orchestrator-api/src/routes/routeHelpers.test.ts` or equivalent - covers REF-01 shared `requireRunnerAuth`, `escapeHtml`, `formatDate`, and status helper behavior. [VERIFIED: codebase grep]
-- [ ] `apps/orchestrator-api/src/webhooks/planePayload.test.ts` - covers REF-02 Plane event support, card identifier fallback, label name/id extraction, `updated_from` and `updatedFrom`. [VERIFIED: apps/orchestrator-api/src/routes/webhooks.ts]
-- [ ] `apps/orchestrator-api/src/webhooks/runTransitions.test.ts` - covers REF-02 paused/cost/duplicate/unique-violation enqueue skips and approval-with-no-run skip. [VERIFIED: apps/orchestrator-api/src/routes/webhooks.ts]
-- [ ] `apps/orchestrator-api/src/missionControl/data.test.ts` - covers REF-01/VER-01 Mission Control data assembly boundaries before moving `buildRecentMissionSummaries` and `listMissionRunsForSource`. [VERIFIED: apps/orchestrator-api/src/routes/admin.ts]
-- [ ] `apps/orchestrator-api/src/missionControl/render.test.ts` - covers REF-01 HTML escaping and read-only Mission Control copy before moving renderers. [VERIFIED: apps/orchestrator-api/src/routes/admin.ts]
+- [ ] `apps/orchestrator-api/src/routes/routeAuth.test.ts` - covers REF-01 shared `requireRunnerAuth` behavior. [VERIFIED: codebase grep]
+- [ ] `apps/orchestrator-api/src/routes/rendering.test.ts` - covers REF-01 shared `escapeHtml`, `formatDate`, and `humanizeStatus` behavior. [VERIFIED: codebase grep]
+- [ ] `apps/orchestrator-api/src/planeWebhook.test.ts` - covers REF-02 Plane event support, card identifier fallback, label name/id extraction, `updated_from` and `updatedFrom`. [VERIFIED: apps/orchestrator-api/src/routes/webhooks.ts]
+- [ ] `apps/orchestrator-api/src/webhookRunActions.test.ts` - covers REF-02 paused/cost/duplicate/unique-violation enqueue skips and approval-with-no-run skip. [VERIFIED: apps/orchestrator-api/src/routes/webhooks.ts]
+- [ ] `apps/orchestrator-api/src/missionControlData.test.ts` - covers REF-01/VER-01 Mission Control data assembly boundaries before moving `buildRecentMissionSummaries` and `listMissionRunsForSource`. [VERIFIED: apps/orchestrator-api/src/routes/admin.ts]
+- [ ] `apps/orchestrator-api/src/missionControlRender.test.ts` - covers REF-01 HTML escaping and read-only Mission Control copy before moving renderers. [VERIFIED: apps/orchestrator-api/src/routes/admin.ts]
 
 ## Security Domain
 
