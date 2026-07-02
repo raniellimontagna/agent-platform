@@ -14,11 +14,7 @@ import {
   restoreLandingMediaAsset,
   shouldAutoGenerateLandingMedia,
 } from './jobMedia.js';
-import {
-  buildCommitMessage,
-  commitErrorResult,
-  summarizeSandbox,
-} from './jobResult.js';
+import { buildCommitMessage, commitErrorResult, summarizeSandbox } from './jobResult.js';
 import {
   type SelfCorrectionState,
   fixValidationFailures,

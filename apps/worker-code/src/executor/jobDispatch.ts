@@ -28,8 +28,7 @@ export async function runDataCollectorJob(
 ): Promise<JobResult> {
   const shouldUsePlaywrightResearch =
     deps.shouldUsePlaywrightResearch ?? defaultShouldUsePlaywrightResearch;
-  const runPlaywrightResearchJob =
-    deps.runPlaywrightResearchJob ?? defaultRunPlaywrightResearchJob;
+  const runPlaywrightResearchJob = deps.runPlaywrightResearchJob ?? defaultRunPlaywrightResearchJob;
   const runFirecrawlResearchJob = deps.runFirecrawlResearchJob ?? defaultRunFirecrawlResearchJob;
 
   if (shouldUsePlaywrightResearch(job)) {

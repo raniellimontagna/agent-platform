@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CommandResult, Job, JobResult } from '../types.js';
 
 const mocks = vi.hoisted(() => ({
@@ -161,7 +161,11 @@ describe('runJob facade orchestration seams', () => {
     mocks.commitAll.mockResolvedValue({ committed: true, sha: 'abc123' });
     mocks.diffAgainst.mockResolvedValue('diff --git a/src/app.ts b/src/app.ts');
     mocks.pushBranch.mockResolvedValue(undefined);
-    mocks.applyFix.mockResolvedValue({ summary: 'Fixed.', filesChanged: ['src/app.ts'], costUsd: 0.1 });
+    mocks.applyFix.mockResolvedValue({
+      summary: 'Fixed.',
+      filesChanged: ['src/app.ts'],
+      costUsd: 0.1,
+    });
     mocks.parsePreferredModels.mockReturnValue([]);
   });
 
@@ -204,7 +208,9 @@ describe('runJob facade orchestration seams', () => {
       error: '$ pnpm test\nFAIL src/app.test.ts',
       fixAttempts: 1,
     });
-    expect(result.commands).toEqual([expect.objectContaining({ command: 'pnpm test', exitCode: 1 })]);
+    expect(result.commands).toEqual([
+      expect.objectContaining({ command: 'pnpm test', exitCode: 1 }),
+    ]);
     expect(result.sandbox).toEqual(expect.objectContaining({ failedCommand: 'pnpm test' }));
     expect(mocks.pushBranch).not.toHaveBeenCalled();
     expect(mocks.cleanupWorktree).toHaveBeenCalledWith(result.runId);
@@ -279,10 +285,7 @@ describe('result and callback compatibility seams', () => {
       'feat(worker): preserve shape\n\nSummary.\n\nRef: AGP-601\nCo-authored-by: Codex <noreply@openai.com>',
     );
     expect(
-      summarizeSandbox([
-        command('pnpm install', 0, '', '',),
-        command('pnpm test', 1, 'FAIL', ''),
-      ]),
+      summarizeSandbox([command('pnpm install', 0, '', ''), command('pnpm test', 1, 'FAIL', '')]),
     ).toEqual(
       expect.objectContaining({
         commandCount: 2,

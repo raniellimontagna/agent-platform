@@ -37,6 +37,9 @@ patterns-established:
   - "Codegen helpers are split by prompt, JSON, file I/O, selection shaping, and fix candidate responsibilities."
   - "Helper tests import the focused modules directly while codegen.ts re-exports compatibility helpers."
 requirements-completed: [REF-04, VER-01]
+follow_up_verification:
+  - "Orchestrator follow-up formatted the 06-01 runner files flagged by broad Biome."
+  - "`rtk corepack pnpm verify` passed after that formatting follow-up: 88 test files / 574 tests, eval 14/14, regression eval 14/14 delta 0."
 coverage:
   - id: D1
     description: "Prompt and JSON repair helpers extracted behind codegen.ts while preserving strong_coder JSON-mode retry/repair behavior"
@@ -104,7 +107,8 @@ status: complete
 - RED evidence: `rtk corepack pnpm vitest run apps/worker-code/src/executor/codegenJson.test.ts apps/worker-code/src/executor/codegenFiles.test.ts apps/worker-code/src/executor/codegenSelection.test.ts apps/worker-code/src/executor/codegenFixes.test.ts` failed before extraction because the four helper modules did not exist.
 - Task 06-02-01: `codegen.test.ts` and `codegenJson.test.ts` passed 34 tests; worker typecheck passed; package/schema diff gate was clean.
 - Task 06-02-02 final focused gate: six focused suites passed 54 tests; worker typecheck passed; owned-file Biome check passed; package/schema diff gate was clean.
-- Broad `rtk corepack pnpm verify` was run after owned formatting fixes and still failed on out-of-scope 06-01 runner formatting/import findings in `jobDispatch.ts`, `jobValidation.test.ts`, `runJob.seams.test.ts`, and `runJob.ts`.
+- Broad `rtk corepack pnpm verify` initially failed on 06-01 runner formatting/import findings in `jobDispatch.ts`, `jobValidation.test.ts`, `runJob.seams.test.ts`, and `runJob.ts`. The orchestrator resolved those with a path-limited Biome formatting follow-up after 06-02.
+- Follow-up full gate: `rtk corepack pnpm verify` passed with 88 test files / 574 tests, eval 14/14, and regression eval 14/14 with score delta 0.
 
 ## Files Created/Modified
 
@@ -124,7 +128,7 @@ status: complete
 - Kept `codegen.ts` as the facade owner for runner/eval compatibility instead of moving public entrypoints.
 - Kept model alias usage, provider routing, role aliases, package files, schema files, route surfaces, workflow labels, and deploy configuration unchanged.
 - Combined docs filtering and review-create filtering in `normalizeSelectedFiles` using the existing order: documentation pruning first, review create pruning second.
-- Did not modify 06-01 runner files even though full repo lint reports formatting issues there; those files are outside this plan and explicitly outside the requested ownership boundary.
+- Kept the 06-02 executor changes limited to codegen files; the orchestrator later fixed 06-01 runner formatting as a phase-level verification blocker.
 
 ## Deviations from Plan
 
@@ -143,8 +147,8 @@ status: complete
 
 ## Issues Encountered
 
-- Broad `rtk corepack pnpm verify` remains blocked by pre-existing/out-of-scope 06-01 runner formatting and import-order findings in `apps/worker-code/src/executor/jobDispatch.ts`, `apps/worker-code/src/executor/jobValidation.test.ts`, `apps/worker-code/src/executor/runJob.seams.test.ts`, and `apps/worker-code/src/executor/runJob.ts`.
-- The plan-requested focused codegen/dry-run verification, worker typecheck, owned Biome check, and package/schema diff gate pass.
+- Broad `rtk corepack pnpm verify` was unblocked by a phase-level formatting follow-up for `apps/worker-code/src/executor/jobDispatch.ts`, `apps/worker-code/src/executor/jobValidation.test.ts`, `apps/worker-code/src/executor/runJob.seams.test.ts`, and `apps/worker-code/src/executor/runJob.ts`.
+- The plan-requested focused codegen/dry-run verification, worker typecheck, owned Biome check, package/schema diff gate, and broad verify now pass.
 
 ## Known Stubs
 
@@ -156,7 +160,7 @@ None - no external service configuration required.
 
 ## Next Phase Readiness
 
-Plan 06-03 can depend on the same facade-preserving pattern: write fail-first helper tests, extract worker-local seams, keep public facade exports stable, and avoid provider/schema/package/route behavior changes. The only residual verification concern is the 06-01 runner formatting blocker for full repo `pnpm verify`.
+Plan 06-03 can depend on the same facade-preserving pattern: write fail-first helper tests, extract worker-local seams, keep public facade exports stable, and avoid provider/schema/package/route behavior changes. No residual verification blocker is known after the phase-level full verify follow-up.
 
 ## Self-Check: PASSED
 
