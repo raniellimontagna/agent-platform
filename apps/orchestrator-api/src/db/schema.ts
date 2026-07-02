@@ -87,7 +87,7 @@ export const runs = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     linearIssueId: text('linear_issue_id').notNull(),
     linearIssueIdentifier: text('linear_issue_identifier').notNull(),
-    cardProvider: text('card_provider').notNull().default('linear'),
+    cardProvider: text('card_provider').notNull().default('plane'),
     cardId: text('card_id'),
     cardIdentifier: text('card_identifier'),
     cardProjectId: text('card_project_id'),

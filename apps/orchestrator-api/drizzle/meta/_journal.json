@@ -120,6 +120,13 @@
       "when": 1781976600000,
       "tag": "0016_drop_legacy_active_issue_index",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1782995224879,
+      "tag": "0017_plane_default_card_provider",
+      "breakpoints": true
     }
   ]
 }
