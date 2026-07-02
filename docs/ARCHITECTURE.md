@@ -105,8 +105,24 @@ execução com roles de catálogo (`planner`, `coder`, `critic`, `pr`, `reporter
 Concorrência: `AGENT_MAX_CONCURRENCY`
 runs simultâneos, observável em `GET /admin/concurrency` (MAC-47).
 
-Plane (primary card provider) -> Orchestrator API -> agent-runners -> GitHub PR/merge -> Plane report
-Linear remains legacy/migration-only compatibility for retained rows and explicit rollback.
+Plane (primary card provider) -> `/webhooks/plane` -> `createRun` -> BullMQ
+`agent-runs` -> approval/resume -> worker-code `/jobs` -> `runJob` ->
+critic/recode -> GitHub PR/merge -> Plane report.
+Linear remains legacy/migration-only compatibility for retained rows and
+explicit rollback.
+
+### Evidencia local do fluxo Plane-first
+
+| Etapa | Fonte de verdade | Teste focado |
+|---|---|---|
+| Entrada Plane, HMAC, `ai-ready`, `approved`, cancelamento e skips auditados | `apps/orchestrator-api/src/routes/webhooks.ts` | `apps/orchestrator-api/src/routes/webhooks.test.ts` |
+| Identidade Plane e persistencia do run | `apps/orchestrator-api/src/runs.ts` | `apps/orchestrator-api/src/runs.test.ts` |
+| Formato dos jobs BullMQ e prioridade `plan`/`resume` | `apps/orchestrator-api/src/queue.ts` | `apps/orchestrator-api/src/queue.test.ts` |
+| Worker do orchestrator, callbacks, artifacts e continuacoes | `apps/orchestrator-api/src/worker.ts` | `apps/orchestrator-api/src/worker.test.ts` |
+| Rota HTTP do runner | `apps/worker-code/src/routes/jobs.ts` | Ancora estatica; comportamento do runner em `apps/worker-code/src/executor/runJob.test.ts`. |
+| Runner de codigo, validacao, self-correction, commit e callback | `apps/worker-code/src/executor/runJob.ts` | `apps/worker-code/src/executor/runJob.test.ts` |
+| Report final no provider de cards | `packages/graph/src/nodes/report.ts` | `packages/graph/src/nodes/report.test.ts` |
+| PR/merge e auto-merge opt-in | `packages/graph/src/nodes/merging.ts` | `packages/graph/src/nodes/merging.test.ts` |
 
 ---
 
