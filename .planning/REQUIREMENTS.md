@@ -8,25 +8,25 @@ living documentation, modular flows, removed legacy, and verification gates.
 
 ### Governance
 
-- [ ] **GOV-01**: Maintainer can read a single current-state map that names the real
+- [x] **GOV-01**: Maintainer can read a single current-state map that names the real
   product flows, packages, entry points, infra assumptions, and ownership boundaries.
 
-- [ ] **GOV-02**: Maintainer can distinguish living documentation from historical
+- [x] **GOV-02**: Maintainer can distinguish living documentation from historical
   plans/specs without reading every file in `docs/`.
 
-- [ ] **GOV-03**: Every phase in this milestone has explicit acceptance criteria,
+- [x] **GOV-03**: Every phase in this milestone has explicit acceptance criteria,
   validation commands, and rollback/migration notes when destructive cleanup is planned.
 
 ### Documentation
 
-- [ ] **DOC-01**: README describes current Plane-first operation without stale Linear
+- [x] **DOC-01**: README describes current Plane-first operation without stale Linear
   framing or card-history overload.
 
-- [ ] **DOC-02**: Architecture documentation describes current flows and module seams
+- [x] **DOC-02**: Architecture documentation describes current flows and module seams
   without mixing roadmap history into operational guidance.
 
-- [ ] **DOC-03**: Runbooks are classified as active, historical, or deprecated.
-- [ ] **DOC-04**: Historical `docs/superpowers` specs/plans are indexed or archived so
+- [x] **DOC-03**: Runbooks are classified as active, historical, or deprecated.
+- [x] **DOC-04**: Historical `docs/superpowers` specs/plans are indexed or archived so
   they do not compete with living docs.
 
 ### Plane-Only Provider Model
@@ -113,13 +113,13 @@ living documentation, modular flows, removed legacy, and verification gates.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| GOV-01 | Phase 1 | Pending |
-| GOV-02 | Phase 1, Phase 2 | Pending |
-| GOV-03 | Phase 1 | Pending |
-| DOC-01 | Phase 2 | Pending |
-| DOC-02 | Phase 2 | Pending |
-| DOC-03 | Phase 2 | Pending |
-| DOC-04 | Phase 2 | Pending |
+| GOV-01 | Phase 1 | Complete |
+| GOV-02 | Phase 1, Phase 2 | Complete |
+| GOV-03 | Phase 1 | Complete |
+| DOC-01 | Phase 2 | Complete |
+| DOC-02 | Phase 2 | Complete |
+| DOC-03 | Phase 2 | Complete |
+| DOC-04 | Phase 2 | Complete |
 | PLN-01 | Phase 1 | Complete |
 | PLN-02 | Phase 3 | Complete |
 | PLN-03 | Phase 3 | Complete |
