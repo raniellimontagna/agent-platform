@@ -8,7 +8,7 @@
 
 Primary scope came from `05-CONTEXT.md`, `ROADMAP.md`, `REQUIREMENTS.md`, `STATE.md`, and Phase 4 summaries. Phase 5 is a behavior-preserving refactor. Keep Plane as the active provider, keep `/webhooks/linear` as legacy compatibility only, preserve source-owner contracts from Phase 4, and do not add worker/eval/schema/deploy changes.
 
-No `RESEARCH.md` exists in the Phase 5 directory as of this mapping.
+`05-RESEARCH.md` now exists in the Phase 5 directory and should be read before planning or executing.
 
 ## File Classification
 
@@ -450,7 +450,7 @@ Work:
 - Preserve exported render functions or update tests to import from the new owner in the same commit.
 - Keep Mission Control read-only; no launch/replay/approve/retry/cancel controls.
 
-Dependencies: should run after Wave 1 so render helpers are stable. Can run in parallel with Wave 2 only if plans coordinate imports and do not both touch `routes/admin.ts`.
+Dependencies: should run after Wave 1 so render helpers are stable, and after 05-02 when 05-03 owns the final phase verification gate. This keeps `rtk corepack pnpm verify` ordered after all Phase 5 refactors.
 
 Verification:
 

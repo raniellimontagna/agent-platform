@@ -470,7 +470,7 @@ All claims in this research were verified or cited in this session; no user conf
 | Property | Value |
 |----------|-------|
 | Framework | Vitest 3.2.6 [VERIFIED: vitest --version] |
-| Config file | none found in repository root via inspected package scripts; tests are invoked through `package.json` scripts. [VERIFIED: package.json] |
+| Config file | `vitest.config.ts` in the repository root. [VERIFIED: vitest.config.ts] |
 | Quick run command | `rtk corepack pnpm vitest run apps/orchestrator-api/src/routes/admin.test.ts apps/orchestrator-api/src/routes/webhooks.test.ts apps/orchestrator-api/src/routes/registry.test.ts apps/orchestrator-api/src/routes/agents.test.ts apps/orchestrator-api/src/routes/schedules.test.ts apps/orchestrator-api/src/routes/tools.test.ts` |
 | Full suite command | `rtk corepack pnpm verify` [VERIFIED: docs/CURRENT.md] |
 
