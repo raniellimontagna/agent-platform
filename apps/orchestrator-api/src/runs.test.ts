@@ -15,8 +15,8 @@ vi.mock('./db/client.js', async () => {
   };
 });
 
-import { cancelActiveRunsForCard, resolveRunCardFields } from './runs.js';
 import { runs as runsTable } from './db/schema.js';
+import { cancelActiveRunsForCard, resolveRunCardFields } from './runs.js';
 
 beforeEach(() => {
   vi.clearAllMocks();

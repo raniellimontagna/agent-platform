@@ -72,11 +72,50 @@ export function resolveRunCardFields(
   cardId: string;
   cardIdentifier: string;
 } {
-  return {
-    cardProvider: input.cardProvider ?? 'linear',
-    cardId: input.cardId ?? input.linearIssueId ?? '',
-    cardIdentifier: input.cardIdentifier ?? input.linearIssueIdentifier ?? '',
+  const hasGenericIdentity = input.cardId !== undefined || input.cardIdentifier !== undefined;
+  const hasLegacyIdentity =
+    input.linearIssueId !== undefined || input.linearIssueIdentifier !== undefined;
+
+  const requireCompleteIdentity = (
+    provider: CardProvider,
+    cardId: string | undefined,
+    cardIdentifier: string | undefined,
+  ) => {
+    if (!cardId || !cardIdentifier) {
+      throw new Error(
+        `resolveRunCardFields requires both card id and identifier for ${provider} cards`,
+      );
+    }
+    return { cardProvider: provider, cardId, cardIdentifier };
   };
+
+  if (input.cardProvider === 'linear') {
+    if (
+      hasGenericIdentity &&
+      hasLegacyIdentity &&
+      ((input.cardId && input.linearIssueId && input.cardId !== input.linearIssueId) ||
+        (input.cardIdentifier &&
+          input.linearIssueIdentifier &&
+          input.cardIdentifier !== input.linearIssueIdentifier))
+    ) {
+      throw new Error('Ambiguous Linear card identity: generic and legacy fields conflict');
+    }
+    return requireCompleteIdentity(
+      'linear',
+      input.linearIssueId ?? input.cardId,
+      input.linearIssueIdentifier ?? input.cardIdentifier,
+    );
+  }
+
+  if (input.cardProvider === 'plane' || hasGenericIdentity) {
+    return requireCompleteIdentity('plane', input.cardId, input.cardIdentifier);
+  }
+
+  if (hasLegacyIdentity) {
+    return requireCompleteIdentity('linear', input.linearIssueId, input.linearIssueIdentifier);
+  }
+
+  throw new Error('resolveRunCardFields requires card identity');
 }
 
 /** Cria o registro do run (MAC-36) e devolve o id. */
