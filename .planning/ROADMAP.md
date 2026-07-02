@@ -155,13 +155,13 @@ while preserving validation, self-correction, and eval behavior.
   3. Eval harness is split into scenario loading, scoring, report rendering, and CLI orchestration without changing reports.
   4. Firecrawl/Playwright/Instagram/Apify research paths share policy, sanitization, and output helpers where safe.
 
-**Plans**: 2/4 plans executed
+**Plans**: 3/4 plans executed
 
 Plans:
 
 - [x] 06-01-PLAN.md
 - [x] 06-02-PLAN.md
-- [ ] 06-03-PLAN.md
+- [x] 06-03-PLAN.md
 - [ ] 06-04-PLAN.md
 
 **Wave 1**
@@ -170,11 +170,11 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 06-02: Refactor `codegen.ts` around prompt, JSON, file, apply, and fix modules.
+- [x] 06-02: Refactor `codegen.ts` around prompt, JSON, file, apply, and fix modules.
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 06-03: Refactor eval harness around scenario loading, scenario running, report, trend, and harness helpers.
+- [x] 06-03: Refactor eval harness around scenario loading, scenario running, report, trend, and harness helpers.
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -216,7 +216,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 3. Plane-Only Provider Cutover | 5/5 | Complete    | 2026-07-02 |
 | 4. Operational Flow Reorganization | 2/2 | Complete    | 2026-07-02 |
 | 5. Orchestrator Hub Refactor | 3/3 | Complete    | 2026-07-02 |
-| 6. Worker and Eval Hub Refactor | 2/4 | In Progress|  |
+| 6. Worker and Eval Hub Refactor | 3/4 | In Progress|  |
 | 7. Final Verification and Governance Closeout | 0/2 | Not started | - |
 
 ## Autonomous Execution Notes
