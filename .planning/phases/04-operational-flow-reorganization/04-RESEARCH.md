@@ -364,22 +364,24 @@ All substantive claims in this research were verified against local project file
 |---|-------|---------|---------------|
 | none | n/a | n/a | n/a |
 
-## Open Questions
+## Resolved Planning Decisions
 
-1. **Should scheduler get a dedicated active runbook?**
-   - What we know: Scheduler has code/tests and architecture mentions, but no active runbook in `docs/runbooks/README.md`. [VERIFIED: docs/runbooks/README.md; apps/orchestrator-api/src/scheduleWorker.ts]
-   - What's unclear: Whether the team prefers `docs/runbooks/scheduler.md` or a section inside an existing runbook.
-   - Recommendation: Add `docs/runbooks/scheduler.md` and link it from `docs/runbooks/README.md` plus `docs/CURRENT.md`.
+All planning questions from the research pass are resolved by the Phase 4 plans.
 
-2. **Should Plane label IDs remain in the migration runbook only?**
-   - What we know: IDs are recorded in `plane-migration-2026-06-20.md`, env variables own runtime configuration, and docs should avoid duplicating mutable values. [VERIFIED: docs/runbooks/plane-migration-2026-06-20.md; apps/orchestrator-api/src/env.ts]
-   - What's unclear: Whether operators want a compact current label map in active docs.
-   - Recommendation: Keep the detailed ID map in the migration runbook; current docs should name label names and point to env/migration docs.
+1. **Scheduler gets a dedicated active runbook.**
+   - Decision: Create `docs/runbooks/scheduler.md` and link it from `docs/runbooks/README.md` plus `docs/CURRENT.md`.
+   - Rationale: Scheduler has code/tests and architecture mentions, but no active runbook in `docs/runbooks/README.md`. [VERIFIED: docs/runbooks/README.md; apps/orchestrator-api/src/scheduleWorker.ts]
+   - Planned evidence: `04-01-PLAN.md` requires scheduler docs to name `apps/orchestrator-api/src/routes/schedules.ts`, `apps/orchestrator-api/src/schedules.ts`, `apps/orchestrator-api/src/scheduleQueue.ts`, `apps/orchestrator-api/src/scheduleWorker.ts`, `apps/orchestrator-api/src/routes/schedules.test.ts`, and `apps/orchestrator-api/src/scheduleWorker.test.ts`.
 
-3. **Should any docs-only behavior claim get a new characterization test?**
-   - What we know: Most flows have focused tests; scheduler runbook/docs status is the main missing doc surface. [VERIFIED: test inventory]
-   - What's unclear: Whether planner wants a docs consistency test or static grep checks.
-   - Recommendation: Prefer focused existing Vitest commands plus static grep checks in plan verification; avoid adding a docs test framework.
+2. **Plane label IDs remain owned by migration and env owner docs.**
+   - Decision: Keep the detailed ID map in `docs/runbooks/plane-migration-2026-06-20.md`; current docs name label meanings and point to env/migration docs instead of duplicating mutable IDs.
+   - Rationale: IDs are deployment-owned runtime data, while env variables own runtime configuration. [VERIFIED: docs/runbooks/plane-migration-2026-06-20.md; apps/orchestrator-api/src/env.ts]
+   - Planned evidence: `04-02-PLAN.md` requires static checks for `docs/runbooks/plane-migration-2026-06-20.md`, `.env.example` owner links, and `docs/runbooks/secrets.md`.
+
+3. **Verification uses focused Vitest plus static owner checks.**
+   - Decision: Use existing focused Vitest coverage for runtime behavior and direct static checks for ownership references in current docs.
+   - Rationale: Most behavior already has focused tests; this phase also needs proof that Mission Control, eval harness, artifact store, Plane label owner, agent-key owner, runner/artifact path owner, and env/secrets owner are named in the docs. [VERIFIED: test inventory; 04-CONTEXT.md]
+   - Planned evidence: `04-01-PLAN.md` and `04-02-PLAN.md` require direct `rtk rg -q` checks for `routes/admin.ts`, `runEval.ts`, `artifacts.ts`, `routes/artifacts.ts`, `apps/orchestrator-api/src/agents.ts`, `docs/runbooks/plane-migration-2026-06-20.md`, `.env.example`, `RUNNER_ARTIFACTS_DIR`, and `docs/runbooks/secrets.md`.
 
 ## Environment Availability
 
