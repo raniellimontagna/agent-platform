@@ -1,17 +1,44 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname, join, resolve } from 'node:path';
 import { type LlmClient, type TokenUsage, estimateCostUsd } from '@agent-platform/llm';
 import type { Logger } from 'pino';
 import { buildExamples, readConventions } from './context.js';
-import { completeJson, responseSchema, selectSchema } from './codegenJson.js';
+import { buildFixCandidateFiles } from './codegenFixes.js';
+import {
+  applyFiles,
+  filterAllowedFiles,
+  formatAvailableFiles,
+  listRepoFiles,
+  readCurrentFiles,
+  readWorktreeFiles,
+} from './codegenFiles.js';
+import { completeJson, responseSchema } from './codegenJson.js';
 import {
   buildCoderInstructions,
   FIX_PROMPT,
   GENERATE_PROMPT,
-  SELECT_PROMPT,
 } from './codegenPrompts.js';
-import { runCommand } from './worktree.js';
+import {
+  buildGenerationTargets,
+  chunkArray,
+  MAX_GENERATE_FILES_PER_CALL,
+  normalizeSelectedFiles,
+  selectFiles,
+} from './codegenSelection.js';
 
+export {
+  buildFixCandidateFiles,
+  isTextFixablePath,
+  selectFixCandidateFiles,
+} from './codegenFixes.js';
+export {
+  applyFiles,
+  filterAllowedFiles,
+  formatAvailableFiles,
+  listRepoFiles,
+  readCurrentFiles,
+  readWorktreeFiles,
+  safeJoin,
+  worktreeFilePath,
+} from './codegenFiles.js';
 export {
   completeJson,
   extractJson,
@@ -26,12 +53,16 @@ export {
   GENERATE_PROMPT,
   SELECT_PROMPT,
 } from './codegenPrompts.js';
+export {
+  buildGenerationTargets,
+  chunkArray,
+  filterDocumentationTargets,
+  filterReviewCreates,
+  MAX_GENERATE_FILES_PER_CALL,
+  normalizeSelectedFiles,
+  selectFiles,
+} from './codegenSelection.js';
 
-/** Limites para não estourar o contexto do modelo ao injetar conteúdo. */
-const MAX_EDIT_FILES = 15;
-const MAX_FILE_CHARS = 20_000;
-const MAX_GENERATE_FILES_PER_CALL = 2;
-const SELECT_MAX_TOKENS = 1_500;
 const GENERATE_MAX_TOKENS = 24_000;
 const FIX_MAX_TOKENS = 16_000;
 
@@ -59,243 +90,6 @@ export interface CodegenArgs {
   /** Capacidades declarativas do agente selecionado. */
   agentCapabilities?: string[];
   log: Logger;
-}
-
-/** Lista os arquivos rastreados pelo git para dar contexto ao modelo. */
-async function listRepoFiles(dir: string): Promise<string[]> {
-  const res = await runCommand('git ls-files', dir);
-  if (res.exitCode !== 0) return [];
-  return res.stdout.split('\n').filter(Boolean);
-}
-
-/** Garante que o caminho não escapa do worktree (defesa contra path traversal). */
-function safeJoin(dir: string, relPath: string): string {
-  const normalized = relPath.replace(/^\/+/, '');
-  const full = resolve(dir, normalized);
-  if (full !== dir && !full.startsWith(`${dir}/`)) {
-    throw new Error(`caminho de arquivo fora do worktree: ${relPath}`);
-  }
-  return full;
-}
-
-/** Passo 1: o modelo escolhe quais arquivos modificar/criar. */
-async function selectFiles(
-  llm: LlmClient,
-  ctx: {
-    title: string;
-    description: string;
-    plan: string;
-    fileTree: string;
-    conventions: string;
-    reviewFeedback?: string;
-    agentInstructions?: string;
-  },
-  log: Logger,
-  onUsage?: (usage: TokenUsage) => void,
-): Promise<{ edit: string[]; create: string[] }> {
-  return completeJson(
-    llm,
-    {
-      temperature: 0,
-      maxTokens: SELECT_MAX_TOKENS,
-      onUsage,
-      messages: [
-        { role: 'system', content: SELECT_PROMPT },
-        {
-          role: 'user',
-          content: [
-            `# Issue: ${ctx.title}`,
-            ctx.description ? `\n${ctx.description}` : '',
-            `\n# Plano aprovado\n${ctx.plan}`,
-            ctx.reviewFeedback
-              ? `\n# Parecer da revisão a endereçar (foque nestes pontos)\n${ctx.reviewFeedback}`
-              : '',
-            ctx.agentInstructions
-              ? `\n# Instruções do agente especializado\n${ctx.agentInstructions}`
-              : '',
-            ctx.conventions ? `\n# Convenções do projeto\n${ctx.conventions}` : '',
-            `\n# Arquivos do repositório\n${ctx.fileTree}`,
-          ].join('\n'),
-        },
-      ],
-    },
-    selectSchema,
-    log,
-  );
-}
-
-/** Lê o conteúdo atual dos arquivos a modificar (truncado por segurança). */
-async function readCurrentFiles(
-  dir: string,
-  repoFiles: Set<string>,
-  editPaths: string[],
-): Promise<{ path: string; content: string }[]> {
-  const out: { path: string; content: string }[] = [];
-  for (const rel of editPaths.slice(0, MAX_EDIT_FILES)) {
-    const normalized = rel.replace(/^\/+/, '');
-    // Só lê o que de fato existe no repo (ignora alucinações do modelo).
-    if (!repoFiles.has(normalized)) continue;
-    const content = await readFile(safeJoin(dir, normalized), 'utf8');
-    out.push({
-      path: normalized,
-      content: content.length > MAX_FILE_CHARS ? content.slice(0, MAX_FILE_CHARS) : content,
-    });
-  }
-  return out;
-}
-
-/** Escreve os arquivos no worktree e devolve os caminhos aplicados (DRY codegen/fix). */
-async function applyFiles(
-  dir: string,
-  files: { path: string; content: string }[],
-): Promise<string[]> {
-  const applied: string[] = [];
-  for (const file of files) {
-    const full = safeJoin(dir, file.path);
-    await mkdir(dirname(full), { recursive: true });
-    await writeFile(full, file.content, 'utf8');
-    applied.push(file.path.replace(/^\/+/, ''));
-  }
-  return applied;
-}
-
-export function filterAllowedFiles(
-  files: { path: string; content: string }[],
-  allowedPaths: string[],
-): { files: { path: string; content: string }[]; dropped: string[] } {
-  const allowed = new Set(allowedPaths.map((path) => path.replace(/^\/+/, '')));
-  const out: { path: string; content: string }[] = [];
-  const dropped: string[] = [];
-
-  for (const file of files) {
-    const normalized = file.path.replace(/^\/+/, '');
-    if (allowed.has(normalized)) {
-      out.push({ ...file, path: normalized });
-    } else {
-      dropped.push(normalized);
-    }
-  }
-
-  return { files: out, dropped };
-}
-
-function chunkArray<T>(items: T[], size: number): T[][] {
-  const chunks: T[][] = [];
-  for (let i = 0; i < items.length; i += size) {
-    chunks.push(items.slice(i, i + size));
-  }
-  return chunks;
-}
-
-function formatAvailableFiles(repoFiles: string[], generatedFiles: { path: string }[]): string {
-  return [...new Set([...repoFiles, ...generatedFiles.map((file) => file.path)])]
-    .slice(0, 900)
-    .join('\n');
-}
-
-function isDocumentationPath(path: string): boolean {
-  const normalized = path.replace(/^\/+/, '').toLowerCase();
-  return normalized.startsWith('docs/') || normalized.endsWith('.md');
-}
-
-function issueExplicitlyRequestsDocs(title: string): boolean {
-  return /\b(doc|docs|documentation|readme|runbook|documenta(?:r|ção|cao))\b/i.test(title);
-}
-
-export function filterDocumentationTargets(
-  selection: { edit: string[]; create: string[] },
-  ctx: { title: string; description: string },
-): { selection: { edit: string[]; create: string[] }; droppedDocs: string[] } {
-  if (issueExplicitlyRequestsDocs(ctx.title)) {
-    return { selection, droppedDocs: [] };
-  }
-
-  const droppedDocs = [...selection.edit, ...selection.create].filter(isDocumentationPath);
-  if (droppedDocs.length === 0) {
-    return { selection, droppedDocs };
-  }
-
-  return {
-    selection: {
-      edit: selection.edit.filter((path) => !isDocumentationPath(path)),
-      create: selection.create.filter((path) => !isDocumentationPath(path)),
-    },
-    droppedDocs,
-  };
-}
-
-export function selectFixCandidateFiles(filesChanged: string[], failureTail: string): string[] {
-  const candidates = [...new Set(filesChanged)].slice(0, MAX_EDIT_FILES);
-  const normalizedTail = failureTail.replaceAll('\\', '/');
-  const changedTests = candidates.filter(isTestPath);
-  const mentioned = candidates.filter((path) => {
-    const normalized = path.replace(/^\/+/, '').replaceAll('\\', '/');
-    const suffixes = normalized
-      .split('/')
-      .map((_, index, parts) => parts.slice(index).join('/'))
-      .filter((suffix) => suffix.includes('/'));
-    const fileName = normalized.split('/').pop() ?? normalized;
-    return (
-      normalizedTail.includes(normalized) ||
-      normalizedTail.includes(`./${normalized}`) ||
-      suffixes.some((suffix) => normalizedTail.includes(suffix)) ||
-      normalizedTail.includes(fileName)
-    );
-  });
-
-  return mentioned.length > 0
-    ? [...new Set([...mentioned, ...changedTests])].slice(0, MAX_EDIT_FILES)
-    : candidates.slice(0, 6);
-}
-
-export function isTextFixablePath(path: string): boolean {
-  const normalized = path.replace(/^\/+/, '').replaceAll('\\', '/').toLowerCase();
-  if (normalized.startsWith('public/generated/')) return false;
-  return !/\.(?:avif|bin|gif|ico|jpe?g|mov|mp4|otf|pdf|png|ttf|webm|webp|woff2?|zip)$/.test(
-    normalized,
-  );
-}
-
-export function buildFixCandidateFiles(
-  filesChanged: string[],
-  failureTail: string,
-): {
-  fixableChangedFiles: string[];
-  prioritizedCandidates: string[];
-  fixCandidates: string[];
-} {
-  const fixableChangedFiles = filesChanged.filter(isTextFixablePath);
-  const prioritizedCandidates = selectFixCandidateFiles(fixableChangedFiles, failureTail);
-  return {
-    fixableChangedFiles,
-    prioritizedCandidates,
-    fixCandidates: [...new Set([...prioritizedCandidates, ...fixableChangedFiles])].slice(
-      0,
-      MAX_EDIT_FILES,
-    ),
-  };
-}
-
-function isTestPath(path: string): boolean {
-  const normalized = path.replace(/^\/+/, '').replaceAll('\\', '/');
-  return (
-    /(^|\/)(__tests__|test|tests)\//.test(normalized) ||
-    /\.(test|spec)\.[cm]?[jt]sx?$/.test(normalized)
-  );
-}
-
-export function filterReviewCreates(
-  selection: { edit: string[]; create: string[] },
-  reviewFeedback?: string,
-): { selection: { edit: string[]; create: string[] }; droppedCreates: string[] } {
-  if (!reviewFeedback?.trim() || selection.create.length === 0) {
-    return { selection, droppedCreates: [] };
-  }
-
-  return {
-    selection: { edit: selection.edit, create: [] },
-    droppedCreates: selection.create,
-  };
 }
 
 /**
@@ -341,12 +135,11 @@ export async function generateAndApplyCode(args: CodegenArgs): Promise<CodegenRe
     log,
     addUsage,
   );
-  const docsFiltered = filterDocumentationTargets(rawSelection, {
-    title,
-    description,
-  });
-  const { selection, droppedCreates } = filterReviewCreates(docsFiltered.selection, reviewFeedback);
-  const droppedDocs = docsFiltered.droppedDocs;
+  const { selection, droppedDocs, droppedCreates } = normalizeSelectedFiles(
+    rawSelection,
+    { title, description },
+    reviewFeedback,
+  );
   if (droppedDocs.length > 0) {
     log.info({ droppedDocs }, 'documentation targets ignored');
   }
@@ -357,10 +150,7 @@ export async function generateAndApplyCode(args: CodegenArgs): Promise<CodegenRe
 
   const current = await readCurrentFiles(dir, repoSet, selection.edit);
   const currentByPath = new Map(current.map((file) => [file.path, file]));
-  const targets = [
-    ...current.map((file) => ({ kind: 'edit' as const, path: file.path })),
-    ...selection.create.map((path) => ({ kind: 'create' as const, path })),
-  ];
+  const targets = buildGenerationTargets(current, selection.create);
 
   const generatedFiles: { path: string; content: string }[] = [];
   const summaries: string[] = [];
@@ -478,9 +268,6 @@ export async function applyFix(args: FixArgs): Promise<FixResult> {
     args;
   const agentInstructions = buildCoderInstructions(agentKey, agentCapabilities);
 
-  // Relê on-disk os arquivos tocados (recém-escritos; arquivos novos podem não
-  // estar no git ls-files, então lemos direto, sem filtro de tracking).
-  const current: { path: string; content: string }[] = [];
   const { fixableChangedFiles, prioritizedCandidates, fixCandidates } = buildFixCandidateFiles(
     filesChanged,
     failureTail,
@@ -496,14 +283,9 @@ export async function applyFix(args: FixArgs): Promise<FixResult> {
     'selected files for fix',
   );
 
-  for (const rel of fixCandidates) {
-    try {
-      const content = await readFile(safeJoin(dir, rel), 'utf8');
-      current.push({ path: rel, content: content.slice(0, MAX_FILE_CHARS) });
-    } catch {
-      // arquivo sumiu entre escrita e releitura — ignora.
-    }
-  }
+  // Relê on-disk os arquivos tocados (recém-escritos; arquivos novos podem não
+  // estar no git ls-files, então lemos direto, sem filtro de tracking).
+  const current = await readWorktreeFiles(dir, fixCandidates);
   const currentBlock = current
     .map((f) => `\n## ${f.path}\n\`\`\`\n${f.content}\n\`\`\``)
     .join('\n');
@@ -557,9 +339,4 @@ export async function applyFix(args: FixArgs): Promise<FixResult> {
   const costUsd = estimateCostUsd('strong_coder', usage);
   log.info({ filesChanged: applied, costUsd }, 'applied fix');
   return { summary: parsed.summary, filesChanged: applied, costUsd };
-}
-
-/** Caminho absoluto de um arquivo do worktree (exportado p/ testes futuros). */
-export function worktreeFilePath(dir: string, relPath: string): string {
-  return join(dir, relPath);
 }
