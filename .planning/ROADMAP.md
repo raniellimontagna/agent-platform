@@ -140,7 +140,7 @@ Plans:
 
 - [x] 05-01: Extract shared route/auth/render helpers with tests.
 - [x] 05-02: Refactor `routes/webhooks.ts` into Plane intake and run transition seams.
-- [ ] 05-03: Refactor `routes/admin.ts`/Mission Control rendering into smaller units.
+- [x] 05-03: Refactor `routes/admin.ts`/Mission Control rendering into smaller units.
 
 ### Phase 6: Worker and Eval Hub Refactor
 
@@ -194,7 +194,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 2. Living Documentation and Historical Archive | 2/2 | Complete | 2026-07-02 |
 | 3. Plane-Only Provider Cutover | 5/5 | Complete   | 2026-07-02 |
 | 4. Operational Flow Reorganization | 2/2 | Complete   | 2026-07-02 |
-| 5. Orchestrator Hub Refactor | 3/3 | Complete   | 2026-07-02 |
+| 5. Orchestrator Hub Refactor | 3/3 | Complete    | 2026-07-02 |
 | 6. Worker and Eval Hub Refactor | 0/3 | Not started | - |
 | 7. Final Verification and Governance Closeout | 0/2 | Not started | - |
 
