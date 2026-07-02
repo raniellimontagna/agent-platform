@@ -161,9 +161,7 @@ function createCards() {
   const linear = createGateway('linear');
   const cards = {
     primary: plane,
-    forProvider: vi.fn((provider: 'plane' | 'linear') =>
-      provider === 'plane' ? plane : linear,
-    ),
+    forProvider: vi.fn((provider: 'plane' | 'linear') => (provider === 'plane' ? plane : linear)),
   } satisfies CardGatewayRegistry;
   return { cards, plane, linear };
 }

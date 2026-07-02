@@ -72,7 +72,8 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
     AGENT_QUEUE,
     async (job) => {
       const { runId } = job.data;
-      const planCard = job.data.kind === 'plan' ? resolvePlanJobCardRef(job.data) : null;
+      const run = await getRun(runId);
+      const planCard = job.data.kind === 'plan' ? resolvePlanJobCardRef(job.data, run) : null;
       const log = logger.child({ runId, kind: job.data.kind, ...(planCard ?? {}) });
       const config = { configurable: { thread_id: runId } };
 
@@ -112,12 +113,11 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
           failedCommand?: string;
         };
       };
-      const run = await getRun(runId);
       if (job.data.kind === 'plan') {
-        const planJobCard = resolvePlanJobCardRef(job.data);
-        const graphProvider = toCardProvider(run?.cardProvider) ?? planJobCard.cardProvider;
+        const planJobCard = resolvePlanJobCardRef(job.data, run);
+        const graphProvider = planJobCard.cardProvider;
         const graph = resolveAgentGraph(agent, graphProvider);
-        const cardId = run?.cardId ?? planJobCard.cardId;
+        const cardId = planJobCard.cardId;
         const cardGateway = cards.forProvider(graphProvider);
         const issue = await cardGateway.getCard(cardId);
         const selectedAgent = run?.agentId ? await getCatalogAgent(run.agentId) : null;
@@ -141,7 +141,8 @@ export async function startAgentWorker(): Promise<Worker<AgentJobData, unknown, 
           config,
         );
       } else {
-        const graphProvider = toCardProvider(run?.cardProvider) ?? 'linear';
+        const runCardRef = resolvePersistedRunCardRef(run, runId);
+        const graphProvider = runCardRef.cardProvider;
         const graph = resolveAgentGraph(agent, graphProvider);
         // Retoma a partir do checkpoint (passa null para continuar do interrupt).
         await updateRunStatus(runId, 'executing');
@@ -308,14 +309,28 @@ function toCardProvider(value: string | null | undefined): CardProvider | undefi
   return value === 'plane' || value === 'linear' ? value : undefined;
 }
 
-function resolveRunCardRef(run: NonNullable<Awaited<ReturnType<typeof getRun>>>): {
+type PersistedRun = NonNullable<Awaited<ReturnType<typeof getRun>>>;
+
+function resolvePersistedRunCardRef(
+  run: PersistedRun | null,
+  runId: string,
+): {
   cardProvider: CardProvider;
   cardId: string;
 } {
-  return {
-    cardProvider: toCardProvider(run.cardProvider) ?? 'linear',
-    cardId: run.cardId ?? run.linearIssueId,
-  };
+  const cardProvider = toCardProvider(run?.cardProvider);
+  const cardId = run?.cardId ?? (cardProvider === 'linear' ? run?.linearIssueId : undefined);
+  if (!cardProvider || !cardId) {
+    throw new Error(`Run ${runId} is missing card provider/card id`);
+  }
+  return { cardProvider, cardId };
+}
+
+function resolveRunCardRef(run: PersistedRun): {
+  cardProvider: CardProvider;
+  cardId: string;
+} {
+  return resolvePersistedRunCardRef(run, run.id);
 }
 
 async function maybeStartResearchToLandingWorkflow(args: {
@@ -339,10 +354,9 @@ async function maybeStartResearchToLandingWorkflow(args: {
   }
 
   const landingAgent = await resolveAgentByKey(LANDING_PAGE_AGENT_KEY);
-  const sourceCardProvider = toCardProvider(sourceRun.cardProvider) ?? 'linear';
-  const sourceCardId = sourceRun.cardId ?? sourceRun.linearIssueId;
-  const sourceGateway = args.cards.forProvider(sourceCardProvider);
-  const issue = await sourceGateway.getCard(sourceCardId);
+  const sourceCardRef = resolveRunCardRef(sourceRun);
+  const sourceGateway = args.cards.forProvider(sourceCardRef.cardProvider);
+  const issue = await sourceGateway.getCard(sourceCardRef.cardId);
   const target = resolveGeneratedRepoTarget({
     title: sourceRun.title,
     description: issue.description,
@@ -366,10 +380,14 @@ async function maybeStartResearchToLandingWorkflow(args: {
       })
     : undefined;
   const landingRunId = await createRun({
-    linearIssueId: sourceRun.linearIssueId,
-    linearIssueIdentifier: sourceRun.linearIssueIdentifier,
-    cardProvider: sourceCardProvider,
-    cardId: sourceCardId,
+    ...(sourceCardRef.cardProvider === 'linear'
+      ? {
+          linearIssueId: sourceRun.linearIssueId,
+          linearIssueIdentifier: sourceRun.linearIssueIdentifier,
+        }
+      : {}),
+    cardProvider: sourceCardRef.cardProvider,
+    cardId: sourceCardRef.cardId,
     cardIdentifier: sourceRun.cardIdentifier ?? sourceRun.linearIssueIdentifier,
     cardProjectId: sourceRun.cardProjectId ?? undefined,
     title: `${sourceRun.title} — landing page`,
@@ -384,8 +402,8 @@ async function maybeStartResearchToLandingWorkflow(args: {
     {
       kind: 'plan',
       runId: landingRunId,
-      cardProvider: sourceCardProvider,
-      cardId: sourceCardId,
+      cardProvider: sourceCardRef.cardProvider,
+      cardId: sourceCardRef.cardId,
       context: formatResearchToLandingContext(args.result.research ?? '', args.runId),
     },
     { priority: JOB_PRIORITY.plan },
@@ -395,7 +413,7 @@ async function maybeStartResearchToLandingWorkflow(args: {
     ? `Repo alvo: \`${target.fullName}\`${createdRepo ? ` (${createdRepo.created ? 'criado' : 'já existia'})` : ''}.`
     : undefined;
   await sourceGateway.comment(
-    sourceCardId,
+    sourceCardRef.cardId,
     [
       '## 🔁 Workflow composto',
       'Coleta concluída. Iniciando etapa de landing page com o `landing-page-agent`.',

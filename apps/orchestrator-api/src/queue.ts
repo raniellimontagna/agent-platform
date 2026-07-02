@@ -18,8 +18,8 @@ export const connection: ConnectionOptions = {
 export type PlanJobData = {
   kind: 'plan';
   runId: string;
-  cardProvider: CardProvider;
-  cardId: string;
+  cardProvider?: CardProvider;
+  cardId?: string;
   issueId?: string;
   context?: string;
 };
@@ -51,12 +51,35 @@ export const agentQueue = new Queue<AgentJobData, unknown, string>(AGENT_QUEUE, 
 });
 
 export function resolvePlanJobCardRef(
-  job: Pick<PlanJobData, 'cardProvider' | 'cardId' | 'issueId'>,
+  job: Pick<PlanJobData, 'cardProvider' | 'cardId' | 'issueId'> & { runId?: string },
+  persistedRun?: {
+    cardProvider?: string | null;
+    cardId?: string | null;
+    linearIssueId?: string | null;
+  } | null,
 ): { cardProvider: CardProvider; cardId: string } {
-  const cardProvider = job.cardProvider ?? 'linear';
-  const cardId = job.cardId ?? job.issueId;
-  if (!cardId) {
-    throw new Error('Plan job is missing cardId');
+  const explicitProvider = toCardProvider(job.cardProvider);
+  if (job.cardProvider && !explicitProvider) {
+    throw new Error(`Plan job has invalid card provider: ${job.cardProvider}`);
   }
-  return { cardProvider, cardId };
+  const explicitCardId = job.cardId ?? (explicitProvider === 'linear' ? job.issueId : undefined);
+  if (explicitProvider && explicitCardId) {
+    return { cardProvider: explicitProvider, cardId: explicitCardId };
+  }
+
+  const persistedProvider = toCardProvider(persistedRun?.cardProvider);
+  const persistedCardId =
+    persistedRun?.cardId ??
+    (persistedProvider === 'linear' ? persistedRun?.linearIssueId : undefined);
+  if (persistedProvider && persistedCardId) {
+    return { cardProvider: persistedProvider, cardId: persistedCardId };
+  }
+
+  throw new Error(
+    `Plan job${'runId' in job && job.runId ? ` ${job.runId}` : ''} is missing card provider/card id`,
+  );
+}
+
+function toCardProvider(value: string | null | undefined): CardProvider | undefined {
+  return value === 'plane' || value === 'linear' ? value : undefined;
 }
