@@ -1,5 +1,6 @@
 import { type LlmClient, type TokenUsage, estimateCostUsd } from '@agent-platform/llm';
 import type { Logger } from 'pino';
+import { z } from 'zod';
 import {
   applyFiles,
   filterAllowedFiles,
@@ -10,7 +11,12 @@ import {
 } from './codegenFiles.js';
 import { buildFixCandidateFiles } from './codegenFixes.js';
 import { completeJson, responseSchema } from './codegenJson.js';
-import { FIX_PROMPT, GENERATE_PROMPT, buildCoderInstructions } from './codegenPrompts.js';
+import {
+  FIX_PROMPT,
+  GENERATE_PROMPT,
+  PATCH_PROMPT,
+  buildCoderInstructions,
+} from './codegenPrompts.js';
 import {
   MAX_GENERATE_FILES_PER_CALL,
   buildGenerationTargets,
@@ -47,6 +53,7 @@ export {
   buildCoderInstructions,
   FIX_PROMPT,
   GENERATE_PROMPT,
+  PATCH_PROMPT,
   SELECT_PROMPT,
 } from './codegenPrompts.js';
 export {
@@ -61,6 +68,21 @@ export {
 
 const GENERATE_MAX_TOKENS = 24_000;
 const FIX_MAX_TOKENS = 16_000;
+const PATCH_MAX_TOKENS = 8_000;
+
+const patchSchema = z.object({
+  prTitle: z.string().default(''),
+  summary: z.string().default(''),
+  patches: z
+    .array(
+      z.object({
+        path: z.string().min(1),
+        search: z.string().min(1),
+        replace: z.string(),
+      }),
+    )
+    .default([]),
+});
 
 export interface CodegenResult {
   summary: string;
@@ -86,6 +108,51 @@ export interface CodegenArgs {
   /** Capacidades declarativas do agente selecionado. */
   agentCapabilities?: string[];
   log: Logger;
+}
+
+function applySearchReplacePatches(
+  currentByPath: Map<string, { path: string; content: string }>,
+  allowedPaths: string[],
+  patches: z.infer<typeof patchSchema>['patches'],
+): { files: { path: string; content: string }[]; dropped: string[] } {
+  const allowed = new Set(allowedPaths.map((path) => path.replace(/^\/+/, '')));
+  const contentByPath = new Map(
+    [...currentByPath.entries()].map(([path, file]) => [path, file.content]),
+  );
+  const touched = new Set<string>();
+  const dropped: string[] = [];
+
+  for (const patch of patches) {
+    const path = patch.path.replace(/^\/+/, '');
+    if (!allowed.has(path)) {
+      dropped.push(path);
+      continue;
+    }
+
+    const current = contentByPath.get(path);
+    if (current === undefined) {
+      throw new Error(`patch para arquivo não carregado: ${path}`);
+    }
+
+    const first = current.indexOf(patch.search);
+    if (first === -1) {
+      throw new Error(`patch search não encontrado em ${path}`);
+    }
+    if (current.indexOf(patch.search, first + patch.search.length) !== -1) {
+      throw new Error(`patch search ambíguo em ${path}`);
+    }
+
+    contentByPath.set(
+      path,
+      `${current.slice(0, first)}${patch.replace}${current.slice(first + patch.search.length)}`,
+    );
+    touched.add(path);
+  }
+
+  return {
+    files: [...touched].map((path) => ({ path, content: contentByPath.get(path) ?? '' })),
+    dropped,
+  };
 }
 
 /**
@@ -179,41 +246,90 @@ export async function generateAndApplyCode(args: CodegenArgs): Promise<CodegenRe
       },
       'requesting code generation chunk',
     );
-    const parsed = await completeJson(
-      llm,
+    const generationMessages = [
+      { role: 'system' as const, content: GENERATE_PROMPT },
       {
-        temperature: 0.1,
-        maxTokens: GENERATE_MAX_TOKENS,
-        onUsage: addUsage,
-        messages: [
-          { role: 'system', content: GENERATE_PROMPT },
-          {
-            role: 'user',
-            content: [
-              `# Issue: ${title}`,
-              description ? `\n${description}` : '',
-              `\n# Plano aprovado\n${plan}`,
-              agentInstructions
-                ? `\n# Instruções do agente especializado\n${agentInstructions}`
-                : '',
-              conventions ? `\n# Convenções do projeto\n${conventions}` : '',
-              examples ? `\n# Arquivos-exemplo (siga este padrão)${examples}` : '',
-              `\n# Arquivos disponíveis para imports/referências\n${availableFiles}`,
-              lessons
-                ? `\n# Lições de runs anteriores (evite repetir estes erros)\n${lessons}`
-                : '',
-              reviewFeedback
-                ? `\n# Parecer da revisão a endereçar (corrija estes pontos, preservando o resto)\n${reviewFeedback}`
-                : '',
-              `\n# Conteúdo atual dos arquivos a modificar neste lote${currentBlock || '\n(nenhum)'}`,
-              createBlock,
-            ].join('\n'),
-          },
-        ],
+        role: 'user' as const,
+        content: [
+          `# Issue: ${title}`,
+          description ? `\n${description}` : '',
+          `\n# Plano aprovado\n${plan}`,
+          agentInstructions ? `\n# Instruções do agente especializado\n${agentInstructions}` : '',
+          conventions ? `\n# Convenções do projeto\n${conventions}` : '',
+          examples ? `\n# Arquivos-exemplo (siga este padrão)${examples}` : '',
+          `\n# Arquivos disponíveis para imports/referências\n${availableFiles}`,
+          lessons ? `\n# Lições de runs anteriores (evite repetir estes erros)\n${lessons}` : '',
+          reviewFeedback
+            ? `\n# Parecer da revisão a endereçar (corrija estes pontos, preservando o resto)\n${reviewFeedback}`
+            : '',
+          `\n# Conteúdo atual dos arquivos a modificar neste lote${currentBlock || '\n(nenhum)'}`,
+          createBlock,
+        ].join('\n'),
       },
-      responseSchema,
-      log,
-    );
+    ];
+
+    let parsed: z.infer<typeof responseSchema>;
+    try {
+      parsed = await completeJson(
+        llm,
+        {
+          temperature: 0.1,
+          maxTokens: GENERATE_MAX_TOKENS,
+          onUsage: addUsage,
+          messages: generationMessages,
+        },
+        responseSchema,
+        log,
+      );
+    } catch (err) {
+      if (chunkEdit.length === 0 || chunkCreate.length > 0) {
+        throw err;
+      }
+
+      log.warn({ err, edit: chunkEdit }, 'full-file generation failed; trying patch fallback');
+      const patchResult = await completeJson(
+        llm,
+        {
+          temperature: 0.1,
+          maxTokens: PATCH_MAX_TOKENS,
+          onUsage: addUsage,
+          messages: [
+            { role: 'system', content: PATCH_PROMPT },
+            {
+              role: 'user',
+              content: [
+                `# Issue: ${title}`,
+                description ? `\n${description}` : '',
+                `\n# Plano aprovado\n${plan}`,
+                agentInstructions
+                  ? `\n# Instruções do agente especializado\n${agentInstructions}`
+                  : '',
+                conventions ? `\n# Convenções do projeto\n${conventions}` : '',
+                `\n# Arquivos disponíveis para imports/referências\n${availableFiles}`,
+                lessons
+                  ? `\n# Lições de runs anteriores (evite repetir estes erros)\n${lessons}`
+                  : '',
+                reviewFeedback
+                  ? `\n# Parecer da revisão a endereçar (corrija estes pontos, preservando o resto)\n${reviewFeedback}`
+                  : '',
+                `\n# Conteúdo atual dos arquivos a modificar neste lote${currentBlock}`,
+              ].join('\n'),
+            },
+          ],
+        },
+        patchSchema,
+        log,
+      );
+
+      if (!prTitle && patchResult.prTitle.trim()) prTitle = patchResult.prTitle;
+      if (patchResult.summary.trim()) summaries.push(patchResult.summary);
+      const patched = applySearchReplacePatches(currentByPath, chunkEdit, patchResult.patches);
+      if (patched.dropped.length > 0) {
+        log.warn({ droppedFiles: patched.dropped }, 'patch files outside selected chunk ignored');
+      }
+      generatedFiles.push(...patched.files);
+      continue;
+    }
     if (!prTitle && parsed.prTitle.trim()) prTitle = parsed.prTitle;
     if (parsed.summary.trim()) summaries.push(parsed.summary);
     const allowed = filterAllowedFiles(parsed.files, [...chunkEdit, ...chunkCreate]);
