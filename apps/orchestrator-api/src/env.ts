@@ -136,9 +136,6 @@ function loadEnv(): Env {
       !parsed.data.LINEAR_API_KEY ? 'LINEAR_API_KEY' : null,
       !parsed.data.LINEAR_WEBHOOK_SECRET ? 'LINEAR_WEBHOOK_SECRET' : null,
     ].filter(Boolean);
-    if (parsed.data.CARD_PRIMARY_PROVIDER === 'linear' && !parsed.data.LINEAR_TEAM_ID) {
-      missing.push('LINEAR_TEAM_ID');
-    }
     if (missing.length > 0) {
       throw new Error(`Linear provider habilitado sem env obrigatório: ${missing.join(', ')}`);
     }

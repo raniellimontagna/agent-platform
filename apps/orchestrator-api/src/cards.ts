@@ -56,12 +56,9 @@ export function createRuntimeCards(env: RuntimeCardEnv): CardGatewayRegistry {
 
   if (enabled.has('linear')) {
     if (!env.LINEAR_API_KEY) {
-      if (env.CARD_PRIMARY_PROVIDER === 'linear') {
-        throw new Error('Linear card provider requires LINEAR_API_KEY');
-      }
-    } else {
-      gateways.push(createLinearGateway(env.LINEAR_API_KEY, { teamId: env.LINEAR_TEAM_ID }));
+      throw new Error('Linear card provider requires LINEAR_API_KEY');
     }
+    gateways.push(createLinearGateway(env.LINEAR_API_KEY, { teamId: env.LINEAR_TEAM_ID }));
   }
 
   return createCardGatewayRegistry({
