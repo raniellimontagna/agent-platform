@@ -45,16 +45,16 @@ living documentation, modular flows, removed legacy, and verification gates.
 
 ### Flow Clarity
 
-- [ ] **FLOW-01**: Main delivery flow is documented and tested as Plane -> run ->
+- [x] **FLOW-01**: Main delivery flow is documented and tested as Plane -> run ->
   approval -> worker -> review -> PR -> report.
 
-- [ ] **FLOW-02**: Research-to-landing continuation is documented and tested as a
+- [x] **FLOW-02**: Research-to-landing continuation is documented and tested as a
   separate flow with clear trigger and ownership.
 
-- [ ] **FLOW-03**: Scheduler, Mission Control, eval harness, registry, skills, and
+- [x] **FLOW-03**: Scheduler, Mission Control, eval harness, registry, skills, and
   artifact store have clear ownership and active runbooks.
 
-- [ ] **FLOW-04**: Workflow labels, agent keys, skills, and model aliases have one
+- [x] **FLOW-04**: Workflow labels, agent keys, skills, and model aliases have one
   canonical source of truth.
 
 ### Refactor
@@ -124,10 +124,10 @@ living documentation, modular flows, removed legacy, and verification gates.
 | PLN-02 | Phase 3 | Complete |
 | PLN-03 | Phase 3 | Complete |
 | PLN-04 | Phase 3 | Complete |
-| FLOW-01 | Phase 4 | Pending |
-| FLOW-02 | Phase 4 | Pending |
-| FLOW-03 | Phase 4 | Pending |
-| FLOW-04 | Phase 4 | Pending |
+| FLOW-01 | Phase 4 | Complete |
+| FLOW-02 | Phase 4 | Complete |
+| FLOW-03 | Phase 4 | Complete |
+| FLOW-04 | Phase 4 | Complete |
 | REF-01 | Phase 5 | Complete |
 | REF-02 | Phase 5 | Complete |
 | REF-03 | Phase 6 | Pending |
