@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 03
-status: planned
-stopped_at: Created 04-02-PLAN.md
-last_updated: "2026-07-02T10:01:41-03:00"
+current_phase: 04
+current_phase_name: Operational Flow Reorganization
+status: in_progress
+stopped_at: Completed 04-01-PLAN.md
+last_updated: "2026-07-02T13:44:49.420Z"
 last_activity: 2026-07-02
-last_activity_desc: Phase 04 plans created
+last_activity_desc: Completed 04-01-PLAN.md
 progress:
   total_phases: 7
   completed_phases: 3
-  total_plans: 9
-  completed_plans: 9
-  percent: 43
-current_phase_name: Operational Flow Reorganization
+  total_plans: 11
+  completed_plans: 10
+  percent: 91
 ---
 
 # Project State
@@ -29,12 +29,12 @@ legacy removal, modular flow refactors, and verification gates.
 
 ## Current Position
 
-Phase: 04 — PLANNED
-Plan: 0 of 2
-Status: Phase 04 plans created
-Last activity: 2026-07-02 — Phase 04 plans created
+Phase: 04 — IN PROGRESS
+Plan: 1 of 2
+Status: 04-01 complete; 04-02 pending
+Last activity: 2026-07-02 — Completed 04-01-PLAN.md
 
-Progress: [████░░░░░░] 43%
+Progress: [█████████░] 91%
 
 ## Performance Metrics
 
@@ -51,7 +51,7 @@ Progress: [████░░░░░░] 43%
 | 1. Bootstrap and Architectural Inventory | 2 | 2 | ~28m |
 | 2. Living Documentation and Historical Archive | 2 | 2 | ~28m |
 | 3. Plane-Only Provider Cutover | 5 | 5 | ~14m |
-| 4. Operational Flow Reorganization | 0 | 2 | - |
+| 4. Operational Flow Reorganization | 1 | 2 | 6m37s |
 | 5. Orchestrator Hub Refactor | 0 | 3 | - |
 | 6. Worker and Eval Hub Refactor | 0 | 3 | - |
 | 7. Final Verification and Governance Closeout | 0 | 2 | - |
@@ -70,6 +70,7 @@ Progress: [████░░░░░░] 43%
 | Phase 03 P03 | 16m10s | 3 tasks | 6 files |
 | Phase 03 P04 | 24m29s | 2 tasks | 4 files |
 | Phase 03 P05 | 14m03s | 3 tasks | 17 files |
+| Phase 04 P01 | 6m37s | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -96,6 +97,9 @@ Progress: [████░░░░░░] 43%
 - [Phase 03]: 03-05: New generic run/card identity defaults to Plane while legacy-only Linear identity remains readable.
 - [Phase 03]: 03-05: Legacy Linear columns are retained; only the card_provider default changed.
 - [Phase 03]: 03-05: Production audit found no legacy-only run rows, but destructive column cleanup still requires a separate confirmation.
+- [Phase 04]: 04-01 kept flow reorganization documentation-only; no route, graph, worker, registry, package, or test files were edited.
+- [Phase 04]: 04-01 uses docs/CURRENT.md as the active surface status map while 04-02 owns runbook index/source-of-truth cleanup.
+- [Phase 04]: 04-01 treats apps/worker-code/src/routes/jobs.ts as a static Worker API anchor while runJob.test.ts covers runner behavior.
 
 ### Pending Todos
 
@@ -117,6 +121,6 @@ Progress: [████░░░░░░] 43%
 
 ## Session Continuity
 
-Last session: 2026-07-02T12:40:08.088Z
-Stopped at: Completed 03-05-PLAN.md
+Last session: 2026-07-02T13:44:49.410Z
+Stopped at: Completed 04-01-PLAN.md
 Resume file: None
