@@ -1,5 +1,11 @@
 import type { CommandResult, Job, JobResult } from '../types.js';
 import {
+  RESEARCH_HEADINGS,
+  formatPolicyLimitLine,
+  formatResearchPackHeader,
+  truncateBlock,
+} from './researchOutput.js';
+import {
   DEFAULT_SCRAPING_LIMITS,
   type ScrapingLimits,
   buildScrapingPolicy,
@@ -240,8 +246,8 @@ async function createPlaywrightAdapter(): Promise<ControlledPlaywrightAdapter> {
           }, true);
         `);
         await page.goto(args.url, { waitUntil: 'networkidle', timeout: args.timeoutMs });
-        const html = truncate(await page.content(), args.maxOutputChars);
-        const text = truncate(
+        const html = truncateBlock(await page.content(), args.maxOutputChars);
+        const text = truncateBlock(
           await page.locator('body').innerText({ timeout: 5_000 }),
           args.maxOutputChars,
         );
@@ -272,15 +278,13 @@ function buildRenderedResearchPack(
   limits: ScrapingLimits,
 ): string {
   const lines = [
-    `# Research Pack - ${job.issueIdentifier}`,
-    '',
-    `Generated at: ${generatedAt.toISOString()}`,
+    ...formatResearchPackHeader(job.issueIdentifier, generatedAt),
     '',
     '## Objective',
     '',
     job.title,
     '',
-    '## Sources',
+    RESEARCH_HEADINGS.sources,
     '',
   ];
 
@@ -295,23 +299,15 @@ function buildRenderedResearchPack(
     }
     lines.push('');
     if (source.text)
-      lines.push('#### Rendered Text', '', truncate(source.text, limits.maxOutputChars), '');
+      lines.push('#### Rendered Text', '', truncateBlock(source.text, limits.maxOutputChars), '');
     if (source.html)
-      lines.push('#### Rendered HTML', '', truncate(source.html, limits.maxOutputChars), '');
+      lines.push('#### Rendered HTML', '', truncateBlock(source.html, limits.maxOutputChars), '');
   }
 
-  lines.push('## Limitations', '');
-  lines.push(
-    `- Policy: explicit URLs only; max ${limits.maxPages} page(s), timeout ${limits.timeoutMs}ms, output cap ${limits.maxOutputChars} chars, rate ${limits.rateLimitPerMinute}/min.`,
-  );
+  lines.push(RESEARCH_HEADINGS.limitations, '');
+  lines.push(formatPolicyLimitLine(limits));
   lines.push(
     '- Downloads, local/internal network targets, and sensitive form submissions are blocked.',
   );
   return lines.join('\n').trim();
-}
-
-function truncate(text: string, maxChars: number): string {
-  const clean = text.trim();
-  if (clean.length <= maxChars) return clean;
-  return `${clean.slice(0, maxChars - 20).trim()}\n\n[truncated]`;
 }

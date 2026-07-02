@@ -1,5 +1,9 @@
 import { z } from 'zod';
 import type { CommandResult } from '../types.js';
+import { normalizeInstagramHandles } from './researchInstagram.js';
+import { RESEARCH_HEADINGS, redactSensitiveText, truncateInline } from './researchOutput.js';
+
+export { redactSensitiveText } from './researchOutput.js';
 
 type FetchImpl = typeof fetch;
 
@@ -127,7 +131,7 @@ export async function runInstagramGraphResearch(
   opts: InstagramGraphResearchOptions,
 ): Promise<InstagramGraphResearchResult> {
   const commands: CommandResult[] = [];
-  const uniqueHandles = [...new Set(handles.map((h) => h.toLowerCase()).filter(Boolean))];
+  const uniqueHandles = normalizeInstagramHandles(handles);
   if (uniqueHandles.length === 0) return { findings: [], commands };
 
   if (!opts.accessToken || !opts.igUserId) {
@@ -244,21 +248,9 @@ function graphLimitation(err: unknown, exactSecrets: string[] = []): string {
   return `Instagram Graph API Business Discovery limitation: ${redactSensitiveText(message, exactSecrets)}`;
 }
 
-export function redactSensitiveText(value: string, exactSecrets: string[] = []): string {
-  let redacted = value;
-  for (const secret of new Set(exactSecrets.filter(Boolean))) {
-    redacted = redacted.split(secret).join('[redacted]');
-    const encodedSecret = encodeURIComponent(secret);
-    if (encodedSecret && encodedSecret !== secret) {
-      redacted = redacted.split(encodedSecret).join('[redacted]');
-    }
-  }
-  return redacted.replace(/[A-Za-z0-9_-]{20,}/g, '[redacted]');
-}
-
 export function formatInstagramGraphFindings(findings: InstagramGraphFinding[]): string[] {
   if (findings.length === 0) return [];
-  const lines = ['## Instagram Graph API Findings', '', '### Sources', ''];
+  const lines = [RESEARCH_HEADINGS.instagramGraphFindings, '', '### Sources', ''];
   for (const [index, finding] of findings.entries()) {
     lines.push(`- IG${index + 1}: @${finding.handle} via Instagram Graph API Business Discovery`);
   }
@@ -286,7 +278,7 @@ export function formatInstagramGraphFindings(findings: InstagramGraphFinding[]):
             media.permalink,
             media.timestamp,
             media.mediaType,
-            media.caption ? `caption: ${truncate(media.caption, 180)}` : undefined,
+            media.caption ? `caption: ${truncateInline(media.caption, 180)}` : undefined,
             media.likeCount !== undefined ? `likes: ${media.likeCount}` : undefined,
             media.commentsCount !== undefined ? `comments: ${media.commentsCount}` : undefined,
           ].filter(Boolean);
@@ -307,9 +299,4 @@ export function formatInstagramGraphFindings(findings: InstagramGraphFinding[]):
     '',
   );
   return lines;
-}
-
-function truncate(value: string, max: number): string {
-  if (value.length <= max) return value;
-  return `${value.slice(0, max - 1)}…`;
 }

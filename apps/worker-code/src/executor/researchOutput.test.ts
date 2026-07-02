@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  extractInstagramHandles,
+  instagramProfileUrl,
+  normalizeInstagramHandles,
+} from './researchInstagram.js';
+import {
   RESEARCH_HEADINGS,
   bulletList,
   formatLandingPageBrief,
@@ -11,11 +16,6 @@ import {
   truncateBlock,
   truncateInline,
 } from './researchOutput.js';
-import {
-  extractInstagramHandles,
-  instagramProfileUrl,
-  normalizeInstagramHandles,
-} from './researchInstagram.js';
 
 describe('research output helpers', () => {
   it('preserves block and inline truncation contracts', () => {
