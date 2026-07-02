@@ -10,6 +10,7 @@ requires:
 provides:
   - Canonical source-owner maps for workflow labels, Plane labels, agent keys, skill bundles, model aliases, runner paths, artifact paths, and env/secrets
   - Focused registry compatibility tests for `coder-agent` and `software-delivery-pipeline`
+  - Tracked local `gsd` skill artifact required by the committed registry mapping
   - Current docs and runbook indexes that keep historical docs separate from active Plane-first guidance
 affects: [phase-04, phase-05, phase-06, operator-docs, agent-skills, registry]
 
@@ -23,6 +24,7 @@ tech-stack:
 key-files:
   created:
     - .planning/phases/04-operational-flow-reorganization/04-02-SUMMARY.md
+    - agent-skills/gsd/SKILL.md
   modified:
     - docs/README.md
     - docs/CURRENT.md
@@ -83,7 +85,7 @@ metrics:
   completed: 2026-07-02T13:55:41Z
   duration_seconds: 436
   tasks: 2
-  files_modified: 7
+  files_modified: 8
 status: complete
 ---
 
@@ -97,12 +99,13 @@ status: complete
 - **Started:** 2026-07-02T13:48:25Z
 - **Completed:** 2026-07-02T13:55:41Z
 - **Tasks:** 2
-- **Files modified:** 7
+- **Files modified:** 8
 
 ## Accomplishments
 
 - Added canonical source-owner maps to current docs and runbook indexes for labels, agent keys, skills, model aliases, runner paths, artifacts, and env/secrets.
 - Preserved the existing local `gsd` software pipeline registry addition and added focused tests for exact `coder-agent` / `software-delivery-pipeline` bundle equality.
+- Tracked the local `gsd` skill file referenced by the registry so clean checkouts do not depend on an untracked workspace directory.
 - Kept historical docs indexed separately from active Plane-first guidance.
 
 ## Task Commits
@@ -110,6 +113,7 @@ status: complete
 1. **Task 1: Update current docs indexes with canonical source owners** - `c21ec88` (docs)
 2. **Task 2 RED: Preserve registry compatibility and focused source tests** - `3caffc2` (test)
 3. **Task 2 GREEN: Preserve registry compatibility and current identity docs** - `f22a78d` (feat)
+4. **Post-plan integration: Track registry skill artifact** - this commit
 
 ## Files Created/Modified
 
@@ -119,6 +123,7 @@ status: complete
 - `docs/runbooks/README.md` - Added runbook source-owner map for mutable operational concepts.
 - `docs/runbooks/agent-skills.md` - Added owner references for agents, models, runner artifacts, workflows, Plane label IDs, and artifact APIs; clarified current pipeline identity.
 - `agent-skills/registry.json` - Preserved the local `gsd` skill entry and identical software pipeline bundles.
+- `agent-skills/gsd/SKILL.md` - Local GSD operating contract referenced by the registry.
 - `apps/worker-code/src/executor/agentSkills.test.ts` - Added focused compatibility, specialization, and docs wording tests.
 
 ## Verification
@@ -133,6 +138,7 @@ status: complete
 | `rtk grep -q "coder-agent" docs/runbooks/agent-skills.md` and `rtk grep -q "software-delivery-pipeline" docs/runbooks/agent-skills.md` | Passed | Runbook names both compatibility and current identity. |
 | Final plan-level static owner checks | Passed | Required owner paths remain present after commits. |
 | `rtk corepack pnpm verify` | Passed | Biome checked 225 files; recursive build passed; Vitest 74 files / 477 tests passed; eval and regression eval both 14/14 score 100. |
+| Post-plan `rtk corepack pnpm vitest run apps/worker-code/src/executor/agentSkills.test.ts` | Passed | Confirmed the tracked local `gsd` skill still satisfies the registry compatibility tests. |
 
 ## Decisions Made
 
@@ -155,7 +161,7 @@ None - plan executed exactly as written.
 - Pre-existing dirty hunks in `agent-skills/registry.json`, `apps/worker-code/src/executor/agentSkills.test.ts`, and `docs/runbooks/agent-skills.md` were preserved and layered on.
 - Pre-existing untracked `docs/README.md`, `docs/HISTORICAL.md`, and `docs/runbooks/README.md` were in 04-02 scope and were committed as Task 1 artifacts.
 - Unrelated untracked planning/archive files and `docs/superpowers/README.md` were left untouched.
-- Pre-existing untracked `agent-skills/gsd/` was preserved and not staged because it is outside the user-approved file list.
+- Pre-existing untracked `agent-skills/gsd/` was later tracked as a post-plan integration fix because the committed registry maps to `agent-skills/gsd/SKILL.md`.
 
 ## Known Stubs
 
@@ -173,7 +179,6 @@ No new runtime endpoint, auth path, schema change, or file-access trust boundary
 
 ## Residual Risks
 
-- `agent-skills/gsd/` remains an untracked pre-existing directory outside the allowed file list. Current workspace verification passes with it present; a clean branch will need that skill file committed separately if it is not already tracked elsewhere.
 - Biome currently reports 0 matching Markdown files for the docs-only checks, so static `rtk rg` owner checks are the primary docs-specific automated evidence.
 
 ## TDD Gate Compliance
