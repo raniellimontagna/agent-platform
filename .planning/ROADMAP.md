@@ -81,19 +81,19 @@ current usage, while preserving explicit migration/compatibility handling for ol
   3. Database legacy fields have a documented compatibility/removal strategy and tests for existing rows if retained.
   4. `corepack pnpm verify` and eval regression pass after the cutover.
 
-**Plans**: 2/5 plans executed
+**Plans**: 3/5 plans executed
 
 Plans:
 
 - [x] 03-01-PLAN.md
 - [x] 03-02-PLAN.md
-- [ ] 03-03-PLAN.md
+- [x] 03-03-PLAN.md
 - [ ] 03-04-PLAN.md
 - [ ] 03-05-PLAN.md
 
 - [x] 03-01: Add characterization tests for current Plane behavior and legacy data handling.
 - [x] 03-02: Cut provider registry, env validation, and graph enablement to Plane-only defaults.
-- [ ] 03-03: Cut queue, worker, and scheduler provider resolution with old BullMQ compatibility checkpoint.
+- [x] 03-03: Cut queue, worker, and scheduler provider resolution with old BullMQ compatibility checkpoint.
 - [ ] 03-04: Gate legacy webhook behavior and update Plane-only env examples.
 - [ ] 03-05: Handle schema compatibility, dashboards, docs, migration notes, and final verification.
 
