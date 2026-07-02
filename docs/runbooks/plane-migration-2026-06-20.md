@@ -32,6 +32,22 @@ migrated through the configured Linear connector and Plane MCP/API, preserving
 `external_source=linear`, each `MAC-*` external ID, title, state, priority, and
 matching labels.
 
+## Current Compatibility Notes
+
+As of 2026-07-02, Plane is the only active provider for new work. Linear data is
+retained as migration provenance and old-row compatibility only.
+
+- `plane:migrate-linear` remains the supported seam for Linear-to-Plane
+  migration work.
+- `linear_issue_id` and `linear_issue_identifier` remain in the `runs` table so
+  old rows stay readable while `card_id`, `card_identifier`, and
+  `card_provider` are authoritative for new rows.
+- `/webhooks/linear` is compatibility-only and should stay disabled unless a
+  deliberate rollback window enables `CARD_EXTRA_PROVIDERS=linear` and exposes
+  that path.
+- Do not drop or rename legacy Linear columns until a read-only production row
+  audit is recorded and a separate destructive cleanup confirmation exists.
+
 ## Verification
 
 - Build: passed with `rtk corepack pnpm -r build`
