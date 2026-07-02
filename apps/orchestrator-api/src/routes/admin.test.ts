@@ -283,6 +283,18 @@ describe('GET /admin/mission-control/missions', () => {
       scenarios: [{ id: 'research-to-landing' }],
     });
   });
+
+  it('mantem alias /admin/api para resumos de missoes com limite seguro', async () => {
+    vi.mocked(listRuns).mockResolvedValue([] as never);
+
+    const res = await app.request('/admin/api/mission-control/missions?limit=not-a-number', {
+      headers: auth,
+    });
+
+    expect(res.status).toBe(200);
+    expect(listRuns).toHaveBeenCalledWith(20, 0);
+    await expect(res.json()).resolves.toEqual({ missions: [] });
+  });
 });
 
 describe('renderMissionControlPage', () => {
@@ -512,6 +524,46 @@ describe('renderMissionDetailPage', () => {
 });
 
 describe('GET /admin/mission-control/missions/:runId', () => {
+  it('401 sem bearer', async () => {
+    const res = await app.request('/admin/mission-control/missions/run-1');
+
+    expect(res.status).toBe(401);
+    expect(getRun).not.toHaveBeenCalled();
+  });
+
+  it('404 quando o run nao existe', async () => {
+    vi.mocked(getRun).mockResolvedValue(null);
+
+    const res = await app.request('/admin/mission-control/missions/missing', { headers: auth });
+
+    expect(res.status).toBe(404);
+    expect(getRun).toHaveBeenCalledWith('missing');
+    await expect(res.json()).resolves.toEqual({ error: 'not found' });
+  });
+
+  it('404 quando o run nao pertence a um cenario Mission Control', async () => {
+    vi.mocked(getRun).mockResolvedValue({
+      id: 'run-other',
+      cardProvider: 'plane',
+      cardId: 'card-2',
+      cardIdentifier: 'AGP-92',
+      status: 'pending',
+      title: 'Other workflow',
+      branch: null,
+      prUrl: null,
+      testsPassed: null,
+      error: null,
+      workflow: 'other-workflow',
+      createdAt: new Date('2026-06-30T12:00:00.000Z'),
+      updatedAt: new Date('2026-06-30T12:00:00.000Z'),
+    } as never);
+
+    const res = await app.request('/admin/mission-control/missions/run-other', { headers: auth });
+
+    expect(res.status).toBe(404);
+    await expect(res.json()).resolves.toEqual({ error: 'not found' });
+  });
+
   it('renders a protected mission detail page for a run id', async () => {
     const { listArtifacts } = await import('../artifacts.js');
     vi.mocked(getRun).mockResolvedValue({
