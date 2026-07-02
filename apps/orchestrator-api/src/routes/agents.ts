@@ -1,4 +1,4 @@
-import { type Context, Hono, type Next } from 'hono';
+import { Hono } from 'hono';
 import { z } from 'zod';
 import {
   AgentExistsError,
@@ -8,21 +8,14 @@ import {
   listAgents,
   updateAgentStatus,
 } from '../agents.js';
-import { env } from '../env.js';
 import { logger } from '../logger.js';
+import { requireRunnerAuth } from './routeAuth.js';
 
 export const agentsRoute = new Hono();
 
-async function requireAuth(c: Context, next: Next) {
-  if (c.req.header('authorization') !== `Bearer ${env.RUNNER_AUTH_TOKEN}`) {
-    return c.json({ error: 'unauthorized' }, 401);
-  }
-  await next();
-}
-
 // Escritas exigem bearer; leituras são abertas (rede interna, igual runs/artifacts).
-agentsRoute.post('/agents', requireAuth);
-agentsRoute.patch('/agents/:id', requireAuth);
+agentsRoute.post('/agents', requireRunnerAuth);
+agentsRoute.patch('/agents/:id', requireRunnerAuth);
 
 const patchSchema = z.object({ status: z.enum(['active', 'deprecated']) });
 const statusSchema = z.enum(['active', 'deprecated']).optional();

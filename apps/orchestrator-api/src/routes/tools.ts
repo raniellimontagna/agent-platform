@@ -1,6 +1,5 @@
-import { type Context, Hono, type Next } from 'hono';
+import { Hono } from 'hono';
 import { z } from 'zod';
-import { env } from '../env.js';
 import { logger } from '../logger.js';
 import {
   ToolExistsError,
@@ -10,19 +9,13 @@ import {
   listTools,
   updateToolStatus,
 } from '../tools.js';
+import { requireRunnerAuth } from './routeAuth.js';
 
 export const toolsRoute = new Hono();
 
-async function requireAuth(c: Context, next: Next) {
-  if (c.req.header('authorization') !== `Bearer ${env.RUNNER_AUTH_TOKEN}`) {
-    return c.json({ error: 'unauthorized' }, 401);
-  }
-  await next();
-}
-
 // Escritas exigem bearer; leituras são abertas (rede interna, igual agents/runs).
-toolsRoute.post('/tools', requireAuth);
-toolsRoute.patch('/tools/:id', requireAuth);
+toolsRoute.post('/tools', requireRunnerAuth);
+toolsRoute.patch('/tools/:id', requireRunnerAuth);
 
 const statusSchema = z.enum(['active', 'deprecated']).optional();
 const riskSchema = z.enum(['safe', 'caution', 'dangerous']).optional();
