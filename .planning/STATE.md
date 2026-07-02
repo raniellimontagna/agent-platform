@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 05
-current_phase_name: Orchestrator Hub Refactor
+current_phase: 06
+current_phase_name: Worker and Eval Hub Refactor
 status: executing
-stopped_at: Completed 06-01-PLAN.md
+stopped_at: Completed 06-01-PLAN.md; ready for 06-02-PLAN.md
 last_updated: "2026-07-02T18:03:41.159Z"
 last_activity: 2026-07-02
-last_activity_desc: Phase 04 complete, transitioned to Phase 05
+last_activity_desc: Phase 06 plan 06-01 complete; 06-02 codegen seams ready
 progress:
   total_phases: 7
   completed_phases: 5
-  total_plans: 18
+  total_plans: 20
   completed_plans: 15
-  percent: 71
+  percent: 75
 ---
 
 # Project State
@@ -25,16 +25,16 @@ See: `.planning/PROJECT.md` (updated 2026-07-02)
 
 **Core value:** Recover control of `agent-platform` through Plane-first docs,
 legacy removal, modular flow refactors, and verification gates.
-**Current focus:** Phase 05 — Orchestrator Hub Refactor (complete; Phase 6 not started)
+**Current focus:** Phase 06 — Worker and Eval Hub Refactor (06-01 complete; 06-02 next)
 
 ## Current Position
 
-Phase: 05 — Orchestrator Hub Refactor
-Plan: Not started
+Phase: 06 — Worker and Eval Hub Refactor
+Plan: 06-02 — Codegen Seams
 Status: Ready to execute
-Last activity: 2026-07-02 — Phase 04 complete, transitioned to Phase 05
+Last activity: 2026-07-02 — Phase 06 plan 06-01 complete
 
-Progress: [███████░░░] 71%
+Progress: [████████░░] 75%
 
 ## Performance Metrics
 
@@ -53,7 +53,7 @@ Progress: [███████░░░] 71%
 | 3. Plane-Only Provider Cutover | 5 | 5 | ~14m |
 | 4. Operational Flow Reorganization | 2 | 2 | ~6m56s |
 | 5. Orchestrator Hub Refactor | 3 | 3 | ~10m30s |
-| 6. Worker and Eval Hub Refactor | 0 | 4 | - |
+| 6. Worker and Eval Hub Refactor | 1 | 4 | 11m45s |
 | 7. Final Verification and Governance Closeout | 0 | 2 | - |
 | 05 | 3 | - | - |
 | 03 | 5 | - | - |
@@ -61,8 +61,8 @@ Progress: [███████░░░] 71%
 
 **Recent Trend:**
 
-- Last 5 completed plans: 04-01, 04-02, 05-01, 05-02, 05-03 all complete.
-- Trend: Phase 5 is complete with shared route helpers, webhook seams, and Mission Control data/render seams all covered by fail-first evidence.
+- Last 5 completed plans: 04-02, 05-01, 05-02, 05-03, 06-01 all complete.
+- Trend: Phase 6 has started with runner seams extracted behind fail-first characterization while route/provider/schema/package surfaces stayed unchanged.
 
 **Recent Plan Metrics:**
 
@@ -144,5 +144,5 @@ Progress: [███████░░░] 71%
 ## Session Continuity
 
 Last session: 2026-07-02T18:03:41.149Z
-Stopped at: Completed 06-01-PLAN.md
+Stopped at: Completed 06-01-PLAN.md; ready for 06-02-PLAN.md
 Resume file: None
