@@ -1,4 +1,3 @@
-import { createHmac, timingSafeEqual } from 'node:crypto';
 import { Hono } from 'hono';
 import { DATA_COLLECTOR_AGENT_KEY, agentKeyFromLabels, resolveAgentByKey } from '../agents.js';
 import { labelJustAdded } from '../cardWebhook.js';
@@ -7,6 +6,7 @@ import { env } from '../env.js';
 import { hasRepoCreateLabel } from '../generatedRepos.js';
 import { isPaused } from '../killswitch.js';
 import { logger } from '../logger.js';
+import { type PlanePayload, normalizePlaneWebhook } from '../planeWebhook.js';
 import { JOB_PRIORITY, agentQueue } from '../queue.js';
 import {
   cancelActiveRunsForCard,
@@ -18,6 +18,7 @@ import {
   updateRunStatus,
 } from '../runs.js';
 import { workflowFromLabels } from '../workflows.js';
+import { verifyPlaneSignature, verifySignature } from '../webhookSignature.js';
 
 export const webhooks = new Hono();
 
@@ -25,14 +26,6 @@ const AI_READY_LABEL = 'ai-ready';
 const APPROVED_LABEL = 'approved';
 const AUTO_MERGE_LABEL = 'auto-merge';
 const PLANE_REMOVED_REASON = 'plane work item removed';
-const PLANE_REMOVAL_ACTIONS = new Set([
-  'delete',
-  'deleted',
-  'remove',
-  'removed',
-  'archive',
-  'archived',
-]);
 
 interface IssueData {
   id?: string;
@@ -48,48 +41,6 @@ interface IssuePayload {
   updatedFrom?: { labels?: { name: string }[]; labelIds?: string[] };
 }
 
-interface PlaneLabel {
-  id?: string;
-  name?: string;
-}
-
-interface PlaneWorkItemData {
-  id?: string;
-  sequence_id?: number;
-  sequenceId?: number;
-  name?: string;
-  labels?: PlaneLabel[];
-  project_id?: string;
-  project_detail?: { identifier?: string };
-  project_identifier?: string;
-}
-
-interface PlanePayload {
-  action: string;
-  type?: string;
-  event?: string;
-  data?: PlaneWorkItemData;
-  updated_from?: { labels?: PlaneLabel[] };
-  updatedFrom?: { labels?: PlaneLabel[] };
-}
-
-function isPlaneWorkItemWebhook(payload: PlanePayload, eventHeader: string | undefined): boolean {
-  const event = eventHeader ?? payload.event ?? payload.type;
-  return event === 'work_item' || event === 'issue';
-}
-
-function isPlaneRemovalAction(action: string | undefined): boolean {
-  return action ? PLANE_REMOVAL_ACTIONS.has(action.toLowerCase()) : false;
-}
-
-function verifySignature(rawBody: string, signature: string | undefined, secret: string): boolean {
-  if (!signature) return false;
-  const expected = createHmac('sha256', secret).update(rawBody).digest('hex');
-  const a = Buffer.from(expected);
-  const b = Buffer.from(signature);
-  return a.length === b.length && timingSafeEqual(a, b);
-}
-
 function issueLabelNames(d: IssueData | undefined): string[] | undefined {
   return d?.labels?.map((l) => l.name);
 }
@@ -98,29 +49,8 @@ function issueLabelIds(d: IssueData | undefined): string[] | undefined {
   return d?.labelIds;
 }
 
-function planeLabelNames(labels: PlaneLabel[] | undefined): string[] | undefined {
-  return labels?.map((label) => label.name ?? '').filter(Boolean);
-}
-
-function planeLabelIds(labels: PlaneLabel[] | undefined): string[] | undefined {
-  return labels?.map((label) => label.id ?? '').filter(Boolean);
-}
-
 function hasLabel(input: { names: string[]; ids: string[]; name: string; id?: string }): boolean {
   return input.names.includes(input.name) || (!!input.id && input.ids.includes(input.id));
-}
-
-function planeCardIdentifier(data: PlaneWorkItemData): string {
-  const projectIdentifier = data.project_detail?.identifier ?? data.project_identifier ?? 'AGP';
-  const sequence = data.sequence_id ?? data.sequenceId;
-  return sequence ? `${projectIdentifier}-${sequence}` : (data.id ?? projectIdentifier);
-}
-
-function verifyPlaneSignature(rawBody: string, signature: string | undefined): boolean {
-  if (!env.PLANE_WEBHOOK_SECRET) {
-    return env.NODE_ENV !== 'production';
-  }
-  return verifySignature(rawBody, signature, env.PLANE_WEBHOOK_SECRET);
 }
 
 function isLegacyLinearWebhookEnabled(): boolean {
@@ -340,36 +270,36 @@ webhooks.post('/webhooks/plane', async (c) => {
   }
 
   const payload = JSON.parse(rawBody) as PlanePayload;
+  const planeEvent = normalizePlaneWebhook(payload, eventHeader);
 
-  if (!isPlaneWorkItemWebhook(payload, eventHeader)) {
+  if (!planeEvent.supported) {
     return c.json(
-      skipPlaneWebhook('unsupported event type', {
-        action: payload.action,
-        event: eventHeader ?? payload.event ?? payload.type,
+      skipPlaneWebhook(planeEvent.reason, {
+        action: planeEvent.action,
+        event: planeEvent.event,
       }),
     );
   }
 
-  const item = payload.data;
-  const cardId = item?.id;
+  const cardId = planeEvent.cardId;
   if (!cardId) {
     return c.json(
       skipPlaneWebhook('no work item id', {
-        action: payload.action,
-        event: eventHeader ?? payload.event ?? payload.type,
+        action: planeEvent.action,
+        event: planeEvent.event,
       }),
     );
   }
 
-  if (isPlaneRemovalAction(payload.action)) {
+  if (planeEvent.removal) {
     const cancelled = await cancelActiveRunsForCard('plane', cardId, PLANE_REMOVED_REASON);
     logger.info(
       {
         provider: 'plane',
-        action: payload.action,
-        event: eventHeader ?? payload.event ?? payload.type,
+        action: planeEvent.action,
+        event: planeEvent.event,
         cardId,
-        cardIdentifier: planeCardIdentifier(item),
+        cardIdentifier: planeEvent.cardIdentifier,
         cancelled,
       },
       'Plane work item removed; active runs cancelled',
@@ -377,11 +307,10 @@ webhooks.post('/webhooks/plane', async (c) => {
     return c.json({ ok: true, cancelled, reason: PLANE_REMOVED_REASON });
   }
 
-  const currentNames = planeLabelNames(item.labels) ?? [];
-  const currentIds = planeLabelIds(item.labels) ?? [];
-  const previousLabels = payload.updated_from?.labels ?? payload.updatedFrom?.labels;
-  const previousNames = planeLabelNames(previousLabels);
-  const previousIds = planeLabelIds(previousLabels);
+  const currentNames = planeEvent.currentNames;
+  const currentIds = planeEvent.currentIds;
+  const previousNames = planeEvent.previousNames;
+  const previousIds = planeEvent.previousIds;
 
   if (
     labelJustAdded({
@@ -389,7 +318,7 @@ webhooks.post('/webhooks/plane', async (c) => {
       currentIds,
       previousNames,
       previousIds,
-      action: payload.action,
+      action: planeEvent.action,
       name: APPROVED_LABEL,
       id: env.PLANE_APPROVED_LABEL_ID,
     })
@@ -398,10 +327,10 @@ webhooks.post('/webhooks/plane', async (c) => {
     if (!run) {
       return c.json(
         skipPlaneWebhook('nenhum run aguardando aprovação', {
-          action: payload.action,
-          event: eventHeader ?? payload.event ?? payload.type,
+          action: planeEvent.action,
+          event: planeEvent.event,
           cardId,
-          cardIdentifier: planeCardIdentifier(item),
+          cardIdentifier: planeEvent.cardIdentifier,
           currentNames,
           currentIds,
           previousNames,
@@ -417,7 +346,7 @@ webhooks.post('/webhooks/plane', async (c) => {
       { priority: JOB_PRIORITY.resume },
     );
     logger.info(
-      { runId: run.id, issue: planeCardIdentifier(item) },
+      { runId: run.id, issue: planeEvent.cardIdentifier },
       'run approved via Plane, resuming',
     );
     return c.json({ ok: true, resumed: true, runId: run.id });
@@ -429,19 +358,19 @@ webhooks.post('/webhooks/plane', async (c) => {
       currentIds,
       previousNames,
       previousIds,
-      action: payload.action,
+      action: planeEvent.action,
       name: AI_READY_LABEL,
       id: env.PLANE_AI_READY_LABEL_ID,
     })
   ) {
     return c.json(
       skipPlaneWebhook(
-        previousLabels ? 'no relevant label transition' : 'previous labels missing',
+        planeEvent.previousLabelsPresent ? 'no relevant label transition' : 'previous labels missing',
         {
-          action: payload.action,
-          event: eventHeader ?? payload.event ?? payload.type,
+          action: planeEvent.action,
+          event: planeEvent.event,
           cardId,
-          cardIdentifier: planeCardIdentifier(item),
+          cardIdentifier: planeEvent.cardIdentifier,
           currentNames,
           currentIds,
           previousNames,
@@ -454,9 +383,9 @@ webhooks.post('/webhooks/plane', async (c) => {
   const result = await handleAiReadyCard({
     provider: 'plane',
     cardId,
-    cardIdentifier: planeCardIdentifier(item),
-    cardProjectId: item.project_id,
-    title: item.name ?? '(sem título)',
+    cardIdentifier: planeEvent.cardIdentifier ?? cardId,
+    cardProjectId: planeEvent.cardProjectId,
+    title: planeEvent.title,
     labels: currentNames,
     hasAutoMerge: hasLabel({
       names: currentNames,
