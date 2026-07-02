@@ -86,7 +86,7 @@ status: complete
 ## Task Commits
 
 1. **Task 07-01-01 and 07-01-02: Final full gate and eval evidence** - `c45622d` (`docs`)
-2. **Task 07-01-03: Focused diagnosis not needed and plan summary** - metadata commit pending (`docs`)
+2. **Task 07-01-03: Focused diagnosis not needed and plan summary** - `dce4f3c` (`docs`)
 
 ## Gate Evidence
 
