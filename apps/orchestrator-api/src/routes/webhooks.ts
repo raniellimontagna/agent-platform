@@ -123,6 +123,12 @@ function verifyPlaneSignature(rawBody: string, signature: string | undefined): b
   return verifySignature(rawBody, signature, env.PLANE_WEBHOOK_SECRET);
 }
 
+function isLegacyLinearWebhookEnabled(): boolean {
+  return env.CARD_EXTRA_PROVIDERS.split(',')
+    .map((provider) => provider.trim())
+    .includes('linear');
+}
+
 function skipPlaneWebhook(
   reason: string,
   context: {
@@ -223,6 +229,18 @@ async function handleAiReadyCard(input: {
 }
 
 webhooks.post('/webhooks/linear', async (c) => {
+  if (!isLegacyLinearWebhookEnabled()) {
+    logger.warn('Linear webhook received but legacy compatibility is disabled');
+    return c.json(
+      {
+        ok: true,
+        skipped: true,
+        reason: 'linear webhook disabled; set CARD_EXTRA_PROVIDERS=linear for legacy compatibility',
+      },
+      410,
+    );
+  }
+
   const rawBody = await c.req.text();
   const signature = c.req.header('linear-signature');
 
