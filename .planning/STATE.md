@@ -85,6 +85,9 @@ Progress: [███████░░░] 67%
 - [Phase 03]: 03-02: CARD_PRIMARY_PROVIDER=linear is rejected at both env validation and direct runtime registry construction.
 - [Phase 03]: 03-02: CARD_EXTRA_PROVIDERS=linear remains the explicit legacy compatibility seam and keeps Plane as primary.
 - [Phase 03]: 03-02: Agent graph enablement remains env-driven but provider parsing is centralized in a local helper.
+- [Phase 03]: 03-03: Queue and worker provider resolution now uses explicit or persisted run card identity and rejects unresolved ambiguity.
+- [Phase 03]: 03-03: Scheduler-created cards use PLANE_SCHEDULED_LABEL_ID only; legacy scheduled labels are not substituted for new Plane work.
+- [Phase 03]: 03-03: Deployed BullMQ inspection found no waiting/delayed/paused missing-provider plan jobs; two failed legacy jobs had persisted Linear provider/card rows.
 
 ### Pending Todos
 
@@ -107,6 +110,6 @@ Progress: [███████░░░] 67%
 
 ## Session Continuity
 
-Last session: 2026-07-02T04:57:19.707Z
-Stopped at: Completed 03-02-PLAN.md
+Last session: 2026-07-02T05:13:30Z
+Stopped at: Completed 03-03-PLAN.md; next checkpoint is deployed env/webhook exposure in 03-04
 Resume file: None
