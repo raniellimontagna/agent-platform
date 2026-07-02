@@ -19,6 +19,7 @@
       "instagram-public-research"
     ],
     "coder-agent": [
+      "gsd",
       "software-planner",
       "software-coder",
       "software-critic",
@@ -26,6 +27,7 @@
       "software-reporter"
     ],
     "software-delivery-pipeline": [
+      "gsd",
       "software-planner",
       "software-coder",
       "software-critic",
@@ -98,6 +100,11 @@
       "name": "instagram-public-research",
       "path": "agent-skills/instagram-public-research/SKILL.md",
       "description": "Collect Instagram-related public and first-party data safely for research packs without posting, messaging, deleting, or bypassing access controls."
+    },
+    {
+      "name": "gsd",
+      "path": "agent-skills/gsd/SKILL.md",
+      "description": "Apply GSD Core delivery discipline to software pipeline work: phase loop, context handoffs, small shippable batches, verification gates, and factual reporting."
     },
     {
       "name": "software-planner",
