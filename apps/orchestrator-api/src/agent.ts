@@ -70,6 +70,23 @@ export function resolveAgentGraph(
   return graph;
 }
 
+function resolveEnabledGraphProviders(input: {
+  primaryProvider: CardProvider;
+  extraProviders: string;
+}): CardProvider[] {
+  return Array.from(
+    new Set<CardProvider>([
+      input.primaryProvider,
+      ...input.extraProviders
+        .split(',')
+        .map((provider) => provider.trim())
+        .filter(
+          (provider): provider is CardProvider => provider === 'plane' || provider === 'linear',
+        ),
+    ]),
+  );
+}
+
 function isGeneratedRepo(repo: RepoRef | undefined): boolean {
   return repo?.owner === env.GENERATED_REPOS_OWNER;
 }
@@ -148,16 +165,10 @@ async function init(): Promise<Agent> {
   const repo = `${repoRef.owner}/${repoRef.repo}`;
   const loadLessons = buildLessonLoader(repo);
 
-  const enabledProviders = Array.from(
-    new Set<CardProvider>([
-      env.CARD_PRIMARY_PROVIDER,
-      ...env.CARD_EXTRA_PROVIDERS.split(',')
-        .map((provider) => provider.trim())
-        .filter(
-          (provider): provider is CardProvider => provider === 'plane' || provider === 'linear',
-        ),
-    ]),
-  );
+  const enabledProviders = resolveEnabledGraphProviders({
+    primaryProvider: env.CARD_PRIMARY_PROVIDER,
+    extraProviders: env.CARD_EXTRA_PROVIDERS,
+  });
   const baseGraphDeps = {
     llm,
     github,
