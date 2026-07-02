@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getAgent } from './agent.js';
+import { env } from './env.js';
 import { JOB_PRIORITY, agentQueue, connection } from './queue.js';
 import { createRun } from './runs.js';
 import { SCHEDULE_QUEUE, removeScheduleJob, upsertScheduleJob } from './scheduleQueue.js';
@@ -70,10 +71,12 @@ vi.mock('./schedules.js', () => ({
 beforeEach(() => {
   vi.clearAllMocks();
   workerProcessors.length = 0;
+  env.PLANE_SCHEDULED_LABEL_ID = 'plane-scheduled-label';
+  env.LINEAR_SCHEDULED_LABEL_ID = 'linear-scheduled-label';
 });
 
 describe('startScheduleWorker', () => {
-  it('creates Plane scheduled cards, persists card metadata, and enqueues provider-aware plan jobs', async () => {
+  function mockRunnableSchedule() {
     const createCard = vi.fn().mockResolvedValue({
       provider: 'plane',
       id: 'plane-card-1',
@@ -98,7 +101,10 @@ describe('startScheduleWorker', () => {
     } as never);
     vi.mocked(hasActiveRunForSchedule).mockResolvedValue(false);
     vi.mocked(createRun).mockResolvedValue('run-scheduled');
+    return { createCard };
+  }
 
+  async function fireSchedule() {
     await startScheduleWorker();
     expect(upsertScheduleJob).toHaveBeenCalledWith({
       id: 'schedule-enabled',
@@ -110,6 +116,12 @@ describe('startScheduleWorker', () => {
     const processor = workerProcessors[0];
     if (!processor) throw new Error('expected schedule worker processor to be registered');
     await processor({ data: { scheduleId: 'schedule-1' } });
+  }
+
+  it('creates Plane scheduled cards, persists card metadata, and enqueues provider-aware plan jobs', async () => {
+    const { createCard } = mockRunnableSchedule();
+
+    await fireSchedule();
 
     expect(createCard).toHaveBeenCalledWith({
       title: 'Weekly planning',
@@ -137,5 +149,19 @@ describe('startScheduleWorker', () => {
       { priority: JOB_PRIORITY.plan },
     );
     expect(removeScheduleJob).not.toHaveBeenCalled();
+  });
+
+  it('passes no scheduled label when the Plane scheduled label is absent', async () => {
+    env.PLANE_SCHEDULED_LABEL_ID = undefined;
+    env.LINEAR_SCHEDULED_LABEL_ID = 'linear-scheduled-label';
+    const { createCard } = mockRunnableSchedule();
+
+    await fireSchedule();
+
+    expect(createCard).toHaveBeenCalledWith({
+      title: 'Weekly planning',
+      description: 'Create the weekly plan',
+      labelIds: undefined,
+    });
   });
 });
