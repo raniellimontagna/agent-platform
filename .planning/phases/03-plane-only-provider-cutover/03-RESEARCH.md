@@ -386,26 +386,26 @@ This keeps old rows readable while making generic card identity the primary disp
 
 | # | Claim | Section | Risk if Wrong |
 |---|-------|---------|---------------|
-| A1 | Live Tailscale/Plane/Linear webhook registrations may still expose `/webhooks/linear`; this was inferred from docs and not live-checked. [ASSUMED] | Runtime State Inventory | Planner may omit an operator checkpoint and leave an active Linear webhook path deployed. |
-| A2 | Production orchestrator env may still set `CARD_EXTRA_PROVIDERS=linear`; this was not live-checked. [ASSUMED] | Runtime State Inventory | Code can be Plane-only in repo while deploy remains Linear-enabled. |
-| A3 | Redis/BullMQ may contain old plan jobs without provider fields; local Redis CLI is missing and live queue was not inspected. [ASSUMED] | Runtime State Inventory | Removing fallback without drain/checkpoint can fail old queued work. |
+| A1 | Live Tailscale/Plane/Linear webhook registrations may still expose `/webhooks/linear`; this was inferred from docs and not live-checked. [ASSUMED] | Runtime State Inventory | Plan 03-04 includes a blocking operator checkpoint for deployed webhook exposure, so the plan does not claim live-state verification. |
+| A2 | Production orchestrator env may still set `CARD_EXTRA_PROVIDERS=linear`; this was not live-checked. [ASSUMED] | Runtime State Inventory | Plan 03-04 includes a blocking operator checkpoint for deployed env inspection, so repository cutover cannot be confused with live secret verification. |
+| A3 | Redis/BullMQ may contain old plan jobs without provider fields; local Redis CLI is missing and live queue was not inspected. [ASSUMED] | Runtime State Inventory | Plan 03-03 includes persisted-run compatibility plus a blocking operator checkpoint to inspect or drain legacy queue payloads before deploy fallback removal. |
 
 ## Open Questions
 
-1. **Should explicit `CARD_PRIMARY_PROVIDER=linear` be rejected or only documented as unsupported?**
+1. **(RESOLVED) Should explicit `CARD_PRIMARY_PROVIDER=linear` be rejected or only documented as unsupported?**
    - What we know: Plane must be the only active provider for new work. [VERIFIED: .planning/phases/03-plane-only-provider-cutover/03-CONTEXT.md]
-   - What's unclear: Whether the env schema should hard-fail `CARD_PRIMARY_PROVIDER=linear` or preserve it as a legacy escape hatch.
-   - Recommendation: Reject `CARD_PRIMARY_PROVIDER=linear` for active runtime; allow only explicit legacy extra-provider behavior if tests and docs prove it is compatibility-only. [VERIFIED: .planning/phases/03-plane-only-provider-cutover/03-CONTEXT.md]
+   - Resolution: Reject `CARD_PRIMARY_PROVIDER=linear` for active runtime. Allow only explicit `CARD_EXTRA_PROVIDERS=linear` legacy compatibility when tests and docs prove it is compatibility-only. This follows the locked Phase 3 decision that Plane is the only active provider and Linear fallback is allowed only for explicit legacy data or migration commands. [VERIFIED: .planning/phases/03-plane-only-provider-cutover/03-CONTEXT.md]
+   - Planned coverage: Plan 03-02 implements env/provider registry tests and runtime behavior for this resolution.
 
-2. **Is deployed `/webhooks/linear` still registered in Tailscale or Linear UI?**
+2. **(RESOLVED - CHECKPOINTED) Is deployed `/webhooks/linear` still registered in Tailscale or Linear UI?**
    - What we know: Current runbook documents Linear Funnel and provider webhook setup. [VERIFIED: docs/runbooks/webhook-tailscale.md]
-   - What's unclear: Live service state was not inspected.
-   - Recommendation: Planner should add an operator checkpoint before changing deployed route exposure. [ASSUMED]
+   - Resolution: Live service state was not inspected and must not be claimed as verified from repository research. Plan 03-04 adds a blocking operator checkpoint to inspect deployed env, Tailscale Funnel, and provider webhook UI before treating the deployed cutover as complete. [ASSUMED]
+   - Planned coverage: Plan 03-04 gates `/webhooks/linear` in code without deleting route support and adds the operator checkpoint for live exposure.
 
-3. **How many production rows still have missing generic `card_*` fields?**
+3. **(RESOLVED - CHECKPOINTED) How many production rows still have missing generic `card_*` fields?**
    - What we know: Migration `0015` backfills generic fields where `card_id` is null. [VERIFIED: apps/orchestrator-api/drizzle/0015_card_providers.sql]
-   - What's unclear: Production data was not queried in this research session.
-   - Recommendation: Add a read-only SQL audit before any future destructive schema cleanup; Phase 3 can proceed without dropping columns. [VERIFIED: .planning/phases/03-plane-only-provider-cutover/03-CONTEXT.md]
+   - Resolution: Production data was not queried in this research session and Phase 3 must not drop or rename legacy columns. Plan 03-05 keeps columns, applies only a non-destructive default change, and adds a blocking operator checkpoint for a read-only production row audit before any future destructive schema cleanup. [VERIFIED: .planning/phases/03-plane-only-provider-cutover/03-CONTEXT.md] [ASSUMED]
+   - Planned coverage: Plan 03-05 owns schema compatibility, dashboard/docs migration notes, final verification, and the production row audit checkpoint.
 
 ## Environment Availability
 
