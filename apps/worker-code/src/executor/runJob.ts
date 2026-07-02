@@ -1,20 +1,37 @@
-import { copyFile, mkdir } from 'node:fs/promises';
-import { extname, join } from 'node:path';
 import { createLlmClient } from '@agent-platform/llm';
-import type { Logger } from 'pino';
 import { env } from '../env.js';
 import { logger } from '../logger.js';
 import type { CommandResult, Job, JobResult } from '../types.js';
 import { applyFix, generateAndApplyCode } from './codegen.js';
-import { checkCommand } from './commandPolicy.js';
-import { DATA_COLLECTOR_AGENT_KEY, runFirecrawlResearchJob } from './firecrawlResearch.js';
 import { commitAll, diffAgainst, pushBranch } from './git.js';
 import { generateHiggsfieldImage, parsePreferredModels } from './higgsfieldTool.js';
-import { runLandingQualityGate } from './landingQuality.js';
-import { runPlaywrightResearchJob, shouldUsePlaywrightResearch } from './playwrightResearch.js';
-import { runSandboxedCommand } from './sandbox.js';
+import { isDataCollectorJob, runDataCollectorJob } from './jobDispatch.js';
+import {
+  DEFAULT_LANDING_HERO_ASSET_PATH,
+  buildLandingMediaPrompt,
+  landingHeroAssetPathForArtifact,
+  landingMediaContext,
+  restoreLandingMediaAsset,
+  shouldAutoGenerateLandingMedia,
+} from './jobMedia.js';
+import {
+  buildCommitMessage,
+  commitErrorResult,
+  summarizeSandbox,
+} from './jobResult.js';
+import { runGuarded, runLandingAwareValidation } from './jobValidation.js';
 import { summarizeFailureTail } from './validation.js';
 import { cleanupWorktree, prepareWorktree } from './worktree.js';
+
+export {
+  buildLandingMediaPrompt,
+  landingHeroAssetPathForArtifact,
+  landingMediaContext,
+  restoreLandingMediaAsset,
+  shouldAutoGenerateLandingMedia,
+} from './jobMedia.js';
+export { buildCommitMessage, commitErrorResult, reportResult } from './jobResult.js';
+export { summarizeFailureTail } from './validation.js';
 
 const llm = createLlmClient({
   baseUrl: env.LITELLM_BASE_URL,
@@ -22,131 +39,6 @@ const llm = createLlmClient({
   timeoutMs: env.LLM_TIMEOUT_MS,
   maxRetries: env.LLM_MAX_RETRIES,
 });
-
-const COMMAND_ALLOWLIST = env.AGENT_COMMAND_ALLOWLIST.split(',')
-  .map((b) => b.trim())
-  .filter(Boolean);
-
-const LANDING_PAGE_AGENT_KEY = 'landing-page-agent';
-const LANDING_HERO_ASSET_BASENAME = 'higgsfield-hero';
-const DEFAULT_LANDING_HERO_ASSET_PATH = `public/generated/${LANDING_HERO_ASSET_BASENAME}.jpg`;
-
-/**
- * Roda um comando do job aplicando a allowlist (MAC-31). Comando bloqueado não
- * executa: devolve um CommandResult de auditoria (exitCode 126) com o motivo.
- */
-async function runGuarded(
-  command: string,
-  dir: string,
-  runId: string,
-  log: Logger,
-): Promise<CommandResult> {
-  const check = checkCommand(command, COMMAND_ALLOWLIST);
-  if (!check.allowed) {
-    log.warn({ command, reason: check.reason }, 'comando bloqueado pela allowlist');
-    return {
-      command,
-      exitCode: 126,
-      stdout: '',
-      stderr: `bloqueado: ${check.reason}`,
-      durationMs: 0,
-    };
-  }
-  return runSandboxedCommand({ command, cwd: dir, runId, env });
-}
-
-export { summarizeFailureTail };
-
-export function shouldAutoGenerateLandingMedia(job: Job): boolean {
-  if (!env.HIGGSFIELD_AUTO_GENERATE_LANDING_MEDIA) return false;
-  if (job.reviewFeedback?.trim()) return false;
-  if (job.agentKey !== LANDING_PAGE_AGENT_KEY) return false;
-  return true;
-}
-
-export function buildLandingMediaPrompt(job: Job): string {
-  return [
-    'Create one high-conversion landing page hero image.',
-    `Business/request: ${job.title}`,
-    job.description ? `Context: ${job.description}` : '',
-    job.plan ? `Approved plan: ${job.plan}` : '',
-    'Composition: premium editorial web hero, clear subject, useful negative space for HTML headline overlay, realistic product/service context, polished lighting, no text in image, no logos unless explicitly provided.',
-    'Output: wide 16:9 image suitable for a modern Astro + React landing page.',
-  ]
-    .filter(Boolean)
-    .join('\n');
-}
-
-export function landingHeroAssetPathForArtifact(artifactPath: string): string {
-  const extension = extname(artifactPath).toLowerCase();
-  const normalized = extension === '.jpeg' ? '.jpg' : extension || '.jpg';
-  return `public/generated/${LANDING_HERO_ASSET_BASENAME}${normalized}`;
-}
-
-export function landingMediaContext(assetPath = DEFAULT_LANDING_HERO_ASSET_PATH): string {
-  const publicPath = assetPath.replace(/^public\//, '/');
-  return [
-    '## Generated Higgsfield Media',
-    '',
-    `A Higgsfield hero image has already been generated and copied to \`${assetPath}\`.`,
-    `Use it in the landing page as \`${publicPath}\` for the primary hero/visual section.`,
-    'Do not create, edit, overwrite, inline, or include this binary asset in generated JSON/code output; only reference the local public URL.',
-    'Do not hotlink the external Higgsfield result URL. Keep meaningful alt text and explicit image dimensions/aspect ratio.',
-  ].join('\n');
-}
-
-export async function restoreLandingMediaAsset(
-  dir: string,
-  artifactPath: string,
-  assetPath = DEFAULT_LANDING_HERO_ASSET_PATH,
-): Promise<string> {
-  const destination = join(dir, assetPath);
-  await mkdir(join(dir, 'public/generated'), { recursive: true });
-  await copyFile(artifactPath, destination);
-  return assetPath;
-}
-
-/**
- * Roda os comandos de validação no worktree. Para no primeiro que falhar (build
- * quebrado → não adianta testar). Devolve se passou tudo + o tail do erro p/ o fix.
- */
-async function runValidation(
-  cmds: string[],
-  dir: string,
-  runId: string,
-  log: Logger,
-): Promise<{ passed: boolean; results: CommandResult[]; failureTail: string }> {
-  const results: CommandResult[] = [];
-  for (const cmd of cmds) {
-    log.info({ cmd }, 'running validation command');
-    const result = await runGuarded(cmd, dir, runId, log);
-    results.push(result);
-    if (result.exitCode !== 0) {
-      log.warn({ cmd, exitCode: result.exitCode }, 'validation failed');
-      break;
-    }
-  }
-  const passed = results.length === cmds.length && results.every((c) => c.exitCode === 0);
-  return { passed, results, failureTail: summarizeFailureTail(results) };
-}
-
-async function runLandingAwareValidation(
-  job: Job,
-  dir: string,
-  filesChanged: string[],
-  log: Logger,
-): Promise<{ passed: boolean; results: CommandResult[]; failureTail: string }> {
-  const quality = await runLandingQualityGate({
-    dir,
-    filesChanged,
-    agentKey: job.agentKey,
-  });
-  if (!quality.passed) {
-    log.warn({ failureTail: quality.failureTail }, 'landing quality gate failed');
-    return quality;
-  }
-  return runValidation(job.commands, dir, job.runId, log);
-}
 
 type CommitAttempt =
   | Awaited<ReturnType<typeof commitAll>>
@@ -162,17 +54,6 @@ async function tryCommitAll(dir: string, message: string): Promise<CommitAttempt
   }
 }
 
-export function commitErrorResult(err: unknown): CommandResult {
-  const message = err instanceof Error ? err.message : String(err);
-  return {
-    command: 'git commit',
-    exitCode: 1,
-    stdout: '',
-    stderr: message,
-    durationMs: 0,
-  };
-}
-
 /**
  * Executa um job em sandbox: prepara worktree, gera código via `strong_coder`
  * (MAC-17), commita/pusha a branch e roda os comandos de validação. Devolve o
@@ -184,38 +65,9 @@ export async function runJob(job: Job): Promise<JobResult> {
   const base: JobResult = { runId: job.runId, status: 'failed', branch: job.branch, commands };
 
   try {
-    if (job.agentKey === DATA_COLLECTOR_AGENT_KEY) {
+    if (isDataCollectorJob(job)) {
       log.info('running data collector research job');
-      if (shouldUsePlaywrightResearch(job)) {
-        return await runPlaywrightResearchJob(job, {
-          timeoutMs: env.PLAYWRIGHT_TIMEOUT_MS,
-          maxPages: env.SCRAPING_MAX_PAGES,
-          maxOutputChars: env.SCRAPING_MAX_OUTPUT_CHARS,
-          rateLimitPerMinute: env.SCRAPING_RATE_LIMIT_PER_MINUTE,
-        });
-      }
-      return await runFirecrawlResearchJob(job, {
-        apiKey: env.FIRECRAWL_API_KEY,
-        baseUrl: env.FIRECRAWL_BASE_URL,
-        timeoutMs: env.FIRECRAWL_TIMEOUT_MS,
-        maxPages: env.SCRAPING_MAX_PAGES,
-        maxOutputChars: env.SCRAPING_MAX_OUTPUT_CHARS,
-        rateLimitPerMinute: env.SCRAPING_RATE_LIMIT_PER_MINUTE,
-        instagramGraph: {
-          accessToken: env.INSTAGRAM_GRAPH_ACCESS_TOKEN,
-          igUserId: env.INSTAGRAM_GRAPH_IG_USER_ID,
-          baseUrl: env.INSTAGRAM_GRAPH_BASE_URL,
-          apiVersion: env.INSTAGRAM_GRAPH_API_VERSION,
-          timeoutMs: env.INSTAGRAM_GRAPH_TIMEOUT_MS,
-        },
-        apifyInstagram: {
-          token: env.APIFY_TOKEN,
-          actorId: env.APIFY_INSTAGRAM_ACTOR_ID,
-          baseUrl: env.APIFY_BASE_URL,
-          maxItems: env.APIFY_INSTAGRAM_MAX_ITEMS,
-          timeoutMs: env.APIFY_TIMEOUT_MS,
-        },
-      });
+      return await runDataCollectorJob(job);
     }
 
     const reviseMode = Boolean(job.reviewFeedback?.trim());
@@ -428,65 +280,5 @@ export async function runJob(job: Job): Promise<JobResult> {
     } catch (err) {
       log.warn({ err }, 'failed to cleanup worktree');
     }
-  }
-}
-
-function summarizeSandbox(commands: CommandResult[]): JobResult['sandbox'] {
-  const durations = commands.map((command) => command.durationMs);
-  const failed = commands.find((command) => command.exitCode !== 0);
-  return {
-    backend: env.AGENT_SANDBOX_BACKEND,
-    image: env.AGENT_SANDBOX_BACKEND === 'docker' ? env.AGENT_SANDBOX_IMAGE : undefined,
-    network: env.AGENT_SANDBOX_BACKEND === 'docker' ? env.AGENT_SANDBOX_NETWORK : undefined,
-    commandCount: commands.length,
-    totalDurationMs: durations.reduce((sum, value) => sum + value, 0),
-    maxCommandDurationMs: durations.length > 0 ? Math.max(...durations) : 0,
-    failedCommand: failed?.command,
-  };
-}
-
-/** Monta a mensagem de commit (Conventional Commits, título do modelo em inglês). */
-interface CommitCoauthor {
-  name?: string;
-  email?: string;
-}
-
-export function buildCommitMessage(
-  job: Job,
-  prTitle: string,
-  summary: string,
-  coauthor: CommitCoauthor = {
-    name: env.GIT_COAUTHOR_NAME,
-    email: env.GIT_COAUTHOR_EMAIL,
-  },
-): string {
-  const subject = (
-    prTitle.trim() || `chore(${job.issueIdentifier.toLowerCase()}): ${job.title}`
-  ).slice(0, 100);
-  const body = summary ? `\n\n${summary}` : '';
-  const trailers = [`Ref: ${job.issueIdentifier}`];
-  if (coauthor.name && coauthor.email) {
-    trailers.push(`Co-authored-by: ${coauthor.name} <${coauthor.email}>`);
-  }
-  return `${subject}${body}\n\n${trailers.join('\n')}`;
-}
-
-/** Reporta o resultado de volta ao orquestrador. */
-export async function reportResult(result: JobResult): Promise<void> {
-  const url = `${env.ORCHESTRATOR_BASE_URL}/runs/${result.runId}/result`;
-  try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        authorization: `Bearer ${env.RUNNER_AUTH_TOKEN}`,
-      },
-      body: JSON.stringify(result),
-    });
-    if (!res.ok) {
-      logger.error({ status: res.status, runId: result.runId }, 'failed to report result');
-    }
-  } catch (err) {
-    logger.error({ err, runId: result.runId }, 'error reporting result to orchestrator');
   }
 }
