@@ -1,20 +1,20 @@
 ---
-gsd_state_version: "1.0"
+gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 3
+current_phase: 03
 current_phase_name: Plane-Only Provider Cutover
-status: planning
-stopped_at: Completed 03-01-PLAN.md
-last_updated: "2026-07-02T04:44:30.961Z"
+status: executing
+stopped_at: Completed 03-02-PLAN.md
+last_updated: "2026-07-02T04:57:19.717Z"
 last_activity: 2026-07-02
-last_activity_desc: Completed 03-01 Plane characterization safety net.
+last_activity_desc: Phase 03 execution started
 progress:
   total_phases: 7
   completed_phases: 2
-  total_plans: 19
-  completed_plans: 5
-  percent: 31
+  total_plans: 9
+  completed_plans: 6
+  percent: 67
 ---
 
 # Project State
@@ -25,22 +25,22 @@ See: `.planning/PROJECT.md` (updated 2026-07-02)
 
 **Core value:** Recover control of `agent-platform` through Plane-first docs,
 legacy removal, modular flow refactors, and verification gates.
-**Current focus:** Phase 3 — Plane-Only Provider Cutover
+**Current focus:** Phase 03 — Plane-Only Provider Cutover
 
 ## Current Position
 
-Phase: 3 of 7 (Plane-Only Provider Cutover)
-Plan: 1 of 5 in current phase
-Status: Phase 3 in progress - 03-01 complete
-Last activity: 2026-07-02 — Completed 03-01 Plane characterization safety net.
+Phase: 03 (Plane-Only Provider Cutover) — EXECUTING
+Plan: 2 of 5
+Status: Ready to execute
+Last activity: 2026-07-02 — Phase 03 execution started
 
-Progress: [███░░░░░░░] 31%
+Progress: [███████░░░] 67%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 5
+- Total plans completed: 6
 - Average duration: ~24 minutes
 - Total execution time: ~2.0 hours documented effort
 
@@ -50,7 +50,7 @@ Progress: [███░░░░░░░] 31%
 |-------|-------|-------|----------|
 | 1. Bootstrap and Architectural Inventory | 2 | 2 | ~28m |
 | 2. Living Documentation and Historical Archive | 2 | 2 | ~28m |
-| 3. Plane-Only Provider Cutover | 1 | 5 | ~7m |
+| 3. Plane-Only Provider Cutover | 2 | 5 | ~7m |
 | 4. Operational Flow Reorganization | 0 | 2 | - |
 | 5. Orchestrator Hub Refactor | 0 | 3 | - |
 | 6. Worker and Eval Hub Refactor | 0 | 3 | - |
@@ -66,6 +66,7 @@ Progress: [███░░░░░░░] 31%
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 03 P01 | 7m14s | 3 tasks | 10 files |
+| Phase 03 P02 | 6m19s | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -81,6 +82,9 @@ Progress: [███░░░░░░░] 31%
 - [Phase 03]: 03-01: Linear env defaults are no longer global Vitest setup; tests that need legacy behavior own their setup explicitly.
 - [Phase 03]: 03-01: Runtime provider behavior remains characterization-only in this plan; active cutover implementation stays in later Phase 3 plans.
 - [Phase 03]: 03-01: Linear provenance on Plane cards is migration metadata, not active provider routing.
+- [Phase 03]: 03-02: CARD_PRIMARY_PROVIDER=linear is rejected at both env validation and direct runtime registry construction.
+- [Phase 03]: 03-02: CARD_EXTRA_PROVIDERS=linear remains the explicit legacy compatibility seam and keeps Plane as primary.
+- [Phase 03]: 03-02: Agent graph enablement remains env-driven but provider parsing is centralized in a local helper.
 
 ### Pending Todos
 
@@ -103,6 +107,6 @@ Progress: [███░░░░░░░] 31%
 
 ## Session Continuity
 
-Last session: 2026-07-02T04:44:30.951Z
-Stopped at: Completed 03-01-PLAN.md
+Last session: 2026-07-02T04:57:19.707Z
+Stopped at: Completed 03-02-PLAN.md
 Resume file: None
