@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_phase: 05
+current_phase_name: Orchestrator Hub Refactor
 status: in_progress
-stopped_at: Completed 05-01-PLAN.md
-last_updated: "2026-07-02T15:01:58.270Z"
+stopped_at: Completed 05-02-PLAN.md
+last_updated: "2026-07-02T15:21:01.287Z"
 last_activity: 2026-07-02
-last_activity_desc: Completed 05-01-PLAN.md
+last_activity_desc: Completed 05-02-PLAN.md
 progress:
   total_phases: 7
   completed_phases: 4
   total_plans: 14
-  completed_plans: 12
-  percent: 86
-current_phase_name: Orchestrator Hub Refactor
+  completed_plans: 13
+  percent: 93
 ---
 
 # Project State
@@ -30,19 +30,19 @@ legacy removal, modular flow refactors, and verification gates.
 ## Current Position
 
 Phase: 05 — Orchestrator Hub Refactor
-Plan: 1 of 3
-Status: Phase 5 in progress; 05-01 complete
-Last activity: 2026-07-02 — Completed 05-01-PLAN.md
+Plan: 2 of 3
+Status: Phase 5 in progress; 05-02 complete
+Last activity: 2026-07-02 — Completed 05-02-PLAN.md
 
-Progress: [█████████░] 86%
+Progress: [█████████░] 93%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 12
+- Total plans completed: 13
 - Average duration: ~23 minutes
-- Total execution time: ~2.2 hours documented effort
+- Total execution time: ~2.4 hours documented effort
 
 **By Phase:**
 
@@ -52,14 +52,14 @@ Progress: [█████████░] 86%
 | 2. Living Documentation and Historical Archive | 2 | 2 | ~28m |
 | 3. Plane-Only Provider Cutover | 5 | 5 | ~14m |
 | 4. Operational Flow Reorganization | 2 | 2 | ~6m56s |
-| 5. Orchestrator Hub Refactor | 1 | 3 | 5m19s |
+| 5. Orchestrator Hub Refactor | 2 | 3 | ~7m32s |
 | 6. Worker and Eval Hub Refactor | 0 | 3 | - |
 | 7. Final Verification and Governance Closeout | 0 | 2 | - |
 
 **Recent Trend:**
 
-- Last 5 completed plans: 03-04, 03-05, 04-01, 04-02, 05-01 all complete.
-- Trend: Phase 5 has started with shared route helper extraction complete and fail-first evidence recorded.
+- Last 5 completed plans: 03-05, 04-01, 04-02, 05-01, 05-02 all complete.
+- Trend: Phase 5 has shared route helper extraction and webhook seam extraction complete with fail-first evidence recorded.
 
 **Recent Plan Metrics:**
 
@@ -73,6 +73,7 @@ Progress: [█████████░] 86%
 | Phase 04 P01 | 6m37s | 3 tasks | 10 files |
 | Phase 04 P02 | 7m16s | 2 tasks | 7 files |
 | Phase 05 P01 | 5m19s | 2 tasks | 9 files |
+| Phase 05 P02 | 9m46s | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -107,6 +108,9 @@ Progress: [█████████░] 86%
 - [Phase 05]: 05-01: Use one local requireRunnerAuth helper instead of Hono bearerAuth so exact 401 JSON remains unchanged.
 - [Phase 05]: 05-01: Extract only escapeHtml, formatDate, and humanizeStatus; keep route-specific status-class mappings local.
 - [Phase 05]: 05-01: Keep Task 1 and Task 2 RED/GREEN commits separate to preserve fail-first evidence.
+- [Phase 05]: 05-02: Keep /webhooks/linear present and gated by CARD_EXTRA_PROVIDERS=linear; do not make Linear an active provider default.
+- [Phase 05]: 05-02: Keep cardWebhook.labelJustAdded as the transition source owner instead of duplicating label-diff semantics.
+- [Phase 05]: 05-02: Keep /webhooks/plane as active intake while moving HMAC checks, Plane parsing, and run transitions behind local seams.
 
 ### Pending Todos
 
@@ -128,6 +132,6 @@ Progress: [█████████░] 86%
 
 ## Session Continuity
 
-Last session: 2026-07-02T15:01:58.261Z
-Stopped at: Completed 05-01-PLAN.md
+Last session: 2026-07-02T15:21:01.277Z
+Stopped at: Completed 05-02-PLAN.md
 Resume file: None

@@ -130,12 +130,16 @@ modules without changing behavior.
   3. Admin/Mission Control rendering is split into focused helpers or modules with tests around output-critical behavior.
   4. Characterization tests fail before refactor when seams are broken and pass after refactor.
 
-**Plans**: 1/3 plans executed
+**Plans**: 2/3 plans executed
 
 Plans:
 
+- [x] 05-01-PLAN.md
+- [x] 05-02-PLAN.md
+- [ ] 05-03-PLAN.md
+
 - [x] 05-01: Extract shared route/auth/render helpers with tests.
-- [ ] 05-02: Refactor `routes/webhooks.ts` into Plane intake and run transition seams.
+- [x] 05-02: Refactor `routes/webhooks.ts` into Plane intake and run transition seams.
 - [ ] 05-03: Refactor `routes/admin.ts`/Mission Control rendering into smaller units.
 
 ### Phase 6: Worker and Eval Hub Refactor
@@ -190,7 +194,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 2. Living Documentation and Historical Archive | 2/2 | Complete | 2026-07-02 |
 | 3. Plane-Only Provider Cutover | 5/5 | Complete   | 2026-07-02 |
 | 4. Operational Flow Reorganization | 2/2 | Complete   | 2026-07-02 |
-| 5. Orchestrator Hub Refactor | 1/3 | In Progress|  |
+| 5. Orchestrator Hub Refactor | 2/3 | In Progress|  |
 | 6. Worker and Eval Hub Refactor | 0/3 | Not started | - |
 | 7. Final Verification and Governance Closeout | 0/2 | Not started | - |
 
