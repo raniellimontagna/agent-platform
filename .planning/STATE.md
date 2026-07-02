@@ -4,9 +4,9 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 05
 current_phase_name: Orchestrator Hub Refactor
-status: completed
+status: executing
 stopped_at: Completed 05-03-PLAN.md
-last_updated: "2026-07-02T16:10:14.473Z"
+last_updated: "2026-07-02T17:47:19.968Z"
 last_activity: 2026-07-02
 last_activity_desc: Phase 04 complete, transitioned to Phase 05
 progress:
@@ -31,7 +31,7 @@ legacy removal, modular flow refactors, and verification gates.
 
 Phase: 05 — Orchestrator Hub Refactor
 Plan: Not started
-Status: Phase 5 complete; Phase 6 not started
+Status: Ready to execute
 Last activity: 2026-07-02 — Phase 04 complete, transitioned to Phase 05
 
 Progress: [███████░░░] 71%
@@ -53,7 +53,7 @@ Progress: [███████░░░] 71%
 | 3. Plane-Only Provider Cutover | 5 | 5 | ~14m |
 | 4. Operational Flow Reorganization | 2 | 2 | ~6m56s |
 | 5. Orchestrator Hub Refactor | 3 | 3 | ~10m30s |
-| 6. Worker and Eval Hub Refactor | 0 | 3 | - |
+| 6. Worker and Eval Hub Refactor | 0 | 4 | - |
 | 7. Final Verification and Governance Closeout | 0 | 2 | - |
 | 05 | 3 | - | - |
 | 03 | 5 | - | - |

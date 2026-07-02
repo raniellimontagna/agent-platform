@@ -454,17 +454,17 @@ await writeFile(join(artifactRoot, 'report.md'), renderMarkdown(report));
 
 **If this table is empty:** All claims in this research were verified or cited; no user confirmation is needed before planning.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Should compatibility re-exports be removed after Phase 6?**
+1. **RESOLVED: Should compatibility re-exports be removed after Phase 6?**
    - What we know: Current tests import helpers directly from hub files. [VERIFIED: apps/worker-code/src/executor/codegen.test.ts:7]
    - What's unclear: Whether maintainers want a cleanup pass to remove old public helper export paths after downstream imports are updated.
-   - Recommendation: Keep compatibility re-exports in Phase 6; record removal as a follow-up only if desired.
+   - Resolution: Keep compatibility re-exports in Phase 6. Removing old public helper export paths is deferred to a future explicit cleanup, not this behavior-preserving phase.
 
-2. **How much runner orchestration should move in 06-01?**
+2. **RESOLVED: How much runner orchestration should move in 06-01?**
    - What we know: `runJob.ts` has intertwined state around media restore, validation, self-correction, and commit recovery. [VERIFIED: apps/worker-code/src/executor/runJob.ts:298]
    - What's unclear: Whether extracting `applySelfCorrection` and commit retry into a separate module will require dependency injection changes.
-   - Recommendation: First extract validation/media/result helpers; then extract self-correction only after faked orchestration tests are green.
+   - Resolution: Extract validation/media/result helpers first. Extract self-correction only after faked orchestration tests are green; if extraction requires product behavior changes, stop and record a gap.
 
 ## Environment Availability
 
