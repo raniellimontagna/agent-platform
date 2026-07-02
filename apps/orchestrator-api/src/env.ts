@@ -121,6 +121,12 @@ function loadEnv(): Env {
     throw new Error(`Secrets com placeholder (preencha o .env): ${placeholders.join(', ')}`);
   }
 
+  if (parsed.data.CARD_PRIMARY_PROVIDER === 'linear') {
+    throw new Error(
+      'CARD_PRIMARY_PROVIDER=linear is not supported; use CARD_EXTRA_PROVIDERS=linear for explicit legacy compatibility',
+    );
+  }
+
   const cardProviders = new Set([
     parsed.data.CARD_PRIMARY_PROVIDER,
     ...parsed.data.CARD_EXTRA_PROVIDERS.split(',').map((provider) => provider.trim()),
