@@ -11,12 +11,12 @@
 │                     ORCHESTRATOR API                            │
 │  (agent-orchestrator / Hono + LangGraph)                        │
 │                                                                 │
-│  1. Lê card + contexto do Plane                                 │
-│  2. Chama LiteLLM [research] → gera plano                       │
-│  3. Comenta plano no Plane                                      │
-│  4. ⏸ PAUSE — aguarda aprovação humana                          │
-│  5. Cria branch: agent/{issue-id}-{slug}                        │
-│  6. Envia tarefa para agent-runners                             │
+│  1. /webhooks/plane valida HMAC + transicao de label            │
+│  2. createRun persiste identidade Plane do card                 │
+│  3. BullMQ agent-runs recebe job plan                           │
+│  4. Planner comenta plano no Plane                              │
+│  5. ⏸ PAUSE — approved retoma com job resume quando necessario  │
+│  6. Worker do orchestrator envia tarefa para /jobs              │
 └───────────────────────────┬─────────────────────────────────────┘
                             │
                             ▼
@@ -61,6 +61,24 @@ Grafo LangGraph: `planning → [⏸ aprovação] → coding → reviewing → [r
 dentro do runner — não muda a topologia do grafo; o loop de revisão (passo 15) é
 graph-level (nó `revising`, fora do `interruptBefore` p/ não re-pedir aprovação).
 Checkpointer Postgres persiste e retoma após restart (MAC-34).
+
+## Ancoras de codigo e teste
+
+| Responsabilidade | Fonte de verdade | Evidencia local |
+|---|---|---|
+| Plane intake, HMAC, label `ai-ready`, approval resume, cancelamento e skips auditados | `apps/orchestrator-api/src/routes/webhooks.ts` | `apps/orchestrator-api/src/routes/webhooks.test.ts` |
+| Run persistence e identidade `card_provider=plane` | `apps/orchestrator-api/src/runs.ts` | `apps/orchestrator-api/src/runs.test.ts` |
+| Jobs BullMQ `plan`/`resume`, fila `agent-runs` e prioridades | `apps/orchestrator-api/src/queue.ts` | `apps/orchestrator-api/src/queue.test.ts` |
+| Processamento do job, artifacts e continuacao workflow | `apps/orchestrator-api/src/worker.ts` | `apps/orchestrator-api/src/worker.test.ts` |
+| API HTTP do runner (`/jobs`, `/jobs/sync`) | `apps/worker-code/src/routes/jobs.ts` | Ancora estatica; a cobertura comportamental do runner fica em `apps/worker-code/src/executor/runJob.test.ts`. |
+| Execucao runner, validacao, self-correction, commit/push e callback | `apps/worker-code/src/executor/runJob.ts` | `apps/worker-code/src/executor/runJob.test.ts` |
+| Report final no Plane | `packages/graph/src/nodes/report.ts` | `packages/graph/src/nodes/report.test.ts` |
+| GitHub PR/merge e auto-merge opt-in | `packages/graph/src/nodes/merging.ts` | `packages/graph/src/nodes/merging.test.ts` |
+
+`apps/worker-code/src/routes/jobs.ts` ainda nao tem um teste de rota dedicado;
+por enquanto ele e uma ancora estatica de propriedade da API do runner, e
+`apps/worker-code/src/executor/runJob.test.ts` cobre o comportamento executado
+apos o dispatch.
 
 ## Pipeline e roles
 

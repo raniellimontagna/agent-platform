@@ -1,6 +1,10 @@
 # Runbook — Webhooks de cards via Tailscale Funnel (MAC-19/20)
 
-Plane (primary card provider) -> Orchestrator API -> agent-runners -> GitHub PR/merge -> Plane report
+Plane (primary card provider) -> `/webhooks/plane` ->
+`apps/orchestrator-api/src/runs.ts` -> BullMQ `agent-runs` ->
+`apps/orchestrator-api/src/worker.ts` -> worker-code `/jobs`
+(`apps/worker-code/src/routes/jobs.ts`) ->
+`apps/worker-code/src/executor/runJob.ts` -> GitHub PR/merge -> Plane report.
 Linear is legacy/migration-only compatibility; current public intake should
 expose Plane only.
 
@@ -10,6 +14,18 @@ por HTTPS para o Plane disparar o fluxo `ai-ready` sem `test-webhook.sh`.
 > **Segurança:** expor SÓ os paths de webhook (validado por HMAC). As rotas
 > `/runs/*` (incl. `/approve`, que dispara código) e `/admin/*` NÃO podem ir pro
 > Funnel. Funnel scoped por path resolve isso.
+
+Evidencia local antes de alterar exposicao publica:
+
+```bash
+rtk corepack pnpm vitest run apps/orchestrator-api/src/routes/webhooks.test.ts apps/orchestrator-api/src/runs.test.ts apps/orchestrator-api/src/queue.test.ts apps/orchestrator-api/src/worker.test.ts apps/worker-code/src/executor/runJob.test.ts packages/graph/src/nodes/report.test.ts packages/graph/src/nodes/merging.test.ts
+```
+
+Esse gate cobre a entrada Plane, persistencia do run, fila BullMQ,
+aprovacao/resume, runner e report final. A rota
+`apps/worker-code/src/routes/jobs.ts` e a propriedade da API HTTP do runner; ela
+permanece ancorada estaticamente enquanto o comportamento executado fica
+coberto por `apps/worker-code/src/executor/runJob.test.ts`.
 
 ## 1. Tailscale no orchestrator (LXC 201)
 
