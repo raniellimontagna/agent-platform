@@ -5,16 +5,16 @@ milestone_name: milestone
 current_phase: 03
 current_phase_name: Plane-Only Provider Cutover
 status: executing
-stopped_at: 03-04 deployed env/webhook exposure checkpoint
-last_updated: "2026-07-02T05:20:00Z"
+stopped_at: Completed 03-04-PLAN.md
+last_updated: "2026-07-02T05:38:00Z"
 last_activity: 2026-07-02
-last_activity_desc: Phase 03 Plan 04 automated work complete; live Linear exposure checkpoint pending
+last_activity_desc: Phase 03 Plan 04 completed after removing live Linear exposure
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 9
-  completed_plans: 7
-  percent: 70
+  completed_plans: 8
+  percent: 80
 ---
 
 # Project State
@@ -31,16 +31,16 @@ legacy removal, modular flow refactors, and verification gates.
 
 Phase: 03 (Plane-Only Provider Cutover) — EXECUTING
 Plan: 4 of 5
-Status: Checkpoint pending
-Last activity: 2026-07-02 — Plan 04 automated work complete; live Linear exposure checkpoint pending
+Status: Ready to execute
+Last activity: 2026-07-02 — Plan 04 completed after removing live Linear exposure
 
-Progress: [███████░░░] 70%
+Progress: [████████░░] 80%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 7
+- Total plans completed: 8
 - Average duration: ~24 minutes
 - Total execution time: ~2.0 hours documented effort
 
@@ -50,7 +50,7 @@ Progress: [███████░░░] 70%
 |-------|-------|-------|----------|
 | 1. Bootstrap and Architectural Inventory | 2 | 2 | ~28m |
 | 2. Living Documentation and Historical Archive | 2 | 2 | ~28m |
-| 3. Plane-Only Provider Cutover | 3 | 5 | ~10m |
+| 3. Plane-Only Provider Cutover | 4 | 5 | ~14m |
 | 4. Operational Flow Reorganization | 0 | 2 | - |
 | 5. Orchestrator Hub Refactor | 0 | 3 | - |
 | 6. Worker and Eval Hub Refactor | 0 | 3 | - |
@@ -58,8 +58,8 @@ Progress: [███████░░░] 70%
 
 **Recent Trend:**
 
-- Last 5 completed plans: 02-01, 02-02, 03-01, 03-02, 03-03 all complete.
-- Trend: Documentation/inventory phases complete; Phase 3 repository cutover is mostly complete but live webhook exposure is intentionally checkpointed.
+- Last 5 completed plans: 02-02, 03-01, 03-02, 03-03, 03-04 all complete.
+- Trend: Documentation/inventory phases complete; Phase 3 repository and live webhook cutover are complete except final schema/docs/dashboard verification.
 
 **Recent Plan Metrics:**
 
@@ -68,6 +68,7 @@ Progress: [███████░░░] 70%
 | Phase 03 P01 | 7m14s | 3 tasks | 10 files |
 | Phase 03 P02 | 6m19s | 2 tasks | 6 files |
 | Phase 03 P03 | 16m10s | 3 tasks | 6 files |
+| Phase 03 P04 | 24m29s | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -90,7 +91,7 @@ Progress: [███████░░░] 70%
 - [Phase 03]: 03-03: Scheduler-created cards use PLANE_SCHEDULED_LABEL_ID only; legacy scheduled labels are not substituted for new Plane work.
 - [Phase 03]: 03-03: Deployed BullMQ inspection found no waiting/delayed/paused missing-provider plan jobs; two failed legacy jobs had persisted Linear provider/card rows.
 - [Phase 03]: 03-04: Repository webhook gating is implemented; legacy Linear webhook route is disabled unless explicit compatibility config is present.
-- [Phase 03]: 03-04: Deployed env currently sets CARD_EXTRA_PROVIDERS=linear, Tailscale Funnel exposes /webhooks/linear, and Linear has an enabled webhook pointing at /webhooks/linear.
+- [Phase 03]: 03-04: Deployed env no longer sets CARD_EXTRA_PROVIDERS=linear, Tailscale Funnel exposes only /webhooks/plane, and the Linear webhook pointing at /webhooks/linear is disabled.
 
 ### Pending Todos
 
@@ -99,8 +100,7 @@ Progress: [███████░░░] 70%
 
 ### Phase 3 Gates
 
-- Confirm production data and dashboards can tolerate migration away from `linear_issue_*` fields.
-- Confirm deployed `CARD_EXTRA_PROVIDERS=linear` and `/webhooks/linear` exposure are intentional legacy compatibility or remove/disable them before completing 03-04.
+- Confirm production data and dashboards can tolerate migration away from `linear_issue_*` fields in 03-05.
 - Add or update Plane-only characterization tests before deleting Linear runtime code.
 - Keep GSD Core loaded in Codex before invoking `$gsd-autonomous --from 3`.
 
@@ -113,6 +113,6 @@ Progress: [███████░░░] 70%
 
 ## Session Continuity
 
-Last session: 2026-07-02T05:20:00Z
-Stopped at: 03-04 deployed env/webhook exposure checkpoint
-Resume file: .planning/phases/03-plane-only-provider-cutover/03-04-CHECKPOINT.md
+Last session: 2026-07-02T05:38:00Z
+Stopped at: Completed 03-04-PLAN.md
+Resume file: None
