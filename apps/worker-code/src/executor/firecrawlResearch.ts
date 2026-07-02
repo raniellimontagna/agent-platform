@@ -10,9 +10,17 @@ import {
   type InstagramGraphFinding,
   type InstagramGraphResearchOptions,
   formatInstagramGraphFindings,
-  redactSensitiveText,
   runInstagramGraphResearch,
 } from './instagramGraphResearch.js';
+import { extractInstagramHandles, instagramProfileUrl } from './researchInstagram.js';
+import {
+  RESEARCH_HEADINGS,
+  formatLandingPageBrief,
+  formatPolicyLimitLine,
+  formatResearchPackHeader,
+  sanitizeStoredText,
+  truncateBlock,
+} from './researchOutput.js';
 import {
   DEFAULT_SCRAPING_LIMITS,
   type ScrapingLimits,
@@ -21,6 +29,7 @@ import {
 } from './scrapingPolicy.js';
 
 export const DATA_COLLECTOR_AGENT_KEY = 'data-collector-agent';
+export { extractInstagramHandles } from './researchInstagram.js';
 
 const MAX_SUMMARY_CHARS = 1_500;
 const MAX_EXTRACT_CHARS = 4_000;
@@ -81,21 +90,6 @@ const firecrawlResponseSchema = z
   .passthrough();
 
 export const extractResearchUrls = extractExplicitUrls;
-
-export function extractInstagramHandles(text: string, limit = 5): string[] {
-  const handles = new Set<string>();
-  for (const match of text.matchAll(/(^|[^\w.])@([a-zA-Z0-9._]{2,30})\b/g)) {
-    const handle = match[2]?.replace(/\.+$/g, '').toLowerCase();
-    if (!handle) continue;
-    handles.add(handle);
-    if (handles.size >= limit) break;
-  }
-  return [...handles];
-}
-
-function instagramProfileUrl(handle: string): string {
-  return `https://www.instagram.com/${handle}/`;
-}
 
 export async function runFirecrawlResearchJob(
   job: Job,
@@ -337,9 +331,7 @@ function buildResearchPack(
   persistedSecrets: string[] = [],
 ): string {
   const lines = [
-    `# Research Pack - ${job.issueIdentifier}`,
-    '',
-    `Generated at: ${generatedAt.toISOString()}`,
+    ...formatResearchPackHeader(job.issueIdentifier, generatedAt),
     '',
     '## Objective',
     '',
@@ -357,7 +349,7 @@ function buildResearchPack(
       apifyFindings: apifyInstagramFindings,
     }),
     '',
-    '## Sources',
+    RESEARCH_HEADINGS.sources,
     '',
   ];
 
@@ -371,10 +363,10 @@ function buildResearchPack(
     if (source.warning) lines.push(`- Warning: ${source.warning}`);
     lines.push('');
     if (source.summary) {
-      lines.push('#### Summary', '', truncate(source.summary, MAX_SUMMARY_CHARS), '');
+      lines.push('#### Summary', '', truncateBlock(source.summary, MAX_SUMMARY_CHARS), '');
     }
     if (source.markdown) {
-      lines.push('#### Extract', '', truncate(source.markdown, MAX_EXTRACT_CHARS), '');
+      lines.push('#### Extract', '', truncateBlock(source.markdown, MAX_EXTRACT_CHARS), '');
     }
   }
 
@@ -384,7 +376,7 @@ function buildResearchPack(
   if (instagramHandles.length > 0 || instagramSources.length > 0) {
     lines.push(...formatInstagramGraphFindings(instagramGraphFindings));
     lines.push(...formatApifyInstagramFindings(apifyInstagramFindings));
-    lines.push('## Instagram Findings', '');
+    lines.push(RESEARCH_HEADINGS.instagramFindings, '');
     if (instagramHandles.length > 0) {
       lines.push('### Sources', '');
       for (const handle of instagramHandles) {
@@ -400,7 +392,7 @@ function buildResearchPack(
     } else {
       for (const source of instagramSources) {
         lines.push(
-          `- ${source.id}: ${source.title}${source.summary ? ` — ${truncate(source.summary, 300)}` : ''}`,
+          `- ${source.id}: ${source.title}${source.summary ? ` — ${truncateBlock(source.summary, 300)}` : ''}`,
         );
       }
       lines.push('');
@@ -416,10 +408,8 @@ function buildResearchPack(
   }
 
   const failed = sources.filter((source) => source.error);
-  lines.push('## Limitations', '');
-  lines.push(
-    `- Policy: explicit URLs only; max ${limits.maxPages} page(s), timeout ${limits.timeoutMs}ms, output cap ${limits.maxOutputChars} chars, rate ${limits.rateLimitPerMinute}/min.`,
-  );
+  lines.push(RESEARCH_HEADINGS.limitations, '');
+  lines.push(formatPolicyLimitLine(limits));
   if (failed.length === 0) {
     lines.push(
       '- Coleta limitada a URLs explícitas da issue/plano; não executa crawl amplo nesta fase.',
@@ -430,202 +420,10 @@ function buildResearchPack(
   return sanitizeStoredText(lines.join('\n').trim(), persistedSecrets);
 }
 
-function formatLandingPageBrief(args: {
-  job: Job;
-  sources: ResearchSource[];
-  instagramHandles: string[];
-  graphFindings: InstagramGraphFinding[];
-  apifyFindings: ApifyInstagramFinding[];
-}): string[] {
-  const successfulSources = args.sources.filter((source) => !source.error);
-  const failedSources = args.sources.filter((source) => source.error);
-  const subject = landingSubject(args);
-  const evidence = landingEvidence(args).slice(0, 6);
-  const seoTerms = landingSeoTerms(args);
-  const primaryUrls = args.sources.map((source) => source.url).slice(0, 5);
-  const hasInstagram = args.instagramHandles.length > 0;
-
-  return [
-    '## Landing Page Brief',
-    '',
-    '### Brand / Subject',
-    '',
-    `- Primary subject: ${subject}`,
-    `- Request: ${args.job.title}`,
-    `- Public handles: ${args.instagramHandles.length > 0 ? args.instagramHandles.map((handle) => `@${handle}`).join(', ') : 'none detected'}`,
-    '',
-    '### Audience Hypotheses',
-    '',
-    '- Treat the audience as prospects arriving from public web/social context; validate specifics against the evidence below.',
-    hasInstagram
-      ? '- Instagram presence suggests the page should connect social proof, visual identity, and direct contact paths.'
-      : '- No Instagram handle was detected; use collected web sources as the main audience signal.',
-    '',
-    '### Offer And Conversion Angle',
-    '',
-    '- Lead with the clearest service/product promise supported by the collected sources.',
-    '- Convert public facts into concise benefits; avoid claims that are not backed by the research pack.',
-    '',
-    '### Evidence To Reuse',
-    '',
-    ...bulletList(evidence, '- No reusable evidence was collected; keep claims conservative.'),
-    '',
-    '### Recommended Page Structure',
-    '',
-    '- Hero: subject, concrete value proposition, primary CTA, and visual drawn from public brand/profile cues.',
-    '- Proof section: reuse follower/media/source facts only when present in the evidence.',
-    '- Services/products section: describe observed offerings and avoid inventing prices or guarantees.',
-    '- Objection handling: address gaps and limitations transparently when evidence is incomplete.',
-    '- Final CTA: repeat the safest public contact or next-step route found in the sources.',
-    '',
-    '### SEO And Content Terms',
-    '',
-    ...bulletList(
-      seoTerms,
-      '- No stable SEO terms were extracted; derive terms manually from approved source copy.',
-    ),
-    '',
-    '### Visual Direction',
-    '',
-    hasInstagram
-      ? '- Use Instagram/profile cues as visual references, but do not copy private or hidden content.'
-      : '- Use visible website/source cues for typography, imagery, color, and hierarchy.',
-    '- Prefer real product/service/context imagery when available; otherwise request/generate a compliant hero asset.',
-    '',
-    '### Calls To Action',
-    '',
-    '- Primary CTA: choose the safest explicit action from the sources, such as contact, quote, booking, or profile visit.',
-    '- Secondary CTA: invite users to view public proof, portfolio, services, or social profile when supported.',
-    '',
-    '### Risks / Gaps',
-    '',
-    `- Successful Firecrawl sources: ${successfulSources.length}; failed sources: ${failedSources.length}.`,
-    hasInstagram
-      ? '- Instagram public/authorized collection can miss hidden posts, private metrics, comments, DMs, and analytics.'
-      : '- No social profile handle was available in the request.',
-    '- Do not invent testimonials, prices, WhatsApp numbers, addresses, guarantees, or private analytics.',
-    '',
-    '### Source Handling',
-    '',
-    ...bulletList(
-      primaryUrls.map((url) => `Use as source evidence: ${url}`),
-      '- No explicit source URLs were available after policy filtering.',
-    ),
-  ];
-}
-
-function landingSubject(args: {
-  job: Job;
-  sources: ResearchSource[];
-  instagramHandles: string[];
-  graphFindings: InstagramGraphFinding[];
-  apifyFindings: ApifyInstagramFinding[];
-}): string {
-  const apifyProfile = args.apifyFindings.find(
-    (finding) => finding.status === 'succeeded',
-  )?.profile;
-  if (apifyProfile?.fullName) return `${apifyProfile.fullName} (@${apifyProfile.username})`;
-  const graphProfile = args.graphFindings.find(
-    (finding) => finding.status === 'succeeded',
-  )?.profile;
-  if (graphProfile?.name) return `${graphProfile.name} (@${graphProfile.username})`;
-  const successfulSource = args.sources.find((source) => !source.error && source.title.trim());
-  if (successfulSource) return successfulSource.title;
-  if (args.instagramHandles[0]) return `@${args.instagramHandles[0]}`;
-  return args.job.title;
-}
-
-function landingEvidence(args: {
-  sources: ResearchSource[];
-  graphFindings: InstagramGraphFinding[];
-  apifyFindings: ApifyInstagramFinding[];
-}): string[] {
-  const evidence: string[] = [];
-  for (const finding of args.apifyFindings) {
-    if (finding.status !== 'succeeded') continue;
-    const profile = finding.profile;
-    if (!profile) continue;
-    if (profile.fullName) evidence.push(`@${finding.handle} public name: ${profile.fullName}`);
-    if (profile.biography)
-      evidence.push(`@${finding.handle} bio: ${truncate(profile.biography, 220)}`);
-    if (profile.followersCount !== undefined)
-      evidence.push(`@${finding.handle} public followers: ${profile.followersCount}`);
-    if (profile.postsCount !== undefined)
-      evidence.push(`@${finding.handle} public posts/media count: ${profile.postsCount}`);
-  }
-  for (const finding of args.graphFindings) {
-    if (finding.status !== 'succeeded') continue;
-    const profile = finding.profile;
-    if (profile.name) evidence.push(`@${finding.handle} Graph name: ${profile.name}`);
-    if (profile.followersCount !== undefined)
-      evidence.push(`@${finding.handle} Graph public followers: ${profile.followersCount}`);
-    if (profile.mediaCount !== undefined)
-      evidence.push(`@${finding.handle} Graph media count: ${profile.mediaCount}`);
-  }
-  for (const source of args.sources) {
-    if (source.error) continue;
-    if (source.summary) {
-      evidence.push(`${source.id} summary: ${truncate(source.summary, 260)}`);
-    } else {
-      evidence.push(`${source.id} collected: ${source.title}`);
-    }
-  }
-  return [...new Set(evidence)];
-}
-
-function landingSeoTerms(args: {
-  job: Job;
-  sources: ResearchSource[];
-  instagramHandles: string[];
-}): string[] {
-  const text = [
-    args.job.title,
-    args.job.description,
-    ...args.instagramHandles,
-    ...args.sources.flatMap((source) => [source.title, source.summary ?? '']),
-  ].join(' ');
-  const terms = text
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase()
-    .match(/[a-z0-9][a-z0-9-]{3,}/g);
-  if (!terms) return [];
-  const blocked = new Set([
-    'https',
-    'www',
-    'instagram',
-    'com',
-    'para',
-    'page',
-    'landing',
-    'publico',
-    'publica',
-    'buscar',
-    'dados',
-  ]);
-  return [...new Set(terms.filter((term) => !blocked.has(term)))]
-    .slice(0, 10)
-    .map((term) => `Term: ${term}`);
-}
-
-function bulletList(items: string[], fallback: string): string[] {
-  return items.length > 0 ? items.map((item) => `- ${item}`) : [fallback];
-}
-
-function truncate(text: string, maxChars: number): string {
-  const clean = text.trim();
-  if (clean.length <= maxChars) return clean;
-  return `${clean.slice(0, maxChars - 20).trim()}\n\n[truncated]`;
-}
-
 function configuredSecrets(opts: FirecrawlResearchOptions): string[] {
   return [opts.apiKey, opts.instagramGraph?.accessToken, opts.apifyInstagram?.token].filter(
     (value): value is string => Boolean(value),
   );
-}
-
-function sanitizeStoredText(value: string, exactSecrets: string[]): string {
-  return redactSensitiveText(value, exactSecrets);
 }
 
 function sanitizeResearchSource(source: ResearchSource, exactSecrets: string[]): ResearchSource {

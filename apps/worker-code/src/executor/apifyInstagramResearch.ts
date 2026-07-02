@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { CommandResult } from '../types.js';
-import { redactSensitiveText } from './instagramGraphResearch.js';
+import { instagramProfileUrl, normalizeInstagramHandles } from './researchInstagram.js';
+import { RESEARCH_HEADINGS, redactSensitiveText, truncateInline } from './researchOutput.js';
 
 type FetchImpl = typeof fetch;
 
@@ -68,7 +69,7 @@ export async function runApifyInstagramResearch(
   handles: string[],
   opts: ApifyInstagramResearchOptions,
 ): Promise<ApifyInstagramResearchResult> {
-  const uniqueHandles = [...new Set(handles.map((handle) => handle.toLowerCase()).filter(Boolean))];
+  const uniqueHandles = normalizeInstagramHandles(handles);
   const commands: CommandResult[] = [];
   if (uniqueHandles.length === 0) return { findings: [], commands };
 
@@ -251,7 +252,7 @@ function apifyLimitation(err: unknown, exactSecrets: string[] = []): string {
 
 export function formatApifyInstagramFindings(findings: ApifyInstagramFinding[]): string[] {
   if (findings.length === 0) return [];
-  const lines = ['## Apify Instagram Findings', '', '### Sources', ''];
+  const lines = [RESEARCH_HEADINGS.apifyInstagramFindings, '', '### Sources', ''];
   for (const [index, finding] of findings.entries()) {
     lines.push(`- AP${index + 1}: @${finding.handle} via Apify actor ${finding.actorId}`);
   }
@@ -275,7 +276,7 @@ export function formatApifyInstagramFindings(findings: ApifyInstagramFinding[]):
       const parts = [
         media.url,
         media.timestamp,
-        media.caption ? `caption: ${truncate(media.caption, 180)}` : undefined,
+        media.caption ? `caption: ${truncateInline(media.caption, 180)}` : undefined,
         media.likesCount !== undefined ? `likes: ${media.likesCount}` : undefined,
         media.commentsCount !== undefined ? `comments: ${media.commentsCount}` : undefined,
       ].filter(Boolean);
@@ -294,10 +295,6 @@ export function formatApifyInstagramFindings(findings: ApifyInstagramFinding[]):
   return lines;
 }
 
-function instagramProfileUrl(handle: string): string {
-  return `https://www.instagram.com/${handle}/`;
-}
-
 function stringField(item: Record<string, unknown>, key: string): string | undefined {
   const value = item[key];
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
@@ -311,9 +308,4 @@ function numberField(item: Record<string, unknown>, key: string): number | undef
 function booleanField(item: Record<string, unknown>, key: string): boolean | undefined {
   const value = item[key];
   return typeof value === 'boolean' ? value : undefined;
-}
-
-function truncate(value: string, max: number): string {
-  if (value.length <= max) return value;
-  return `${value.slice(0, max - 1)}…`;
 }
