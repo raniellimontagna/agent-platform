@@ -60,14 +60,23 @@ describe('runValidation', () => {
       .mockResolvedValueOnce(command('pnpm test', 1, 'FAIL src/app.test.ts', 'stdout ignored'))
       .mockResolvedValueOnce(command('pnpm lint'));
 
-    const result = await runValidation(['pnpm build', 'pnpm test', 'pnpm lint'], '/repo', 'run-1', log, {
-      allowlist: ['pnpm'],
-      runSandboxedCommand,
-    });
+    const result = await runValidation(
+      ['pnpm build', 'pnpm test', 'pnpm lint'],
+      '/repo',
+      'run-1',
+      log,
+      {
+        allowlist: ['pnpm'],
+        runSandboxedCommand,
+      },
+    );
 
     expect(result).toEqual({
       passed: false,
-      results: [command('pnpm build'), command('pnpm test', 1, 'FAIL src/app.test.ts', 'stdout ignored')],
+      results: [
+        command('pnpm build'),
+        command('pnpm test', 1, 'FAIL src/app.test.ts', 'stdout ignored'),
+      ],
       failureTail: '$ pnpm test\nFAIL src/app.test.ts\nstdout ignored',
     });
     expect(runSandboxedCommand).toHaveBeenCalledTimes(2);
