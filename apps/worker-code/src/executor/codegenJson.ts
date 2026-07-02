@@ -1,4 +1,4 @@
-import { type LlmClient, type TokenUsage } from '@agent-platform/llm';
+import type { LlmClient, TokenUsage } from '@agent-platform/llm';
 import type { Logger } from 'pino';
 import { z } from 'zod';
 

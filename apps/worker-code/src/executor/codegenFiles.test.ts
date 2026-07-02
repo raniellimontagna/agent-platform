@@ -47,11 +47,10 @@ describe('codegen file helpers', () => {
       await writeFile(join(dir, 'src/a.ts'), 'a'.repeat(20_050), 'utf8');
       await writeFile(join(dir, 'src/untracked.ts'), 'skip me', 'utf8');
 
-      const current = await readCurrentFiles(
-        dir,
-        new Set(['src/a.ts']),
-        ['src/a.ts', 'src/untracked.ts'],
-      );
+      const current = await readCurrentFiles(dir, new Set(['src/a.ts']), [
+        'src/a.ts',
+        'src/untracked.ts',
+      ]);
 
       expect(current).toEqual([{ path: 'src/a.ts', content: 'a'.repeat(20_000) }]);
     } finally {
@@ -63,10 +62,7 @@ describe('codegen file helpers', () => {
     expect(
       formatAvailableFiles(
         ['src/a.ts', 'src/b.ts'],
-        [
-          { path: 'src/generated.ts' },
-          { path: 'src/a.ts' },
-        ],
+        [{ path: 'src/generated.ts' }, { path: 'src/a.ts' }],
       ),
     ).toBe(['src/a.ts', 'src/b.ts', 'src/generated.ts'].join('\n'));
   });
