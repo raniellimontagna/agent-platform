@@ -1,4 +1,4 @@
-import { type Context, Hono, type Next } from 'hono';
+import { Hono } from 'hono';
 import { isValidCron } from '../cron.js';
 import { env } from '../env.js';
 import { logger } from '../logger.js';
@@ -11,18 +11,12 @@ import {
   listSchedules,
   updateSchedule,
 } from '../schedules.js';
+import { requireRunnerAuth } from './routeAuth.js';
 
 export const schedulesRoute = new Hono();
 
-async function requireAuth(c: Context, next: Next) {
-  if (c.req.header('authorization') !== `Bearer ${env.RUNNER_AUTH_TOKEN}`) {
-    return c.json({ error: 'unauthorized' }, 401);
-  }
-  await next();
-}
-
-schedulesRoute.use('/schedules', requireAuth);
-schedulesRoute.use('/schedules/*', requireAuth);
+schedulesRoute.use('/schedules', requireRunnerAuth);
+schedulesRoute.use('/schedules/*', requireRunnerAuth);
 
 /** Cria um agendamento (valida cron antes de persistir). */
 schedulesRoute.post('/schedules', async (c) => {
