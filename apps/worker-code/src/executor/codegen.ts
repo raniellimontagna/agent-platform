@@ -2,96 +2,30 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { type LlmClient, type TokenUsage, estimateCostUsd } from '@agent-platform/llm';
 import type { Logger } from 'pino';
-import { z } from 'zod';
-import { buildSkillInstructions } from './agentSkills.js';
 import { buildExamples, readConventions } from './context.js';
+import { completeJson, responseSchema, selectSchema } from './codegenJson.js';
+import {
+  buildCoderInstructions,
+  FIX_PROMPT,
+  GENERATE_PROMPT,
+  SELECT_PROMPT,
+} from './codegenPrompts.js';
 import { runCommand } from './worktree.js';
 
-const SELECT_PROMPT = `Você é um agente de engenharia de software.
-Recebe uma issue, um plano aprovado e a lista de arquivos do repositório.
-Decida quais arquivos precisam ser MODIFICADOS (já existem) e quais precisam ser CRIADOS.
-
-Responda APENAS com um objeto JSON válido, sem markdown:
-{
-  "edit": ["caminhos/de/arquivos/existentes/a/modificar"],
-  "create": ["caminhos/de/arquivos/novos/a/criar"]
-}
-
-Regras:
-- Inclua em "edit" SÓ caminhos que aparecem na lista de arquivos do repositório.
-- Seja cirúrgico: liste apenas o estritamente necessário para cumprir o plano.
-- Caminhos relativos à raiz, sem "./" nem caminhos absolutos.
-- NÃO devolva comandos shell, comandos de validação, instruções de execução,
-  markdown, bash, pnpm, npm, git ou texto explicativo.
-- Se o plano mencionar comandos como "rtk pnpm eval", trate-os apenas como
-  validação futura; eles NÃO são arquivos e NÃO pertencem à resposta.
-- Não escreva nada fora do JSON.`;
-
-const GENERATE_PROMPT = `Você é um agente de engenharia de software que escreve código.
-Recebe a issue, o plano, o conteúdo ATUAL dos arquivos a modificar e a lista de arquivos a criar.
-Produza o conteúdo final de cada arquivo.
-
-Responda APENAS com um objeto JSON válido, sem markdown:
-{
-  "prTitle": "Conventional Commits subject in ENGLISH (e.g. 'feat(api): add /status endpoint'), imperative, <= 72 chars",
-  "summary": "resumo curto das alterações (1-2 linhas)",
-  "files": [
-    { "path": "caminho/relativo", "content": "conteúdo COMPLETO e final do arquivo" }
-  ]
-}
-
-Regras CRÍTICAS:
-- Ao MODIFICAR um arquivo existente, PRESERVE todo o código não relacionado ao plano.
-  Parta do conteúdo atual fornecido e aplique APENAS as mudanças necessárias.
-  NUNCA remova imports, bootstrap, handlers ou rotas que não fazem parte da tarefa.
-- Você só pode alterar/criar os arquivos listados para ESTE lote.
-- Não importe, referencie ou dependa de arquivo novo que não esteja listado em
-  "Arquivos a criar neste lote" e que não exista em "Arquivos disponíveis".
-  Se precisar de dados auxiliares e não houver arquivo permitido para criá-los,
-  mantenha esses dados inline no arquivo que está modificando.
-- "content" é o arquivo inteiro e final (não um diff/patch).
-- Mantenha o estilo e as convenções já presentes no repositório (ESM, imports com .js, etc.).
-- Siga os ARQUIVOS-EXEMPLO (vizinhos) e as CONVENÇÕES fornecidas: mesmo padrão de
-  imports, estrutura e libs. NÃO adicione imports/dependências que os exemplos não usam.
-- Inclua no array só os arquivos realmente alterados/criados.
-- NÃO devolva comandos shell, instruções de execução ou passos de validação.
-  A resposta deve conter arquivos completos em JSON, não comandos como "pnpm test".
-- Não escreva nada fora do JSON.`;
-
-const FIX_PROMPT = `Você é um agente de engenharia de software corrigindo uma falha de validação.
-Recebe os arquivos que você acabou de escrever e a saída do comando que FALHOU (build/test/lint).
-Corrija a CAUSA do erro preservando todo o código correto.
-
-Responda APENAS com um objeto JSON válido, sem markdown:
-{
-  "summary": "o que você corrigiu (1 linha)",
-  "files": [ { "path": "caminho/relativo", "content": "conteúdo COMPLETO e final do arquivo corrigido" } ]
-}
-
-Regras CRÍTICAS:
-- "content" é o arquivo inteiro e final (não um diff/patch).
-- Inclua só os arquivos que você precisou alterar para corrigir o erro.
-- Não importe, referencie ou dependa de arquivo novo que não esteja listado em
-  "Arquivos disponíveis". Se o erro for "Cannot find module", remova/substitua
-  o import ausente usando os arquivos existentes que recebeu.
-- NÃO adicione dependências/imports que o repositório não tem.
-- Não escreva nada fora do JSON.`;
-
-const fileSchema = z.object({
-  path: z.string().min(1),
-  content: z.string(),
-});
-
-const selectSchema = z.object({
-  edit: z.array(z.string()).default([]),
-  create: z.array(z.string()).default([]),
-});
-
-const responseSchema = z.object({
-  prTitle: z.string().default(''),
-  summary: z.string().default(''),
-  files: z.array(fileSchema).default([]),
-});
+export {
+  completeJson,
+  extractJson,
+  fileSchema,
+  responseSchema,
+  selectSchema,
+} from './codegenJson.js';
+export {
+  buildAgentInstructions,
+  buildCoderInstructions,
+  FIX_PROMPT,
+  GENERATE_PROMPT,
+  SELECT_PROMPT,
+} from './codegenPrompts.js';
 
 /** Limites para não estourar o contexto do modelo ao injetar conteúdo. */
 const MAX_EDIT_FILES = 15;
@@ -132,115 +66,6 @@ async function listRepoFiles(dir: string): Promise<string[]> {
   const res = await runCommand('git ls-files', dir);
   if (res.exitCode !== 0) return [];
   return res.stdout.split('\n').filter(Boolean);
-}
-
-/**
- * Extrai o JSON da resposta do modelo, tolerando cercas de código (```json ... ```)
- * ou texto ao redor. Lança se não encontrar um objeto JSON. Exportado p/ teste.
- */
-export function extractJson(raw: string): unknown {
-  const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidate = (fenced?.[1] ?? raw).trim();
-  const start = candidate.indexOf('{');
-  const end = candidate.lastIndexOf('}');
-  if (start === -1 || end === -1 || end <= start) {
-    const sample = candidate.replace(/\s+/g, ' ').slice(0, 240);
-    throw new Error(
-      sample
-        ? `resposta do modelo não contém JSON. Amostra: ${sample}`
-        : 'resposta do modelo não contém JSON',
-    );
-  }
-  return JSON.parse(candidate.slice(start, end + 1));
-}
-
-function hasJsonObjectStart(raw: string): boolean {
-  const candidate = raw.trim();
-  return candidate.includes('{');
-}
-
-export function buildAgentInstructions(
-  agentKey?: string,
-  capabilities: string[] = [],
-  root?: string,
-  opts: { skills?: string[] } = {},
-): string {
-  return buildSkillInstructions(agentKey, capabilities, root, opts);
-}
-
-function buildCoderInstructions(agentKey?: string, capabilities: string[] = []): string {
-  return buildAgentInstructions(agentKey, capabilities, undefined, { skills: ['software-coder'] });
-}
-
-/**
- * Chama o modelo e faz parse do JSON da resposta, com retry — o modelo às vezes
- * devolve prosa em vez de JSON limpo (flakiness). Loga a resposta crua truncada
- * na última falha para diagnóstico.
- */
-export async function completeJson<S extends z.ZodTypeAny>(
-  llm: LlmClient,
-  opts: {
-    messages: { role: 'system' | 'user'; content: string }[];
-    temperature: number;
-    maxTokens?: number;
-    onUsage?: (usage: TokenUsage) => void;
-  },
-  schema: S,
-  log: Logger,
-  attempts = 2,
-): Promise<z.infer<S>> {
-  let lastErr: unknown;
-  let lastRaw = '';
-  for (let i = 1; i <= attempts; i++) {
-    const start = Date.now();
-    log.info({ attempt: i }, 'llm call start');
-    const raw = await llm.complete({
-      alias: 'strong_coder',
-      temperature: opts.temperature,
-      maxTokens: opts.maxTokens,
-      jsonMode: true,
-      messages: opts.messages,
-      onUsage: opts.onUsage,
-    });
-    lastRaw = raw;
-    log.info({ attempt: i, ms: Date.now() - start }, 'llm call done');
-    try {
-      return schema.parse(extractJson(raw));
-    } catch (err) {
-      lastErr = err;
-      log.warn({ attempt: i, raw: raw.slice(0, 500) }, 'falha ao parsear JSON do modelo');
-    }
-  }
-  // Passo de "repair" (MAC-57): o modelo às vezes devolve prosa em vez de JSON.
-  // Em vez de desistir, reenvia a última resposta suja pedindo SÓ o objeto JSON.
-  // Model-agnostic (qualquer combo do gateway) e só roda quando os attempts falharam.
-  if (lastRaw.trim() && hasJsonObjectStart(lastRaw)) {
-    try {
-      log.info('repair: re-pedindo JSON limpo');
-      const repaired = await llm.complete({
-        alias: 'strong_coder',
-        temperature: 0,
-        maxTokens: opts.maxTokens,
-        jsonMode: true,
-        onUsage: opts.onUsage,
-        messages: [
-          {
-            role: 'system',
-            content:
-              'Você extrai JSON. Devolva SOMENTE o objeto JSON válido presente no texto a seguir — sem markdown, sem comentários, sem nada fora do JSON.',
-          },
-          { role: 'user', content: lastRaw },
-        ],
-      });
-      return schema.parse(extractJson(repaired));
-    } catch (err) {
-      lastErr = err;
-      log.warn('repair falhou — sem JSON parseável');
-    }
-  } else if (lastRaw.trim()) {
-    log.warn({ raw: lastRaw.slice(0, 500) }, 'repair ignorado — resposta sem objeto JSON');
-  }
-  throw lastErr instanceof Error ? lastErr : new Error('resposta do modelo não contém JSON');
 }
 
 /** Garante que o caminho não escapa do worktree (defesa contra path traversal). */
