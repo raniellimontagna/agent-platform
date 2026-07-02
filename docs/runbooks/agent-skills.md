@@ -81,8 +81,8 @@ The software pipeline skill set includes these local reviewed skills:
 
 `coder-agent` and `software-delivery-pipeline` both load these skills so existing labels keep working while the clearer pipeline identity evolves.
 
-O catalogo pode expor `software-delivery-pipeline` como identidade mais clara do
-pipeline, sem mudar labels existentes nem separar a execucao fisica do LangGraph.
+O catalogo expoe `software-delivery-pipeline` como identidade atual mais clara do pipeline,
+sem mudar labels existentes nem separar a execucao fisica do LangGraph.
 
 ## Skills atuais
 
