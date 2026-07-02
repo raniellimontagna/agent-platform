@@ -44,10 +44,24 @@ Evidence anchors:
 | Webhook intake | `apps/orchestrator-api/src/routes/webhooks.ts` | `/webhooks/plane` is active. `/webhooks/linear` is compatibility-only and disabled unless explicit legacy config is present. |
 | Run persistence | `apps/orchestrator-api/src/runs.ts`, `apps/orchestrator-api/src/db/schema.ts` | Generic `card_*` fields are authoritative and default to Plane; `linear_issue_*` columns remain for old rows until production audit and destructive confirmation. |
 | Agent queue | `apps/orchestrator-api/src/queue.ts`, `apps/orchestrator-api/src/worker.ts` | BullMQ `agent-runs` owns `plan` and `resume` jobs, including approval resume priority and research-to-landing continuation enqueueing. |
+| Scheduler | `apps/orchestrator-api/src/routes/schedules.ts`, `apps/orchestrator-api/src/schedules.ts`, `apps/orchestrator-api/src/scheduleQueue.ts`, `apps/orchestrator-api/src/scheduleWorker.ts` | Active Plane-first recurring work surface; see `docs/runbooks/scheduler.md` and `apps/orchestrator-api/src/scheduleWorker.test.ts`. |
 | Agent graph | `packages/graph`, `apps/orchestrator-api/src/agent.ts` | `software-delivery-pipeline` names roles; `coder-agent` remains compatibility key. |
 | Worker execution | `apps/worker-code/src/routes/jobs.ts`, `apps/worker-code/src/executor/runJob.ts` and helpers | `/jobs` and `/jobs/sync` receive orchestrator dispatch; runner owns codegen, research, validation, self-correction, commit, and report callback. |
 | Eval harness | `apps/worker-code/src/eval/*` | `pnpm verify` includes eval and regression eval. |
 | Operator UI | `apps/orchestrator-api/src/routes/admin.ts`, `missionTimeline.ts` | Mission Control is read-only for E2E inspection. |
+| Artifact store | `apps/orchestrator-api/src/artifacts.ts`, `apps/orchestrator-api/src/routes/artifacts.ts` | Active run artifact persistence and read API for plan, patch, review, validation, summary, and research outputs. |
+| Registry and skills | `apps/orchestrator-api/src/agents.ts`, `agent-skills/registry.json`, `apps/worker-code/src/executor/agentSkills.ts` | Active agent-key and prompt-skill ownership; `coder-agent` remains compatibility while specialized agents use explicit keys. |
+
+## Operational Surface Status
+
+| Surface | Status | Current owner | Runbook / evidence |
+|---------|--------|---------------|--------------------|
+| Scheduler | Active | `apps/orchestrator-api/src/scheduleWorker.ts` | [scheduler](runbooks/scheduler.md), `apps/orchestrator-api/src/scheduleWorker.test.ts`, `apps/orchestrator-api/src/routes/schedules.test.ts` |
+| Mission Control | Active read-only; actions deferred | `apps/orchestrator-api/src/routes/admin.ts` | [mission-control](runbooks/mission-control.md), `apps/orchestrator-api/src/routes/admin.test.ts` |
+| Eval harness | Active local verification | `apps/worker-code/src/eval/runEval.ts` | [eval-harness](runbooks/eval-harness.md), `apps/worker-code/src/eval/runEval.test.ts`, `apps/worker-code/src/eval/roleQuality.test.ts` |
+| Registry / skills | Active, source-owner normalization continues in 04-02 | `agent-skills/registry.json`, `apps/worker-code/src/executor/agentSkills.ts` | [agent-skills](runbooks/agent-skills.md), `apps/worker-code/src/executor/agentSkills.test.ts` |
+| Artifact store | Active read API; richer Mission Control display deferred | `apps/orchestrator-api/src/artifacts.ts`, `apps/orchestrator-api/src/routes/artifacts.ts` | `apps/orchestrator-api/src/artifacts.test.ts`, `apps/orchestrator-api/src/routes/artifacts.test.ts`, [research-to-landing-workflow](runbooks/research-to-landing-workflow.md) |
+| Linear intake | Legacy/migration-only | `/webhooks/linear`, legacy `linear_issue_*` columns | Disabled unless explicit rollback compatibility config is present. |
 
 ## Current Verification Gate
 
@@ -75,6 +89,8 @@ This runs lint, build, tests, worker eval, and eval regression.
 
 - [webhook-tailscale](runbooks/webhook-tailscale.md) — expose and test Plane
   webhook paths.
+- [scheduler](runbooks/scheduler.md) — operate recurring Plane-first scheduled
+  work.
 - [mission-control](runbooks/mission-control.md) — inspect E2E scenario state.
 - [research-to-landing-workflow](runbooks/research-to-landing-workflow.md) —
   run the composed research-to-landing flow.

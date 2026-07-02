@@ -13,6 +13,7 @@ manual launch without triggering Plane, webhooks, GitHub, or live agent runs.
 | Research-to-landing scenario contract | Active | `apps/orchestrator-api/src/missionScenarios.ts` | `apps/orchestrator-api/src/missionScenarios.test.ts` |
 | Mission timeline stages | Active | `apps/orchestrator-api/src/missionTimeline.ts` | `apps/orchestrator-api/src/missionTimeline.test.ts` |
 | Artifact inspection links | Active read-only | `apps/orchestrator-api/src/artifacts.ts`, `apps/orchestrator-api/src/routes/artifacts.ts` | `apps/orchestrator-api/src/artifacts.test.ts`, `apps/orchestrator-api/src/routes/artifacts.test.ts` |
+| Scheduler visibility | Active through run history, not schedule control | `apps/orchestrator-api/src/routes/schedules.ts`, `apps/orchestrator-api/src/scheduleWorker.ts` | `apps/orchestrator-api/src/routes/schedules.test.ts`, `apps/orchestrator-api/src/scheduleWorker.test.ts` |
 | Launch, replay, approval, retry, cancel controls | Deferred | Phase 5/mission-control follow-up | Not exposed from this runbook |
 
 ## Scope
@@ -32,6 +33,12 @@ Mission Control can confirm the composed workflow after it starts: first run
 `research_landing_page`, artifact `research`, landing continuation run,
 approval state, PR/deploy metadata, and artifact links. It must not be treated
 as a privileged operator action panel in this phase.
+
+Scheduled runs appear as ordinary mission/run history after
+`apps/orchestrator-api/src/scheduleWorker.ts` creates the Plane card and run.
+Creating, editing, replaying, pausing, or deleting schedules remains in the
+protected schedules API and [scheduler](scheduler.md) runbook, not Mission
+Control.
 
 ## Access
 
