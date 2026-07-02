@@ -1,4 +1,5 @@
 import { createHmac } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { Hono } from 'hono';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { resolveAgentByKey } from '../agents.js';
@@ -20,6 +21,7 @@ vi.mock('../env.js', () => ({
     LINEAR_APPROVED_LABEL_ID: 'approved-id',
     LINEAR_AI_READY_LABEL_ID: 'ai-ready-id',
     LINEAR_AUTO_MERGE_LABEL_ID: 'auto-merge-id',
+    CARD_EXTRA_PROVIDERS: '',
     PLANE_WEBHOOK_SECRET: 'secret',
     PLANE_AI_READY_LABEL_ID: 'plane-ai-ready-id',
     PLANE_APPROVED_LABEL_ID: 'plane-approved-id',
@@ -62,11 +64,91 @@ function signed(body: string) {
 beforeEach(() => {
   vi.clearAllMocks();
   env.NODE_ENV = 'test';
+  env.CARD_EXTRA_PROVIDERS = '';
+  env.LINEAR_WEBHOOK_SECRET = 'secret';
   env.PLANE_WEBHOOK_SECRET = 'secret';
 });
 
+function enableLegacyLinearCompatibility() {
+  env.CARD_EXTRA_PROVIDERS = 'linear';
+}
+
 describe('POST /webhooks/linear', () => {
+  it('returns a disabled legacy response unless Linear compatibility is explicitly enabled', async () => {
+    const body = JSON.stringify({
+      action: 'update',
+      type: 'Issue',
+      data: {
+        id: 'issue-disabled',
+        identifier: 'MAC-900',
+        title: 'Disabled legacy intake',
+        labels: [{ name: 'ai-ready' }],
+      },
+      updatedFrom: { labels: [] },
+    });
+
+    const res = await app.request('/webhooks/linear', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'linear-signature': signed(body) },
+      body,
+    });
+
+    expect(res.status).toBe(410);
+    await expect(res.json()).resolves.toEqual({
+      ok: true,
+      skipped: true,
+      reason: 'linear webhook disabled; set CARD_EXTRA_PROVIDERS=linear for legacy compatibility',
+    });
+    expect(createRun).not.toHaveBeenCalled();
+    expect(agentQueue.add).not.toHaveBeenCalled();
+  });
+
+  it('keeps signed legacy enqueue behavior when Linear compatibility is explicitly enabled', async () => {
+    enableLegacyLinearCompatibility();
+    vi.mocked(resolveAgentByKey).mockResolvedValue({ id: 'legacy-id' } as never);
+    vi.mocked(createRun).mockResolvedValue('run-legacy');
+    const body = JSON.stringify({
+      action: 'update',
+      type: 'Issue',
+      data: {
+        id: 'issue-legacy',
+        identifier: 'MAC-901',
+        title: 'Legacy compatibility intake',
+        labels: [{ name: 'ai-ready' }],
+      },
+      updatedFrom: { labels: [] },
+    });
+
+    const res = await app.request('/webhooks/linear', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'linear-signature': signed(body) },
+      body,
+    });
+
+    expect(res.status).toBe(200);
+    expect(createRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        linearIssueId: 'issue-legacy',
+        linearIssueIdentifier: 'MAC-901',
+        cardProvider: 'linear',
+        cardId: 'issue-legacy',
+      }),
+    );
+    expect(agentQueue.add).toHaveBeenCalledWith(
+      'plan',
+      {
+        kind: 'plan',
+        runId: 'run-legacy',
+        issueId: 'issue-legacy',
+        cardProvider: 'linear',
+        cardId: 'issue-legacy',
+      },
+      { priority: 10 },
+    );
+  });
+
   it('seleciona reviewer-agent quando a issue tem label agent:reviewer', async () => {
+    enableLegacyLinearCompatibility();
     vi.mocked(resolveAgentByKey).mockResolvedValue({ id: 'reviewer-id' } as never);
     vi.mocked(createRun).mockResolvedValue('run-1');
     const body = JSON.stringify({
@@ -111,6 +193,7 @@ describe('POST /webhooks/linear', () => {
   });
 
   it('seleciona landing-page-agent quando a issue tem label agent:landing-page', async () => {
+    enableLegacyLinearCompatibility();
     vi.mocked(resolveAgentByKey).mockResolvedValue({ id: 'landing-id' } as never);
     vi.mocked(createRun).mockResolvedValue('run-landing');
     const body = JSON.stringify({
@@ -144,6 +227,7 @@ describe('POST /webhooks/linear', () => {
   });
 
   it('seleciona data-collector-agent quando a issue tem label agent:data-collector', async () => {
+    enableLegacyLinearCompatibility();
     vi.mocked(resolveAgentByKey).mockResolvedValue({ id: 'collector-id' } as never);
     vi.mocked(createRun).mockResolvedValue('run-collector');
     const body = JSON.stringify({
@@ -177,6 +261,7 @@ describe('POST /webhooks/linear', () => {
   });
 
   it('workflow:landing-page inicia pelo data-collector-agent e grava workflow', async () => {
+    enableLegacyLinearCompatibility();
     vi.mocked(resolveAgentByKey).mockResolvedValue({ id: 'collector-id' } as never);
     vi.mocked(createRun).mockResolvedValue('run-workflow');
     const body = JSON.stringify({
@@ -211,6 +296,7 @@ describe('POST /webhooks/linear', () => {
   });
 
   it('persiste opt-in repo:create no run inicial', async () => {
+    enableLegacyLinearCompatibility();
     vi.mocked(resolveAgentByKey).mockResolvedValue({ id: 'collector-id' } as never);
     vi.mocked(createRun).mockResolvedValue('run-workflow');
     const body = JSON.stringify({
@@ -583,5 +669,20 @@ describe('POST /webhooks/linear', () => {
 
     expect(res.status).toBe(401);
     expect(createRun).not.toHaveBeenCalled();
+  });
+});
+
+describe('Plane-only env examples', () => {
+  const envExampleFiles = [
+    new URL('../../.env.example', import.meta.url),
+    new URL('../../../../infra/compose/orchestrator/.env.example', import.meta.url),
+  ];
+
+  it.each(envExampleFiles)('%s does not enable Linear as an active default', (file) => {
+    const contents = readFileSync(file, 'utf8');
+    expect(contents).toContain('CARD_PRIMARY_PROVIDER=plane');
+    expect(contents).toContain('CARD_EXTRA_PROVIDERS=');
+    expect(contents).not.toContain('CARD_EXTRA_PROVIDERS=linear');
+    expect(contents).toMatch(/legacy|compatibility|migration/i);
   });
 });
