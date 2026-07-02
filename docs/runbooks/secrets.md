@@ -17,7 +17,7 @@ Política e procedimento de rotação dos segredos do agent-platform.
 ## Configuração de cards
 
 - `CARD_PRIMARY_PROVIDER=plane`
-- `CARD_EXTRA_PROVIDERS=linear`
+- `CARD_EXTRA_PROVIDERS=`
 - `PLANE_BASE_URL=http://10.10.0.14:8080`
 - `PLANE_WORKSPACE_SLUG=attodev`
 - `PLANE_PROJECT_ID=change-me`
@@ -26,7 +26,9 @@ Política e procedimento de rotação dos segredos do agent-platform.
 - `PLANE_AUTO_MERGE_LABEL_ID=change-me`
 - `PLANE_SCHEDULED_LABEL_ID=change-me`
 - `PLANE_DONE_STATE_ID=change-me`
-- Linear continua como provider legado opcional; mantenha os envs dele só quando houver cards históricos ou suporte explícito.
+- Linear é compatibilidade legado/migração. Mantenha `LINEAR_*` ausente ou vazio
+  em operação normal; preencha só para `plane:migrate-linear`, leitura de dados
+  antigos que exija provider Linear, ou uma janela explícita de rollback.
 
 ## Inventário
 
@@ -38,8 +40,8 @@ Política e procedimento de rotação dos segredos do agent-platform.
 | `LITELLM_API_KEY` | orchestrator + runner `.env` | chamadas LLM | virtual key dedicada do LiteLLM (`key_alias=agent-platform`), gerada com a master (MAC-15) — **não** é a master key |
 | `PLANE_API_KEY` | orchestrator `.env` | Plane SDK / API | Plane → Settings → API |
 | `PLANE_WEBHOOK_SECRET` | orchestrator `.env` | HMAC do webhook | Plane → Webhooks |
-| `LINEAR_API_KEY` | orchestrator `.env` (legado opcional) | Linear SDK | Linear → Settings → API |
-| `LINEAR_WEBHOOK_SECRET` | orchestrator `.env` (legado opcional) | HMAC do webhook | Linear → Webhooks |
+| `LINEAR_API_KEY` | orchestrator `.env` (legado/migração) | Linear SDK | Linear → Settings → API |
+| `LINEAR_WEBHOOK_SECRET` | orchestrator `.env` (legado/migração) | HMAC do webhook | Linear → Webhooks |
 | `GITHUB_TOKEN` | orchestrator `.env` | clone/push/PR | GitHub PAT (escopo `repo`) |
 | `RUNNER_AUTH_TOKEN` | orchestrator + runner `.env` | auth orchestrator↔runner + `/admin` | gerado (`openssl rand -hex 24`) |
 | `FIRECRAWL_API_KEY` | runner `.env` | research packs do `data-collector-agent` | Firecrawl dashboard |
@@ -95,6 +97,6 @@ Geral: editar o `.env` do serviço, salvar, redeployar/reiniciar o container.
 
 - Serviço sobe sem erro de secret placeholder (guard do `env.ts`).
 - Runner→gateway: `curl` no LiteLLM com o novo `LITELLM_API_KEY` responde.
-- Webhook: `infra/deploy/test-webhook.sh` com o `PLANE_WEBHOOK_SECRET` ou
-  `LINEAR_WEBHOOK_SECRET` correspondente ao provider testado.
+- Webhook ativo: `infra/deploy/test-webhook.sh` com `PLANE_WEBHOOK_SECRET`.
+  Teste `LINEAR_WEBHOOK_SECRET` apenas durante migração/rollback explícito.
 - `/admin/status` responde com o novo `RUNNER_AUTH_TOKEN`.

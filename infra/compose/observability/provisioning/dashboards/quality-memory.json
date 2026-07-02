@@ -335,7 +335,7 @@
           "refId": "A",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT created_at, linear_issue_identifier AS issue, tests_passed, fix_attempts, sandbox_backend, sandbox_image, sandbox_network, sandbox_command_count, round((sandbox_total_duration_ms / 1000.0)::numeric, 1) AS sandbox_s, round((sandbox_max_command_duration_ms / 1000.0)::numeric, 1) AS max_cmd_s, sandbox_failed_command FROM runs WHERE sandbox_backend IS NOT NULL ORDER BY created_at DESC LIMIT 50;"
+          "rawSql": "SELECT created_at, coalesce(card_identifier, linear_issue_identifier) AS issue, card_provider, tests_passed, fix_attempts, sandbox_backend, sandbox_image, sandbox_network, sandbox_command_count, round((sandbox_total_duration_ms / 1000.0)::numeric, 1) AS sandbox_s, round((sandbox_max_command_duration_ms / 1000.0)::numeric, 1) AS max_cmd_s, sandbox_failed_command FROM runs WHERE sandbox_backend IS NOT NULL ORDER BY created_at DESC LIMIT 50;"
         }
       ]
     },
@@ -415,7 +415,7 @@
           "refId": "A",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT r.created_at AS time, r.linear_issue_identifier AS metric, coalesce(sum(s.cost_usd), 0) AS value FROM runs r JOIN run_steps s ON s.run_id = r.id WHERE $__timeFilter(r.created_at) AND s.model LIKE '%critic%' GROUP BY r.created_at, r.linear_issue_identifier ORDER BY r.created_at;"
+          "rawSql": "SELECT r.created_at AS time, coalesce(r.card_identifier, r.linear_issue_identifier) AS metric, coalesce(sum(s.cost_usd), 0) AS value FROM runs r JOIN run_steps s ON s.run_id = r.id WHERE $__timeFilter(r.created_at) AND s.model LIKE '%critic%' GROUP BY r.created_at, coalesce(r.card_identifier, r.linear_issue_identifier) ORDER BY r.created_at;"
         }
       ]
     },
@@ -533,7 +533,7 @@
           "refId": "A",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT r.created_at, r.linear_issue_identifier AS issue, r.status, r.tests_passed, r.sandbox_command_count, r.sandbox_failed_command, CASE WHEN a.content ILIKE '%pnpm verify%' THEN 'pnpm verify' WHEN a.content ILIKE '%pnpm test%' THEN 'legacy pnpm test' ELSE '(sem evidencia)' END AS validation_gate, left(regexp_replace(coalesce(a.content, ''), '[[:space:]]+', ' ', 'g'), 240) AS validation_excerpt FROM runs r LEFT JOIN artifacts a ON a.run_id = r.id AND a.kind = 'validation' WHERE r.sandbox_backend IS NOT NULL ORDER BY r.created_at DESC LIMIT 50;"
+          "rawSql": "SELECT r.created_at, coalesce(r.card_identifier, r.linear_issue_identifier) AS issue, r.card_provider, r.status, r.tests_passed, r.sandbox_command_count, r.sandbox_failed_command, CASE WHEN a.content ILIKE '%pnpm verify%' THEN 'pnpm verify' WHEN a.content ILIKE '%pnpm test%' THEN 'legacy pnpm test' ELSE '(sem evidencia)' END AS validation_gate, left(regexp_replace(coalesce(a.content, ''), '[[:space:]]+', ' ', 'g'), 240) AS validation_excerpt FROM runs r LEFT JOIN artifacts a ON a.run_id = r.id AND a.kind = 'validation' WHERE r.sandbox_backend IS NOT NULL ORDER BY r.created_at DESC LIMIT 50;"
         }
       ]
     }

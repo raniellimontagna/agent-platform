@@ -1,10 +1,11 @@
 # Runbook — Webhooks de cards via Tailscale Funnel (MAC-19/20)
 
 Plane (primary card provider) -> Orchestrator API -> agent-runners -> GitHub PR/merge -> Plane report
-Linear remains supported as an optional provider for legacy cards through `/webhooks/linear`.
+Linear is legacy/migration-only compatibility; current public intake should
+expose Plane only.
 
-Expor os endpoints de webhook do orchestrator (.11, LXC 201) publicamente por
-HTTPS pra o provider de cards disparar o fluxo `ai-ready` sem `test-webhook.sh`.
+Expor o endpoint ativo de webhook do orchestrator (.11, LXC 201) publicamente
+por HTTPS para o Plane disparar o fluxo `ai-ready` sem `test-webhook.sh`.
 
 > **Segurança:** expor SÓ os paths de webhook (validado por HMAC). As rotas
 > `/runs/*` (incl. `/approve`, que dispara código) e `/admin/*` NÃO podem ir pro
@@ -36,22 +37,20 @@ No console Tailscale (admin):
   ```
   (ou liberar Funnel pelo botão na página do device).
 
-## 3. Funnel SÓ nos paths dos webhooks
+## 3. Funnel SÓ no webhook ativo
 
 Expõe o Plane primário → `localhost:3000` (o resto fica privado):
 ```bash
 pct exec 201 -- tailscale funnel --bg --set-path=/webhooks/plane http://127.0.0.1:3000/webhooks/plane
 ```
 
-Expõe também o Linear legado → `localhost:3000`:
-```bash
-pct exec 201 -- tailscale funnel --bg --set-path=/webhooks/linear http://127.0.0.1:3000/webhooks/linear
-```
+Não exponha `/webhooks/linear` no fluxo normal. Essa rota existe apenas para
+compatibilidade legado/migração e só deve voltar ao Funnel durante uma janela de
+rollback explícita com `CARD_EXTRA_PROVIDERS=linear` e secrets Linear válidos.
 
 Confirma no `tailscale funnel status` que só os paths esperados estão públicos.
-As URLs ficam tipo:
+Em operação atual, a única URL pública esperada é:
 - `https://orchestrator.<tailnet>.ts.net/webhooks/plane`
-- `https://orchestrator.<tailnet>.ts.net/webhooks/linear`
 
 ## 4. Configurar os webhooks
 
@@ -61,10 +60,13 @@ Plane → **Settings → API → Webhooks → New webhook**:
 - **Eventos:** work-item events que cobrem `ai-ready`, `approved`, remoção/arquivo
   de card e labels do fluxo.
 
-Linear (legado) → **Settings → API → Webhooks → New webhook**:
-- **URL:** `https://orchestrator.<tailnet>.ts.net/webhooks/linear`
-- **Secret:** = `LINEAR_WEBHOOK_SECRET` do `.env` do orchestrator (HMAC).
-- **Eventos:** Issues (e mudanças de label).
+Linear (legado/migração) deve permanecer desabilitado. Se um rollback exigir
+reativar temporariamente:
+- configure `CARD_EXTRA_PROVIDERS=linear`;
+- preencha `LINEAR_API_KEY`, `LINEAR_WEBHOOK_SECRET` e, se necessário,
+  `LINEAR_TEAM_ID`;
+- exponha `/webhooks/linear` apenas durante a janela de rollback;
+- remova o path do Funnel e desabilite o webhook Linear ao encerrar a janela.
 
 ## 5. Testar com card real
 
@@ -133,3 +135,8 @@ orchestrator para confirmar se o webhook gerou ou retomou runs.
 Hoje `/runs/:id/approve|reject` não tem auth (OK enquanto só o Funnel scoped
 expõe `/webhooks`). Se algum dia expor mais que o webhook, proteger essas rotas
 com bearer (igual `/admin`).
+
+Antes de qualquer remoção destrutiva da rota ou dos campos
+`linear_issue_id`/`linear_issue_identifier`, registre uma auditoria read-only do
+Postgres de produção contando linhas legacy-only. A compatibilidade Linear existe
+para leitura de dados antigos e rollback, não para novas entradas.

@@ -2,15 +2,20 @@
 
 Mapa único do sistema: o que está no ar, o fluxo ponta a ponta, e como cada
 card do Plane (workspace `attodev`, projeto **Agent Platform** / `AGP`) se
-encaixa na estrutura. Linear fica como provider opcional legado e só entra no
-mapa quando existe card histórico ou suporte explícito em `/webhooks/linear`.
+encaixa na estrutura. Plane é o único provider ativo para trabalho novo; Linear
+fica como compatibilidade legado/migração para dados antigos e rollback
+explícito, sem exposição pública por default.
 
-> Estado em 2026-06-22. Legenda: ✅ feito · 🏗 no ar/parcial · ⏳ pendente.
+> Estado revisado em 2026-07-02. Legenda: ✅ feito · 🏗 no ar/parcial · ⏳ pendente.
 > **Fases 0–7 completas** — projeto deployado em prod; auto-merge opt-in,
 > loop critic até 3 voltas, identidade de commits do agente e dashboards
 > validados com E2E real. O catálogo expõe roles com contratos versionados em
 > `agent-skills/software-*`, aliases de modelo por role, evals determinísticos
 > para planner/critic e métricas de qualidade no report final.
+>
+> Para separar documentação viva de histórico, comece pelo mapa em
+> [`README.md`](./README.md), o estado atual em [`CURRENT.md`](./CURRENT.md) e
+> o índice histórico em [`HISTORICAL.md`](./HISTORICAL.md).
 
 ---
 
@@ -30,13 +35,13 @@ flowchart TB
   end
 
   PLANE["Plane (primary card provider)"]
-  LINEAR["Linear (legacy optional provider)"]
+  LINEAR["Linear (legacy/migration compatibility)"]
   GH["GitHub"]
   SUBS["Claude Max / ChatGPT<br/>(assinaturas via OAuth)"]
   VERBOO["Verboo<br/>(API key, alto volume)"]
 
   PLANE -->|"webhook (label ai-ready / approved)"| ORCH
-  LINEAR -.legacy webhook.-> ORCH
+  LINEAR -.compat webhook disabled unless explicit legacy config.-> ORCH
   ORCH -->|"job HTTP"| RUN
   ORCH -->|"aliases LLM"| GW
   RUN -->|"aliases LLM"| GW
@@ -44,7 +49,7 @@ flowchart TB
   GW -->|"API key (cheap_fast)"| VERBOO
   ORCH -->|"branch · PR · merge opt-in"| GH
   ORCH -->|"status · comentários"| PLANE
-  ORCH -.legacy status/comments.-> LINEAR
+  ORCH -.legacy/migration comments only.-> LINEAR
   ORCH -.métricas/logs.-> OBS
   RUN -.métricas/logs.-> OBS
   GW -.métricas/logs.-> OBS
@@ -52,8 +57,10 @@ flowchart TB
 
 **Estado da infra:** as 4 VMs provisionadas, no ar e deployadas. Gateway com OmniRoute
 (OAuth) + Verboo + virtual key dedicada (MAC-15); orchestrator com Postgres+pgvector
-(migrations 0000→0009) e embeddings locais; Plane é o provider primário e
-`/webhooks/linear` segue disponível como legado/optional via Tailscale Funnel.
+(migrations 0000→0009) e embeddings locais; Plane é o provider ativo, e
+`/webhooks/linear` fica como rota de compatibilidade desabilitada salvo
+configuração legado explícita. O Funnel público atual expõe apenas
+`/webhooks/plane`.
 
 ---
 
@@ -99,7 +106,7 @@ Concorrência: `AGENT_MAX_CONCURRENCY`
 runs simultâneos, observável em `GET /admin/concurrency` (MAC-47).
 
 Plane (primary card provider) -> Orchestrator API -> agent-runners -> GitHub PR/merge -> Plane report
-Linear remains supported as an optional provider for legacy cards through `/webhooks/linear`.
+Linear remains legacy/migration-only compatibility for retained rows and explicit rollback.
 
 ---
 
@@ -113,7 +120,7 @@ Linear remains supported as an optional provider for legacy cards through `/webh
 | Provider Verboo (`cheap_fast`) | MAC-13 | `infra/compose/gateway/litellm-config.yaml` | ✅ configurado |
 | Provider OmniRoute/OAuth (`research`/`strong_coder`/`heavy_coder`/`critic`) | MAC-48 | `infra/compose/gateway/` + ADR-0006 | ✅ OAuth feito |
 | Budgets / Rate limits | MAC-15 | `litellm-config.yaml` + `docs/runbooks/litellm-guardrails.md` | ✅ aplicados |
-| API + Webhooks Plane/Linear (legacy optional) | MAC-19 | `apps/orchestrator-api/src/routes/webhooks.ts` | ✅ |
+| API + Webhooks Plane / Linear compatibility | MAC-19 | `apps/orchestrator-api/src/routes/webhooks.ts` | ✅ Plane ativo; Linear desabilitado salvo config legado explícita |
 | Fluxo ai-ready | MAC-20 | `apps/orchestrator-api` (enfileirar) | ✅ |
 | State Machine | MAC-14 | `packages/graph` + schema `runs/run_steps` | ✅ (`planning→coding→reviewing→pr→merging→cloudflareDeploy→report`) |
 | Pipeline roles (planner/coder/critic/pr/reporter) | AGP follow-up | `apps/orchestrator-api/src/agents.ts`, registry UI | ✅ `coder-agent` compatível + `software-delivery-pipeline`, contratos `software-*`, aliases por role, evals planner/critic e métricas no report |

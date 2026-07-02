@@ -45,8 +45,10 @@ Plane (primary card provider) → Orchestrator API → agent-runners → GitHub 
                       Verboo / OmniRoute combos
 ```
 
-Linear remains supported as an optional provider for legacy cards through `/webhooks/linear`.
+Linear remains only as legacy/migration-only compatibility for retained rows and
+explicit rollback scenarios; new work uses Plane.
 
+Mapa de documentação vivo: [`docs/README.md`](docs/README.md)
 Visão completa (deploy + fluxo + mapa dos cards): [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 Fluxo detalhado do agente: [`docs/decisions/FLOW-agent-workflow.md`](docs/decisions/FLOW-agent-workflow.md)
 
@@ -93,7 +95,7 @@ agent-platform/
     graph/                # State machines
     llm/                  # Cliente LiteLLM
     plane/                # Integração Plane (provider primário)
-    linear/               # Integração Linear (legado opcional)
+    linear/               # Integração Linear (legado/migração, não ativa por default)
     github/               # Integração GitHub
     memory/               # Memória dos agentes
     policy/               # Políticas de aprovação/custo
@@ -116,9 +118,11 @@ agent-platform/
 
 ## Runbooks
 
+Comece pelo índice de runbooks: [`docs/runbooks/README.md`](docs/runbooks/README.md).
+
 - [proxmox-setup](docs/runbooks/proxmox-setup.md) — provisionamento das 4 VMs
 - [proxmox-estado-atual](docs/runbooks/proxmox-estado-atual.md) — estado vivo da infra + gotchas
-- [webhook-tailscale](docs/runbooks/webhook-tailscale.md) — webhooks do Plane primário e Linear legado via Tailscale Funnel
+- [webhook-tailscale](docs/runbooks/webhook-tailscale.md) — webhook Plane ativo e compatibilidade Linear desabilitada por default
 - [grafana-lan-access](docs/runbooks/grafana-lan-access.md) — acessar o Grafana pela LAN (sem ssh)
 - [litellm-guardrails](docs/runbooks/litellm-guardrails.md) — budgets e rate limits do gateway
 - [secrets](docs/runbooks/secrets.md) — inventário e rotação de secrets
