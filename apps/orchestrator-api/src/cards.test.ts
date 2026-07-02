@@ -32,4 +32,19 @@ describe('createRuntimeCards', () => {
     expect(cards.primary.provider).toBe('plane');
     expect(cards.forProvider('linear').provider).toBe('linear');
   });
+
+  it('rejects Linear as an active primary provider', () => {
+    expect(() =>
+      createRuntimeCards({
+        CARD_PRIMARY_PROVIDER: 'linear',
+        CARD_EXTRA_PROVIDERS: '',
+        PLANE_BASE_URL: 'http://plane.local',
+        PLANE_API_KEY: 'plane-key',
+        PLANE_WORKSPACE_SLUG: 'attodev',
+        PLANE_PROJECT_ID: 'project-1',
+        LINEAR_API_KEY: 'linear-key',
+        LINEAR_TEAM_ID: 'team-1',
+      }),
+    ).toThrow('CARD_PRIMARY_PROVIDER=linear is not supported');
+  });
 });
