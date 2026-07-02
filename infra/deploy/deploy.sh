@@ -84,17 +84,23 @@ ensure_env() { # $1 = dir remoto do compose
     fi
   fi
 
-  # Gateway/orchestrator exigem secrets reais antes de subir.
-  if [ "$SERVICE" = gateway ] || [ "$SERVICE" = orchestrator ]; then
-    if remote_exec "grep -q 'change-me' '$dir/.env'" 2>/dev/null; then
+  # Serviços com credenciais em runtime exigem secrets reais antes de subir.
+  case "$SERVICE" in
+    gateway|orchestrator|runners)
+    if remote_exec "awk -F= '/^[[:space:]]*(#|$)/ { next } { v=tolower(\$0); if (v ~ /(change-me|placeholder|preencha|token_aqui|sk-xxx|your_)/) found=1 } END { exit found ? 0 : 1 }' '$dir/.env'" 2>/dev/null; then
       echo ""
-      echo "  BLOQUEADO: $dir/.env ainda contém 'change-me'."
+      echo "  BLOQUEADO: $dir/.env ainda contém placeholders."
       echo "  Preencha os secrets reais e rode de novo:"
-      echo "    LXC: pct exec $ID -- nano $dir/.env"
+      if [ "$KIND" = lxc ]; then
+        echo "    LXC: pct exec $ID -- nano $dir/.env"
+      else
+        echo "    VM: ssh $SSH_USER@$IP 'nano $dir/.env'"
+      fi
       echo ""
       exit 2
     fi
-  fi
+    ;;
+  esac
 }
 
 echo "================================================"
@@ -140,12 +146,20 @@ else
   # Serviços de build: precisam do repo inteiro para o build context.
   DEST="$REMOTE_BASE/repo"
   COMPOSE_DIR="$DEST/infra/compose/$SUBDIR"
-  echo "==> Enviando repositório -> $DEST (sem node_modules/.git/dist)"
+  echo "==> Enviando repositório -> $DEST (sem node_modules/.git/dist/.env)"
   TMP_REPO="$(mktemp -d)"
-  tar -C "$REPO_ROOT" \
-    --exclude='./node_modules' --exclude='*/node_modules' \
-    --exclude='./.git' --exclude='*/dist' --exclude='*.log' \
-    -czf "$TMP_REPO/repo.tgz" .
+  (
+    cd "$REPO_ROOT"
+    find . \
+      -path './node_modules' -prune -o \
+      -path '*/node_modules' -prune -o \
+      -path './.git' -prune -o \
+      -path '*/dist' -prune -o \
+      -name '*.log' -prune -o \
+      -name '.env' -prune -o \
+      \( -name '.env.*' ! -name '.env.example' \) -prune -o \
+      \( -type f -o -type l \) -print
+  ) | tar -C "$REPO_ROOT" -czf "$TMP_REPO/repo.tgz" --files-from -
   if [ "$KIND" = lxc ]; then
     remote_exec "mkdir -p '$DEST'"
     pct push "$ID" "$TMP_REPO/repo.tgz" /tmp/repo.tgz
