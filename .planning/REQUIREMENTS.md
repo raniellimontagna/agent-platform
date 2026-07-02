@@ -81,8 +81,8 @@ living documentation, modular flows, removed legacy, and verification gates.
 ### Verification
 
 - [x] **VER-01**: Characterization tests protect behavior before each risky refactor.
-- [ ] **VER-02**: `corepack pnpm verify` passes at the end of each phase.
-- [ ] **VER-03**: Evals remain at 14/14 with no score regression after provider and
+- [x] **VER-02**: `corepack pnpm verify` passes at the end of each phase.
+- [x] **VER-03**: Evals remain at 14/14 with no score regression after provider and
   flow cleanup.
 
 - [ ] **VER-04**: Final milestone audit includes remaining debt, accepted gaps, and
@@ -135,8 +135,8 @@ living documentation, modular flows, removed legacy, and verification gates.
 | REF-05 | Phase 6 | Complete |
 | REF-06 | Phase 6 | Complete |
 | VER-01 | Phase 5, Phase 6 | Complete |
-| VER-02 | Phase 7 | Pending |
-| VER-03 | Phase 7 | Pending |
+| VER-02 | Phase 7 | Complete |
+| VER-03 | Phase 7 | Complete |
 | VER-04 | Phase 7 | Pending |
 
 **Coverage:**

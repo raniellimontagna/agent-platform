@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 7
-current_phase_name: Final Verification and Governance Closeout
+current_phase: 07
+current_phase_name: final-verification-and-governance-closeout
 status: executing
-stopped_at: Completed 06-04-PLAN.md; ready for Phase 07
-last_updated: "2026-07-02T19:33:57.094Z"
+stopped_at: Completed 07-01-PLAN.md; ready for 07-02 when explicitly requested
+last_updated: "2026-07-02T19:46:57.436Z"
 last_activity: 2026-07-02
-last_activity_desc: Phase 06 complete, transitioned to Phase 7
+last_activity_desc: Completed 07-01 final verification evidence
 progress:
   total_phases: 7
   completed_phases: 6
-  total_plans: 18
-  completed_plans: 18
-  percent: 86
+  total_plans: 20
+  completed_plans: 19
+  percent: 95
 ---
 
 # Project State
@@ -25,16 +25,16 @@ See: `.planning/PROJECT.md` (updated 2026-07-02)
 
 **Core value:** Recover control of `agent-platform` through Plane-first docs,
 legacy removal, modular flow refactors, and verification gates.
-**Current focus:** Phase 06 complete — Phase 07 Final Verification and Governance Closeout next
+**Current focus:** Phase 07 — final-verification-and-governance-closeout
 
 ## Current Position
 
-Phase: 7 — Final Verification and Governance Closeout
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-07-02 — Phase 06 complete, transitioned to Phase 7
+Phase: 07 (final-verification-and-governance-closeout) — EXECUTING
+Plan: 2 of 2
+Status: Ready for Plan 07-02 when explicitly requested
+Last activity: 2026-07-02 — Completed 07-01 final verification evidence
 
-Progress: [█████████░] 86%
+Progress: [██████████] 95%
 
 ## Performance Metrics
 
@@ -54,7 +54,7 @@ Progress: [█████████░] 86%
 | 4. Operational Flow Reorganization | 2 | 2 | ~6m56s |
 | 5. Orchestrator Hub Refactor | 3 | 3 | ~10m30s |
 | 6. Worker and Eval Hub Refactor | 3 | 4 | ~11m38s |
-| 7. Final Verification and Governance Closeout | 0 | 2 | - |
+| 7. Final Verification and Governance Closeout | 1 | 2 | ~4m29s |
 | 05 | 3 | - | - |
 | 03 | 5 | - | - |
 | 04 | 2 | - | - |
@@ -83,6 +83,7 @@ Progress: [█████████░] 86%
 | Phase 06 P02 | 9m12s | 3 tasks | 11 files |
 | Phase 06 P03 | 13m58s | 3 tasks | 11 files |
 | Phase 06 P04 | 8m18s | 3 tasks | 8 files |
+| Phase 07 P01 | 4m29s | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -133,6 +134,9 @@ Progress: [█████████░] 86%
 - [Phase 06]: 06-03 preserved eval report semantics, score thresholds, worker dry-run behavior, package/schema surfaces, provider behavior, and route surfaces. — Matches Phase 6 behavior-preserving scope fences and 06-03 verification gates.
 - [Phase 06]: 06-04 kept provider request execution, policy decisions, secret requirements, and fallback behavior in existing provider modules while moving only pure research output helpers.
 - [Phase 06]: 06-04 preserved research pack headings, Landing Page Brief, limitation wording, source handling, redaction behavior, package/schema surfaces, route surfaces, deploy config, workflow labels, model aliases, and Plane behavior.
+- [Phase 07]: 07-01 used rtk corepack pnpm verify as the source of truth for VER-02 and recorded the exact outcome. — Matches Phase 07 D-02 and the 07-01 plan gate.
+- [Phase 07]: 07-01 used parsed .eval-runs/latest-report.json as the source of truth for VER-03: 14/14 scenarios, score 100, score delta 0, no regressions. — Matches Phase 07 D-03 and prevents console-only eval claims.
+- [Phase 07]: 07-01 preserved the existing .eval-runs/ gitignore policy and committed durable planning evidence instead of force-staging generated runtime artifacts. — Generated eval artifacts are intentionally ignored; committed evidence records the verification result.
 
 ### Pending Todos
 
@@ -155,6 +159,6 @@ Progress: [█████████░] 86%
 
 ## Session Continuity
 
-Last session: 2026-07-02T18:53:29.292Z
-Stopped at: Completed 06-04-PLAN.md; ready for Phase 07
+Last session: 2026-07-02T19:46:57.425Z
+Stopped at: Completed 07-01-PLAN.md; ready for 07-02 when explicitly requested
 Resume file: None
