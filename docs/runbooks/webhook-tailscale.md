@@ -28,7 +28,7 @@ permanece ancorada estaticamente enquanto o comportamento executado fica
 coberto por `apps/worker-code/src/executor/runJob.test.ts`.
 
 > **Nota de verificação:** as evidências de closeout do smoke test da Fase 11
-> estão em `.planning/phases/11-final-verification-and-e2e-gate/11-E2E-SMOKE-EVIDENCE.md`.
+> estão em [11-E2E-SMOKE-EVIDENCE.md](../../.planning/phases/11-final-verification-and-e2e-gate/11-E2E-SMOKE-EVIDENCE.md).
 
 ## 1. Tailscale no orchestrator (LXC 201)
 
