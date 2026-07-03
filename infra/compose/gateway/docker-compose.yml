@@ -15,7 +15,7 @@ services:
   # Bridge OAuth: segura as assinaturas (Claude Max, ChatGPT) e expõe um
   # endpoint OpenAI-compatible. OAuth feito na web UI (porta 20128).
   omniroute:
-    image: diegosouzapw/omniroute:latest
+    image: diegosouzapw/omniroute:3.8.43
     restart: unless-stopped
     ports:
       - "20128:20128"
