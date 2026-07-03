@@ -1,38 +1,41 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-current_phase: 0
-status: Awaiting next milestone
-stopped_at: Completed 07-02-PLAN.md
-last_updated: "2026-07-02T20:17:25.166Z"
-last_activity: 2026-07-02
-last_activity_desc: Milestone v1.0 completed and archived
+milestone: v1.1
+milestone_name: Linear Cleanup + Operational Hardening
+current_phase: 8
+current_phase_name: Linear Audit and Removal Plan
+status: planning
+last_updated: "2026-07-03T01:59:19.932Z"
+last_activity: 2026-07-03
 progress:
-  total_phases: 7
-  completed_phases: 7
-  total_plans: 20
-  completed_plans: 20
-  percent: 100
-current_phase_name: milestone-complete
+  total_phases: 4
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-07-02)
+See: `.planning/PROJECT.md` (updated 2026-07-03)
 
 **Core value:** Recover control of `agent-platform` through Plane-first docs,
 legacy removal, modular flow refactors, and verification gates.
-**Current focus:** Milestone v1.0 archived — awaiting next milestone planning
+**Current focus:** Milestone v1.1 — Linear Cleanup + Operational Hardening
 
 ## Current Position
 
-Phase: Milestone v1.0 complete
+Milestone: v1.1 Linear Cleanup + Operational Hardening
+Current Phase: 8
+Current Phase Name: Linear Audit and Removal Plan
+Total Phases: 4
+Progress: 0%
+Phase: 8 — Linear Audit and Removal Plan
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-07-02 — Milestone v1.0 completed and archived
+Status: Ready for discussion/planning
+Last activity: 2026-07-03 — Milestone v1.1 requirements and roadmap defined
 
 ## Performance Metrics
 
@@ -142,8 +145,9 @@ Last activity: 2026-07-02 — Milestone v1.0 completed and archived
 
 ### Pending Todos
 
-- Review Phase 3 gates before removing Linear runtime paths.
-- Decide whether `coder-agent` remains a permanent compatibility alias or becomes deprecated after external reference audit.
+- Execute Phase 8 before any destructive Linear deletion.
+- Preserve rollback/migration notes for `linear_issue_*`, `/webhooks/linear`, `packages/linear`, `@linear/sdk`, and Linear env/config removal.
+- Keep `coder-agent` as compatibility alias unless Phase 8/9 proves no external references remain.
 
 ### Phase 3 Gates
 
@@ -171,4 +175,4 @@ Resume file: None
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Start Phase 8 with /gsd-discuss-phase 8 or run autonomous milestone execution with /gsd-autonomous --from 8 --auto
