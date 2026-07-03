@@ -36,6 +36,18 @@ describe('codegen selection helpers', () => {
     ).toEqual({ selection, droppedDocs: [] });
   });
 
+  it('keeps documentation targets when the description names the docs path explicitly', () => {
+    const selection = { edit: [], create: ['docs/runbooks/e2e-smoke-2026-07-03.md'] };
+
+    expect(
+      filterDocumentationTargets(selection, {
+        title: 'Smoke pós-fixes: criar nota E2E curta',
+        description:
+          'Crie o arquivo docs/runbooks/e2e-smoke-2026-07-03.md com um título e uma frase.',
+      }),
+    ).toEqual({ selection, droppedDocs: [] });
+  });
+
   it('removes creates during review fixes without changing edit targets', () => {
     expect(
       filterReviewCreates(

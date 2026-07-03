@@ -76,15 +76,19 @@ function isDocumentationPath(path: string): boolean {
   return normalized.startsWith('docs/') || normalized.endsWith('.md');
 }
 
-function issueExplicitlyRequestsDocs(title: string): boolean {
-  return /\b(doc|docs|documentation|readme|runbook|documenta(?:r|ção|cao))\b/i.test(title);
+function issueExplicitlyRequestsDocs(ctx: { title: string; description: string }): boolean {
+  const text = `${ctx.title}\n${ctx.description}`;
+  return (
+    /\b(doc|docs|documentation|readme|runbook|documenta(?:r|ção|cao))\b/i.test(text) ||
+    /(?:^|\s)(?:docs\/|readme\.md\b|[\w./-]+\.md\b)/i.test(text)
+  );
 }
 
 export function filterDocumentationTargets(
   selection: FileSelection,
   ctx: { title: string; description: string },
 ): { selection: FileSelection; droppedDocs: string[] } {
-  if (issueExplicitlyRequestsDocs(ctx.title)) {
+  if (issueExplicitlyRequestsDocs(ctx)) {
     return { selection, droppedDocs: [] };
   }
 
