@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
+import { logger } from '../logger.js';
 
 const registrySkillSchema = z.object({
   name: z.string().min(1),
@@ -41,10 +42,31 @@ function stripFrontmatter(markdown: string): string {
   return match ? markdown.slice(match[0].length).trim() : markdown.trim();
 }
 
-function truncateSkill(content: string): string {
-  return content.length > MAX_SKILL_CHARS
-    ? `${content.slice(0, MAX_SKILL_CHARS)}\n\n[skill truncada por limite de contexto]`
-    : content;
+/**
+ * Corta no ultimo limite de paragrafo (ou de linha) antes do teto, em vez de
+ * partir no meio de uma frase. Mesmo orcamento, conteudo utilizavel ate o fim.
+ */
+function cutAtBoundary(content: string): string {
+  const head = content.slice(0, MAX_SKILL_CHARS);
+  const paragraph = head.lastIndexOf('\n\n');
+  if (paragraph > MAX_SKILL_CHARS / 2) return head.slice(0, paragraph).trimEnd();
+  const line = head.lastIndexOf('\n');
+  if (line > MAX_SKILL_CHARS / 2) return head.slice(0, line).trimEnd();
+  return head.trimEnd();
+}
+
+type TruncationResult = {
+  text: string;
+  droppedChars: number;
+};
+
+function truncateSkill(content: string): TruncationResult {
+  if (content.length <= MAX_SKILL_CHARS) return { text: content, droppedChars: 0 };
+  const text = cutAtBoundary(content);
+  return {
+    text: `${text}\n\n[skill truncada por limite de contexto]`,
+    droppedChars: content.length - text.length,
+  };
 }
 
 export function loadAgentSkillRegistry(root = repoRootFromModule()): AgentSkillRegistry | null {
@@ -73,8 +95,21 @@ export function buildSkillInstructions(
     if (!skill) return [];
     const fullPath = resolve(root, skill.path);
     if (!existsSync(fullPath)) return [];
-    const body = truncateSkill(stripFrontmatter(readFileSync(fullPath, 'utf8')));
-    return [`## Skill: ${skill.name}\n${body}`];
+    const full = stripFrontmatter(readFileSync(fullPath, 'utf8'));
+    const { text, droppedChars } = truncateSkill(full);
+    if (droppedChars > 0) {
+      logger.warn(
+        {
+          agentKey,
+          skill: skill.name,
+          originalChars: full.length,
+          limitChars: MAX_SKILL_CHARS,
+          droppedChars,
+        },
+        'skill truncada por limite de contexto',
+      );
+    }
+    return [`## Skill: ${skill.name}\n${text}`];
   });
 
   if (skillBlocks.length === 0) {

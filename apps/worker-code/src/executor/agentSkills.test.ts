@@ -143,4 +143,51 @@ describe('agentSkills', () => {
       '`software-delivery-pipeline` como identidade atual mais clara do pipeline',
     );
   });
+  it('corta a skill no limite de paragrafo e avisa quanto ficou de fora', async () => {
+    const root = join(tmpdir(), `agent-skills-truncate-${Date.now()}`);
+    await mkdir(join(root, 'agent-skills/grande'), { recursive: true });
+
+    const paragrafo = `${'x'.repeat(500)}\n\n`;
+    const corpo = paragrafo.repeat(12); // ~6k chars, acima do teto de 4k
+    await writeFile(join(root, 'agent-skills/grande/SKILL.md'), `---\nname: grande\n---\n\n${corpo}`, 'utf8');
+    await writeFile(
+      join(root, 'agent-skills/registry.json'),
+      JSON.stringify({
+        version: 1,
+        agentSkills: { 'reviewer-agent': ['grande'] },
+        skills: [{ name: 'grande', path: 'agent-skills/grande/SKILL.md', description: '' }],
+      }),
+      'utf8',
+    );
+
+    const saida = buildSkillInstructions('reviewer-agent', [], root);
+
+    expect(saida).toContain('[skill truncada por limite de contexto]');
+    // corta num limite de paragrafo, nao no meio de um bloco
+    const conteudo = saida.split('## Skill: grande\n')[1]?.split('\n\n[skill truncada')[0] ?? '';
+    expect(conteudo.endsWith('x')).toBe(true);
+    expect(conteudo.length).toBeLessThanOrEqual(4_000);
+    expect(conteudo.length).toBeGreaterThan(2_000);
+  });
+
+  it('nao trunca skill dentro do limite', async () => {
+    const root = join(tmpdir(), `agent-skills-small-${Date.now()}`);
+    await mkdir(join(root, 'agent-skills/pequena'), { recursive: true });
+    await writeFile(
+      join(root, 'agent-skills/pequena/SKILL.md'),
+      '---\nname: pequena\n---\n\nConteudo curto.',
+      'utf8',
+    );
+    await writeFile(
+      join(root, 'agent-skills/registry.json'),
+      JSON.stringify({
+        version: 1,
+        agentSkills: { 'reviewer-agent': ['pequena'] },
+        skills: [{ name: 'pequena', path: 'agent-skills/pequena/SKILL.md', description: '' }],
+      }),
+      'utf8',
+    );
+
+    expect(buildSkillInstructions('reviewer-agent', [], root)).not.toContain('truncada');
+  });
 });
