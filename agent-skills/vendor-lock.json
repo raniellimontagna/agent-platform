@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "source": {
+    "package": "@ranimontagna/agent-skills",
+    "version": "0.1.0"
+  },
+  "contentHash": "sha256:bab887a73c014d91f6ed589a22cb4172ecfdd6799bd61f0752521f6dae8c1640",
+  "skills": [
+    {
+      "name": "accessibility",
+      "ref": "frontend/accessibility",
+      "hash": "sha256:6999e13f1856325f2fad36bc07e6a4845a3cdbc45c57fbd036848565d533b606"
+    },
+    {
+      "name": "astro-react-landing",
+      "ref": "frontend/astro/astro-react-landing",
+      "hash": "sha256:83a7acd256539ae1d9b8c1f5558309d705620e65e888df0cad06418445fe8824"
+    },
+    {
+      "name": "frontend-design",
+      "ref": "frontend/design/frontend-design",
+      "hash": "sha256:356cda346fdd2e740e4d3c294bab632d4c825f235a631cf7b3af05123b311b29"
+    },
+    {
+      "name": "ui-ux-pro-max",
+      "ref": "frontend/design/ui-ux-pro-max",
+      "hash": "sha256:1f1ad41af459c8587c13a010e13de4d6cfcd857bbc3fe6bfc896100fd23c95bb"
+    },
+    {
+      "name": "gsap-motion",
+      "ref": "frontend/gsap/gsap-motion",
+      "hash": "sha256:8920f1ae8ae0089a100fd4fe0fc8341e96e71004331ded77be266455ca75c80f"
+    },
+    {
+      "name": "seo-page",
+      "ref": "frontend/seo/seo-page",
+      "hash": "sha256:aa45dbfd0d89e83851deac731cb9e9eddac0beab01d17d9ee57bb574a6eb6132"
+    },
+    {
+      "name": "biome-formatting",
+      "ref": "quality/biome-formatting",
+      "hash": "sha256:107f071e132c04a6026739dc096dbdc95a1a8b17541d2282e68fae29ab2aaba0"
+    },
+    {
+      "name": "instagram-public-research",
+      "ref": "research/instagram-public-research",
+      "hash": "sha256:1e93785a499dec5655841dfa8346cdf6193b33b0dc295cff3d4189c923dcf3be"
+    },
+    {
+      "name": "research-data-collection",
+      "ref": "research/research-data-collection",
+      "hash": "sha256:990de7d2f65a851423016aeaf65bb7e857d91bcd30450a1a5744368acf0dfe2a"
+    }
+  ]
+}
