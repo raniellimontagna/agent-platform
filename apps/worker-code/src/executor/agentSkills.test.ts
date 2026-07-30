@@ -1,10 +1,19 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
-import { buildSkillInstructions, loadAgentSkillRegistry } from './agentSkills.js';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { logger } from '../logger.js';
+import {
+  MAX_AGENT_SKILL_CHARS,
+  buildSkillInstructions,
+  loadAgentSkillRegistry,
+} from './agentSkills.js';
 
 describe('agentSkills', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('carrega o registry versionado do repo', () => {
     const registry = loadAgentSkillRegistry();
 
@@ -20,6 +29,46 @@ describe('agentSkills', () => {
       'gsap-motion',
       'higgsfield-media-generation',
     ]);
+  });
+
+  it('preserva nomes e ordem enquanto distingue skills locais das vendorizadas', () => {
+    const registry = loadAgentSkillRegistry();
+
+    expect(registry?.skills.map((skill) => skill.name)).toEqual([
+      'landing-page-production',
+      'landing-page-style-recipes',
+      'frontend-design',
+      'ui-ux-pro-max',
+      'accessibility-wcag',
+      'astro-react-landing',
+      'seo-page',
+      'biome-formatting',
+      'gsap-motion',
+      'higgsfield-media-generation',
+      'research-data-collection',
+      'research-planner',
+      'instagram-public-research',
+      'gsd',
+      'software-planner',
+      'software-coder',
+      'software-critic',
+      'software-pr',
+      'software-reporter',
+    ]);
+
+    const frontendDesign = registry?.skills.find((skill) => skill.name === 'frontend-design');
+    expect(frontendDesign).toMatchObject({
+      source: 'toolkit',
+      path: 'agent-skills/vendor/agent-toolkit/skills/frontend/design/frontend-design/SKILL.md',
+      briefPath:
+        'agent-skills/vendor/agent-toolkit/skills/frontend/design/frontend-design/BRIEF.md',
+    });
+    expect(
+      registry?.skills.find((skill) => skill.name === 'higgsfield-media-generation')?.source,
+    ).toBe('local');
+    expect(registry?.skills.find((skill) => skill.name === 'software-planner')?.source).toBe(
+      'local',
+    );
   });
 
   it('injeta skills versionadas para landing-page-agent', () => {
@@ -39,13 +88,11 @@ describe('agentSkills', () => {
     expect(instructions).toContain('Treat this skill as the orchestrator');
     expect(instructions).toContain('Editorial Travel Magazine');
     expect(instructions).toContain('Boutique Concierge');
-    expect(instructions).toContain('Make the interface perceivable, operable');
-    expect(instructions).toContain('Use product-level design judgment');
-    expect(instructions).toContain('Use Astro as the page and content framework');
-    expect(instructions).toContain('Treat SEO as part of the landing page implementation');
+    expect(instructions).toContain('Use semantic native controls first');
+    expect(instructions).toContain('Make the offer and next action clear');
+    expect(instructions).toContain('Use Astro for routes, layouts, metadata');
+    expect(instructions).toContain('Build SEO into the page');
     expect(instructions).toContain('Higgsfield MCP/CLI');
-    expect(instructions).toContain('seedream_v5_lite');
-    expect(instructions).toContain('Prefer Higgsfield models covered');
   });
 
   it('injeta contrato GSD para o pipeline de software', () => {
@@ -102,9 +149,105 @@ describe('agentSkills', () => {
     expect(instructions).toContain('## Skill: research-data-collection');
     expect(instructions).toContain('## Skill: instagram-public-research');
     expect(instructions).toContain('safe, bounded data collection plan');
-    expect(instructions).toContain('Collect useful evidence, not raw dumps');
-    expect(instructions).toContain('Do not bypass paywalls');
-    expect(instructions).toContain('This is a research-only skill');
+    expect(instructions).toContain('Collect evidence, not raw dumps');
+    expect(instructions).toContain('Never bypass');
+    expect(instructions).toContain('Research only.');
+  });
+
+  it('prefere BRIEF.md para prompt e usa SKILL.md como fallback', async () => {
+    const root = join(tmpdir(), `agent-skills-brief-${Date.now()}`);
+    await mkdir(join(root, 'agent-skills/compacta'), { recursive: true });
+    await writeFile(join(root, 'agent-skills/compacta/BRIEF.md'), '# Brief\n\nConteudo compacto.');
+    await writeFile(join(root, 'agent-skills/compacta/SKILL.md'), '# Full\n\nConteudo completo.');
+    await writeFile(
+      join(root, 'agent-skills/registry.json'),
+      JSON.stringify({
+        version: 1,
+        agentSkills: { 'reviewer-agent': ['compacta'] },
+        skills: [
+          {
+            name: 'compacta',
+            path: 'agent-skills/compacta/SKILL.md',
+            briefPath: 'agent-skills/compacta/BRIEF.md',
+            source: 'toolkit',
+            description: '',
+          },
+        ],
+      }),
+    );
+
+    const brief = buildSkillInstructions('reviewer-agent', [], root);
+    expect(brief).toContain('Conteudo compacto.');
+    expect(brief).not.toContain('Conteudo completo.');
+
+    await writeFile(
+      join(root, 'agent-skills/registry.json'),
+      JSON.stringify({
+        version: 1,
+        agentSkills: { 'reviewer-agent': ['compacta'] },
+        skills: [
+          {
+            name: 'compacta',
+            path: 'agent-skills/compacta/SKILL.md',
+            briefPath: 'agent-skills/compacta/AUSENTE.md',
+            source: 'toolkit',
+            description: '',
+          },
+        ],
+      }),
+    );
+
+    expect(buildSkillInstructions('reviewer-agent', [], root)).toContain('Conteudo completo.');
+  });
+
+  it('aplica um orcamento total deterministico e preserva todos os blocos', async () => {
+    const root = join(tmpdir(), `agent-skills-budget-${Date.now()}`);
+    const names = ['alpha', 'beta', 'gamma'];
+    for (const name of names) {
+      await mkdir(join(root, `agent-skills/${name}`), { recursive: true });
+      const paragraph = `${name}-${'x'.repeat(500)}\n\n`;
+      await writeFile(join(root, `agent-skills/${name}/SKILL.md`), paragraph.repeat(40));
+    }
+    await writeFile(
+      join(root, 'agent-skills/registry.json'),
+      JSON.stringify({
+        version: 1,
+        agentSkills: { 'reviewer-agent': names },
+        skills: names.map((name) => ({
+          name,
+          path: `agent-skills/${name}/SKILL.md`,
+          source: 'local',
+          description: '',
+        })),
+      }),
+    );
+
+    const first = buildSkillInstructions('reviewer-agent', [], root);
+    const second = buildSkillInstructions('reviewer-agent', [], root);
+
+    expect(second).toBe(first);
+    expect(first.length).toBeLessThanOrEqual(MAX_AGENT_SKILL_CHARS + 500);
+    for (const name of names) expect(first).toContain(`## Skill: ${name}`);
+  });
+
+  it('registra fonte, arquivo e tamanhos da skill carregada', async () => {
+    const info = vi.spyOn(logger, 'info').mockImplementation(() => undefined);
+
+    buildSkillInstructions('data-collector-agent', ['research']);
+
+    expect(info).toHaveBeenCalledWith(
+      expect.objectContaining({
+        agentKey: 'data-collector-agent',
+        skill: 'research-data-collection',
+        source: 'toolkit',
+        selectedPath: expect.stringContaining('BRIEF.md'),
+        originalChars: expect.any(Number),
+        includedChars: expect.any(Number),
+        droppedChars: expect.any(Number),
+        totalBudgetChars: MAX_AGENT_SKILL_CHARS,
+      }),
+      'skill carregada no contexto do agente',
+    );
   });
 
   it('usa fallback especializado quando o registry não existe', async () => {
@@ -148,8 +291,12 @@ describe('agentSkills', () => {
     await mkdir(join(root, 'agent-skills/grande'), { recursive: true });
 
     const paragrafo = `${'x'.repeat(500)}\n\n`;
-    const corpo = paragrafo.repeat(12); // ~6k chars, acima do teto de 4k
-    await writeFile(join(root, 'agent-skills/grande/SKILL.md'), `---\nname: grande\n---\n\n${corpo}`, 'utf8');
+    const corpo = paragrafo.repeat(40); // ~20k chars, acima do teto total
+    await writeFile(
+      join(root, 'agent-skills/grande/SKILL.md'),
+      `---\nname: grande\n---\n\n${corpo}`,
+      'utf8',
+    );
     await writeFile(
       join(root, 'agent-skills/registry.json'),
       JSON.stringify({
@@ -166,8 +313,8 @@ describe('agentSkills', () => {
     // corta num limite de paragrafo, nao no meio de um bloco
     const conteudo = saida.split('## Skill: grande\n')[1]?.split('\n\n[skill truncada')[0] ?? '';
     expect(conteudo.endsWith('x')).toBe(true);
-    expect(conteudo.length).toBeLessThanOrEqual(4_000);
-    expect(conteudo.length).toBeGreaterThan(2_000);
+    expect(conteudo.length).toBeLessThanOrEqual(MAX_AGENT_SKILL_CHARS);
+    expect(conteudo.length).toBeGreaterThan(MAX_AGENT_SKILL_CHARS / 2);
   });
 
   it('nao trunca skill dentro do limite', async () => {

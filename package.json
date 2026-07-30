@@ -15,9 +15,11 @@
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
+    "skills:sync": "node scripts/sync-agent-skills.mjs",
+    "skills:check": "node scripts/sync-agent-skills.mjs --check",
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
-    "verify": "corepack pnpm lint && corepack pnpm verify:loop && corepack pnpm eval:regression",
+    "verify": "corepack pnpm skills:check && corepack pnpm lint && corepack pnpm verify:loop && corepack pnpm eval:regression",
     "verify:loop": "corepack pnpm -r build && corepack pnpm test && corepack pnpm eval"
   },
   "devDependencies": {
