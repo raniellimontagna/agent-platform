@@ -20,7 +20,8 @@ const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_REPO_ROOT = resolve(SCRIPT_DIR, '..');
 const VENDOR_RELATIVE_PATH = 'agent-skills/vendor/agent-toolkit';
 const LOCK_RELATIVE_PATH = 'agent-skills/vendor-lock.json';
-const TOP_LEVEL_FILES = ['LICENSE', 'README.md', 'package.json', 'skills.index.json'];
+const TOP_LEVEL_FILES = ['LICENSE', 'README.md'];
+const JSON_LINE_WIDTH = 100;
 
 async function exists(path) {
   try {
@@ -82,7 +83,35 @@ async function hashTree(root) {
   return `sha256:${hash.digest('hex')}`;
 }
 
-async function copySourceProjection(sourceDir, destination, index) {
+function formatJsonValue(value, level = 0, prefixLength = 0) {
+  const indent = '  '.repeat(level);
+  if (value === null || typeof value !== 'object') return JSON.stringify(value);
+  if (Array.isArray(value)) {
+    if (value.length === 0) return '[]';
+    const primitives = value.every((item) => item === null || typeof item !== 'object');
+    const inline = primitives ? `[${value.map((item) => JSON.stringify(item)).join(', ')}]` : '';
+    if (primitives && prefixLength + inline.length <= JSON_LINE_WIDTH) return inline;
+    return `[\n${value
+      .map((item) => `${'  '.repeat(level + 1)}${formatJsonValue(item, level + 1)}`)
+      .join(',\n')}\n${indent}]`;
+  }
+
+  const entries = Object.entries(value);
+  if (entries.length === 0) return '{}';
+  return `{\n${entries
+    .map(([key, item]) => {
+      const itemIndent = '  '.repeat(level + 1);
+      const prefix = `${itemIndent}${JSON.stringify(key)}: `;
+      return `${prefix}${formatJsonValue(item, level + 1, prefix.length)}`;
+    })
+    .join(',\n')}\n${indent}}`;
+}
+
+function formatJson(value) {
+  return `${formatJsonValue(value)}\n`;
+}
+
+async function copySourceProjection(sourceDir, destination, index, packageJson) {
   await mkdir(destination, { recursive: true });
   for (const file of TOP_LEVEL_FILES) {
     const source = join(sourceDir, file);
@@ -96,11 +125,13 @@ async function copySourceProjection(sourceDir, destination, index) {
       force: true,
     });
   }
+  await writeFile(join(destination, 'package.json'), formatJson(packageJson), 'utf8');
+  await writeFile(join(destination, 'skills.index.json'), formatJson(index), 'utf8');
 }
 
 async function createProjection(sourceDir, destination) {
   const { packageJson, index } = await loadSource(sourceDir);
-  await copySourceProjection(sourceDir, destination, index);
+  await copySourceProjection(sourceDir, destination, index, packageJson);
   const contentHash = await hashTree(destination);
   const skills = [];
   for (const skill of index.skills) {

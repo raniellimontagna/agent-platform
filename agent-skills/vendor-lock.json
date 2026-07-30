@@ -4,7 +4,7 @@
     "package": "@ranimontagna/agent-skills",
     "version": "0.1.0"
   },
-  "contentHash": "sha256:bab887a73c014d91f6ed589a22cb4172ecfdd6799bd61f0752521f6dae8c1640",
+  "contentHash": "sha256:b3dd48d6aa2208db238b1aa821f2ab7de182f6eb8e84b75a68f36e1f7458236a",
   "skills": [
     {
       "name": "accessibility",

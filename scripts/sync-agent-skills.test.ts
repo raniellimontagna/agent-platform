@@ -30,7 +30,15 @@ async function makeSource(): Promise<string> {
 
   await writeFile(
     join(sourceDir, 'package.json'),
-    `${JSON.stringify({ name: '@ranimontagna/agent-skills', version: '1.2.3' }, null, 2)}\n`,
+    `${JSON.stringify(
+      {
+        name: '@ranimontagna/agent-skills',
+        version: '1.2.3',
+        files: ['skills', 'skills.index.json', 'README.md', 'LICENSE'],
+      },
+      null,
+      2,
+    )}\n`,
   );
   await writeFile(
     join(sourceDir, 'skills.index.json'),
@@ -61,6 +69,22 @@ describe('sync-agent-skills', () => {
         'utf8',
       ),
     ).resolves.toBe('Brief alpha.\n');
+  });
+
+  it('formata o package.json somente no staging e nao altera a fonte', async () => {
+    const repoRoot = await mkdtemp(join(tmpdir(), 'agent-platform-format-'));
+    const sourceDir = await makeSource();
+    const sourcePackagePath = join(sourceDir, 'package.json');
+    const sourceBefore = await readFile(sourcePackagePath, 'utf8');
+
+    await syncAgentSkills({ repoRoot, sourceDir });
+
+    const vendored = await readFile(
+      join(repoRoot, 'agent-skills/vendor/agent-toolkit/package.json'),
+      'utf8',
+    );
+    expect(vendored).toContain('"files": ["skills", "skills.index.json", "README.md", "LICENSE"]');
+    await expect(readFile(sourcePackagePath, 'utf8')).resolves.toBe(sourceBefore);
   });
 
   it('check detecta drift no vendor sem precisar da fonte', async () => {
