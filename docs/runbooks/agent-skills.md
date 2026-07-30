@@ -7,6 +7,10 @@ codegen conforme o agente selecionado.
 ## Estrutura
 
 - `agent-skills/registry.json`: mapeia agentes para skills.
+- `agent-skills/vendor/agent-toolkit/`: snapshot autocontido do pacote
+  `@ranimontagna/agent-skills`, copiado de uma fonte local aprovada.
+- `agent-skills/vendor-lock.json`: identidade, versão e hashes SHA-256 do
+  snapshot; `pnpm skills:check` detecta drift sem depender do checkout fonte.
 - `apps/orchestrator-api/src/agents.ts`: fonte canonica para agent keys,
   roles do `software-delivery-pipeline` e compatibilidade `coder-agent`.
 - `packages/llm/src/index.ts` e `packages/graph/src/roleModels.ts`: fontes
@@ -21,8 +25,9 @@ codegen conforme o agente selecionado.
   `docs/runbooks/plane-migration-2026-06-20.md`.
 - UI LAN do registry: `http://192.168.0.10:8088/registry` proxy para o
   orchestrator via `infra/systemd/agent-registry-proxy.*`.
-- `agent-skills/<skill>/SKILL.md`: instruções da skill, com frontmatter `name`
-  e `description`.
+- Skills locais usam `agent-skills/<skill>/SKILL.md`. Skills compartilhadas
+  apontam para o vendor e preferem `BRIEF.md` no prompt, com fallback para
+  `SKILL.md` quando o brief não existe.
 
 Exemplo:
 
@@ -30,24 +35,57 @@ Exemplo:
 {
   "agentSkills": {
     "landing-page-agent": ["landing-page-production", "frontend-design"]
-  }
+  },
+  "skills": [
+    { "name": "landing-page-production", "source": "local", "path": "agent-skills/landing-page-production/SKILL.md" },
+    { "name": "frontend-design", "source": "toolkit", "path": "agent-skills/vendor/agent-toolkit/skills/frontend/design/frontend-design/SKILL.md", "briefPath": "agent-skills/vendor/agent-toolkit/skills/frontend/design/frontend-design/BRIEF.md" }
+  ]
 }
 ```
 
+O loader preserva a ordem do bundle e divide um orçamento total determinístico
+de 16.000 caracteres entre todas as skills existentes do agente. Cortes são
+feitos em limite de parágrafo ou linha. Os logs registram agente, skill, fonte,
+arquivo escolhido, tamanho original, tamanho incluído e quantidade descartada.
+
+## Sincronizar o catálogo compartilhado
+
+Use somente um checkout local revisado do pacote de skills:
+
+```bash
+rtk pnpm skills:sync --source /caminho/agent-toolkit/packages/agent-skills
+rtk pnpm skills:check
+```
+
+Também é possível definir `AGENT_TOOLKIT_SKILLS_DIR`. A sincronização valida o
+índice e todos os arquivos, monta o snapshot em staging e só então troca o vendor
+e o lock. Para comparar o snapshot com uma fonte upstream sem alterar arquivos:
+
+```bash
+rtk pnpm skills:check --source /caminho/agent-toolkit/packages/agent-skills
+```
+
+O check sem `--source` é o modo indicado para CI. Não edite o conteúdo do vendor
+manualmente: atualize a fonte aprovada e execute a sincronização.
+
 ## Como adicionar uma skill
 
-1. Crie `agent-skills/<nome>/SKILL.md`.
+1. Para uma skill exclusiva da plataforma, crie
+   `agent-skills/<nome>/SKILL.md`. Para uma skill compartilhada, publique-a no
+   pacote do Toolkit e sincronize o vendor.
 2. Use nome em lowercase com hífens.
 3. Escreva `description` com os gatilhos de uso.
 4. Mantenha o corpo curto e operacional.
-5. Adicione a skill em `agent-skills/registry.json`.
+5. Adicione a skill em `agent-skills/registry.json`, marcando `source` como
+   `local` ou `toolkit`; para a segunda opção, registre também `briefPath`.
 6. Mapeie a skill para um agente em `agentSkills`.
 7. Cubra a seleção/injeção com testes em `apps/worker-code`.
 8. Rode `rtk pnpm verify`.
 
 ## Boas práticas
 
-- Preferir skills locais revisadas no repo a download dinâmico em produção.
+- Preferir skills locais revisadas ou o snapshot vendorizado a download dinâmico
+  em produção.
 - Não executar scripts de skills externas sem revisão.
 - Separar conhecimento por skill quando isso ajuda o agente a compor funções.
 - Manter fallback seguro: se uma skill não existir, o job não deve quebrar por
@@ -104,3 +142,5 @@ sem mudar labels existentes nem separar a execucao fisica do LangGraph.
   web quando a geração não estiver disponível.
 - `research-data-collection`: coleta pública com fontes, evidências, política de
   scraping e saída estruturada para agentes downstream.
+- `instagram-public-research`: pesquisa pública/authorized-only de contexto do
+  Instagram, sem engajamento nem bypass de controles.

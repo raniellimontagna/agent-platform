@@ -39,96 +39,124 @@
     {
       "name": "landing-page-production",
       "path": "agent-skills/landing-page-production/SKILL.md",
+      "source": "local",
       "description": "Build complete, conversion-focused landing pages quickly inside the existing app."
     },
     {
       "name": "landing-page-style-recipes",
       "path": "agent-skills/landing-page-production/references/style-recipes.md",
+      "source": "local",
       "description": "Creative direction recipes for visually distinct, complete landing pages."
     },
     {
       "name": "frontend-design",
-      "path": "agent-skills/frontend-design/SKILL.md",
+      "path": "agent-skills/vendor/agent-toolkit/skills/frontend/design/frontend-design/SKILL.md",
+      "briefPath": "agent-skills/vendor/agent-toolkit/skills/frontend/design/frontend-design/BRIEF.md",
+      "source": "toolkit",
       "description": "Improve frontend visual quality, layout, typography, responsive behavior, and interaction states."
     },
     {
       "name": "ui-ux-pro-max",
-      "path": "agent-skills/ui-ux-pro-max/SKILL.md",
+      "path": "agent-skills/vendor/agent-toolkit/skills/frontend/design/ui-ux-pro-max/SKILL.md",
+      "briefPath": "agent-skills/vendor/agent-toolkit/skills/frontend/design/ui-ux-pro-max/BRIEF.md",
+      "source": "toolkit",
       "description": "Raise landing page UI/UX quality with strong art direction, hierarchy, accessibility, interaction design, motion, typography, color, layout, and responsive polish."
     },
     {
       "name": "accessibility-wcag",
-      "path": "agent-skills/accessibility-wcag/SKILL.md",
+      "path": "agent-skills/vendor/agent-toolkit/skills/frontend/accessibility/SKILL.md",
+      "briefPath": "agent-skills/vendor/agent-toolkit/skills/frontend/accessibility/BRIEF.md",
+      "source": "toolkit",
       "description": "Apply WCAG 2.2 AA accessibility requirements for semantic HTML, contrast, focus, keyboard navigation, ARIA, labels, target sizes, and reduced motion."
     },
     {
       "name": "astro-react-landing",
-      "path": "agent-skills/astro-react-landing/SKILL.md",
+      "path": "agent-skills/vendor/agent-toolkit/skills/frontend/astro/astro-react-landing/SKILL.md",
+      "briefPath": "agent-skills/vendor/agent-toolkit/skills/frontend/astro/astro-react-landing/BRIEF.md",
+      "source": "toolkit",
       "description": "Build landing pages with Astro as the page framework and React islands/components for interactive UI."
     },
     {
       "name": "seo-page",
-      "path": "agent-skills/seo-page/SKILL.md",
+      "path": "agent-skills/vendor/agent-toolkit/skills/frontend/seo/seo-page/SKILL.md",
+      "briefPath": "agent-skills/vendor/agent-toolkit/skills/frontend/seo/seo-page/BRIEF.md",
+      "source": "toolkit",
       "description": "Optimize landing pages for technical SEO, on-page metadata, schema, sitemap readiness, content quality, and AI search/GEO."
     },
     {
       "name": "biome-formatting",
-      "path": "agent-skills/biome-formatting/SKILL.md",
+      "path": "agent-skills/vendor/agent-toolkit/skills/quality/biome-formatting/SKILL.md",
+      "briefPath": "agent-skills/vendor/agent-toolkit/skills/quality/biome-formatting/BRIEF.md",
+      "source": "toolkit",
       "description": "Use Biome for formatting and lint validation in projects that use biome.json or Biome commands."
     },
     {
       "name": "gsap-motion",
-      "path": "agent-skills/gsap-motion/SKILL.md",
+      "path": "agent-skills/vendor/agent-toolkit/skills/frontend/gsap/gsap-motion/SKILL.md",
+      "briefPath": "agent-skills/vendor/agent-toolkit/skills/frontend/gsap/gsap-motion/BRIEF.md",
+      "source": "toolkit",
       "description": "Use GSAP for polished motion when the repository already supports frontend animation or can add GSAP safely."
     },
     {
       "name": "higgsfield-media-generation",
       "path": "agent-skills/higgsfield-media-generation/SKILL.md",
+      "source": "local",
       "description": "Plan and use Higgsfield-generated images, videos, character-consistent media, and motion assets when an authenticated Higgsfield MCP/CLI tool is available."
     },
     {
       "name": "research-data-collection",
-      "path": "agent-skills/research-data-collection/SKILL.md",
+      "path": "agent-skills/vendor/agent-toolkit/skills/research/research-data-collection/SKILL.md",
+      "briefPath": "agent-skills/vendor/agent-toolkit/skills/research/research-data-collection/BRIEF.md",
+      "source": "toolkit",
       "description": "Collect public web data with source evidence, safety policy, rate limits, and structured research outputs for downstream agents."
     },
     {
       "name": "research-planner",
       "path": "agent-skills/research-planner/SKILL.md",
+      "source": "local",
       "description": "Plan safe data collection for companies, public profiles, Instagram context, and landing-page research packs."
     },
     {
       "name": "instagram-public-research",
-      "path": "agent-skills/instagram-public-research/SKILL.md",
+      "path": "agent-skills/vendor/agent-toolkit/skills/research/instagram-public-research/SKILL.md",
+      "briefPath": "agent-skills/vendor/agent-toolkit/skills/research/instagram-public-research/BRIEF.md",
+      "source": "toolkit",
       "description": "Collect Instagram-related public and first-party data safely for research packs without posting, messaging, deleting, or bypassing access controls."
     },
     {
       "name": "gsd",
       "path": "agent-skills/gsd/SKILL.md",
+      "source": "local",
       "description": "Apply GSD Core delivery discipline to software pipeline work: phase loop, context handoffs, small shippable batches, verification gates, and factual reporting."
     },
     {
       "name": "software-planner",
       "path": "agent-skills/software-planner/SKILL.md",
+      "source": "local",
       "description": "Plan software delivery work with scope, TDD, validation, approval reasons, and self-review."
     },
     {
       "name": "software-coder",
       "path": "agent-skills/software-coder/SKILL.md",
+      "source": "local",
       "description": "Implement approved software plans while preserving unrelated code and respecting repo conventions."
     },
     {
       "name": "software-critic",
       "path": "agent-skills/software-critic/SKILL.md",
+      "source": "local",
       "description": "Review generated diffs for bugs, regressions, tests, security, scope, and operational caveats."
     },
     {
       "name": "software-pr",
       "path": "agent-skills/software-pr/SKILL.md",
+      "source": "local",
       "description": "Package validated branches into factual GitHub pull requests with safe auto-merge gates."
     },
     {
       "name": "software-reporter",
       "path": "agent-skills/software-reporter/SKILL.md",
+      "source": "local",
       "description": "Report final run outcomes and quality signals back to Plane cards."
     }
   ]
