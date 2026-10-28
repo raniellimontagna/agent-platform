@@ -1,128 +1,155 @@
-# agent-platform
+# Agent Platform
 
-Orquestrador de agentes self-hosted. Cards do Plane com label `ai-ready`
-disparam um pipeline autônomo de entrega de software: leitura de contexto →
-plano → aprovação humana → branch → código → **validação + auto-correção** →
-revisão → Draft PR → auto-merge opt-in → report.
+A self-hosted AI-agent platform that turns a labeled card into a reviewed GitHub pull request: planning, human approval, coding, validation, review and reporting, with governance built in.
 
-O agente **aprende com as próprias falhas** (memória de lições por repo, com **busca semântica**) e **se corrige dentro do run** quando a validação quebra, antes de abrir o PR. Governança embutida: kill switch, cost guard, políticas de aprovação. Observabilidade via Grafana (execuções, custo, qualidade, memória). Roda **vários runs em paralelo** com catálogos versionados de agentes e ferramentas.
+[![License: MIT](https://img.shields.io/github/license/raniellimontagna/agent-platform)](LICENSE)
+[![TypeScript](https://img.shields.io/github/package-json/dependency-version/raniellimontagna/agent-platform/dev/typescript)](package.json)
 
-## Capacidades
+Add the `ai-ready` label to a Plane card and the platform reads the repository context, posts a plan, waits for human approval (`approved` label), writes the change in an isolated worktree, validates it in a sandbox, fixes its own failures, has a critic role review the diff, opens a pull request and reports the result back on the card. Failures become per-repository lessons that are retrieved by semantic search in later runs.
 
-- **Loop autônomo ponta a ponta** — webhook `ai-ready` do provider primário → plano (LLM) → aprovação humana (label `approved`) → codegen com contexto → validação no sandbox → revisão (critic) → Draft PR → merge opt-in → report consolidado no provider de origem.
-- **Pipeline com roles** — `coder-agent` permanece como chave compatível; o catálogo também expõe `software-delivery-pipeline` com roles `planner`, `coder`, `critic`, `pr` e `reporter` para deixar claro o papel de cada etapa sem dividir fisicamente o LangGraph.
-- **Memory Layer (MAC-23/45)** — falhas (critic REPROVA / validação ❌) viram lições destiladas, guardadas por repo e reinjetadas no codegen de runs futuros. Recuperação por **relevância** (embeddings locais + pgvector, cosine), com fallback pra recência.
-- **Self-correction (MAC-54)** — valida antes de pushar; se falha, corrige e revalida até `AGENT_MAX_FIX_ATTEMPTS` (default 2).
-- **Loop de revisão (MAC-59)** — critic REPROVA / ressalva → o coder re-coda endereçando o parecer e re-revisa, até `AGENT_MAX_REVIEW_ROUNDS`.
-- **Multi-Agent Execution (MAC-47)** — N runs em paralelo (`AGENT_MAX_CONCURRENCY`), coordenação à prova de race (índice único de issue ativa), observabilidade de concorrência.
-- **Agent Registry (MAC-42) + Tool Registry (MAC-43)** — catálogos versionados (key/version) de pipelines/agentes (capabilities + roles) e ferramentas (risk + scopes), via REST + MCP; `agent_id` gravado por run.
-- **Scheduler (MAC-38) + Worker Manager (MAC-39)** — agendamentos cron disparam runs (auto-aprovação sem motivo crítico); failover entre runners.
-- **Artifact Store (MAC-44)** — plano/patch/review/validação/summary de cada run guardados de forma durável e consultável.
-- **Governança** — kill switch (Redis), cost guard (limite por run/24h), approval policies, retry + persistência de runs.
-- **Observabilidade** — dashboards Grafana (Execuções, Custo & Governança, Qualidade & Memória) + endpoints `/admin/*`.
-- **MCP server (MAC-46)** — fachada stdio sobre a REST API: runs, lições, agentes, tools, concorrência, aprovações (read + ações), via Claude Code/qualquer cliente MCP.
+## Capabilities
 
-## Stack
+- **End-to-end delivery loop.** Plane webhook → plan → human approval → code generation with repository context → sandbox validation → critic review → pull request → optional auto-merge → final report on the card.
+- **Role-based pipeline.** The `software-delivery-pipeline` agent exposes `planner`, `coder`, `critic`, `pr` and `reporter` roles on one LangGraph graph; `coder-agent` remains as a compatible key.
+- **Self-correction.** Changes are validated before anything is pushed. When validation fails, the coder fixes and revalidates, up to `AGENT_MAX_FIX_ATTEMPTS` (default 3).
+- **Review loop.** When the critic rejects or raises caveats, the coder addresses the review and the critic reviews again, up to `AGENT_MAX_REVIEW_ROUNDS` (default 3).
+- **Lesson memory.** Failed validations and rejected reviews are distilled into lessons stored per repository and injected into future code generation. Retrieval is by relevance (local embeddings and pgvector cosine search), with a recency fallback.
+- **Parallel runs.** Up to `AGENT_MAX_CONCURRENCY` runs at once (default 3), with a unique active-card index that prevents duplicate runs for the same card.
+- **Agent and tool registries.** Versioned catalogs of agents (capabilities and roles) and tools (risk and scopes), available over REST and MCP. Each run records its `agent_id`.
+- **Scheduler and runner failover.** Cron schedules create cards and runs; the orchestrator fails over between registered runners.
+- **Artifact store.** Plan, patch, review, validation and summary of each run are stored durably and can be read through the API.
+- **Opt-in auto-merge.** A pull request merges only when the card has the `auto-merge` label, tests pass and the critic approved.
+- **Governance.** Redis-backed kill switch, cost guard per run and per 24 hours (defaults USD 2 and USD 20), approval policies, retries and persisted run state.
+- **Observability.** Grafana dashboards for runs, cost and governance, and quality and memory; `/admin/*` endpoints; a read-only Mission Control view.
+- **MCP server.** A stdio facade over the REST API for runs, lessons, agents, tools, concurrency and approvals, usable from Claude Code or any MCP client.
 
-| Camada | Tecnologia |
+## Architecture
+
+```mermaid
+flowchart LR
+  Plane["Plane card<br/>label ai-ready / approved"] -->|webhook| API["Orchestrator API<br/>Hono + LangGraph"]
+  Sched["Scheduler (cron)"] --> API
+  API <--> PG[("Postgres + pgvector")]
+  API <--> Queue[("Redis + BullMQ")]
+  API -->|"job over HTTP"| Runner["worker-code runner<br/>git worktree + sandbox"]
+  API -->|"model aliases"| Gateway["LiteLLM gateway"]
+  Runner -->|"model aliases"| Gateway
+  Gateway --> Models["LLM providers"]
+  API -->|"branch, PR, opt-in merge"| GitHub["GitHub"]
+  API -->|"plan, status, final report"| Plane
+  MCP["MCP server (stdio)"] -->|REST| API
+  API -.->|"metrics and logs"| Obs["Grafana + Prometheus + Loki"]
+  Runner -.->|"metrics and logs"| Obs
+```
+
+The run graph is `planning → (approval) → coding → reviewing → (revising → reviewing) → pr → merging → report`. A coder failure short-circuits to `report`. Agents and roles use model aliases (`cheap_fast`, `research`, `strong_coder`, `heavy_coder`, `critic`), so providers can change in the gateway without code changes.
+
+Plane is the active card provider. Linear support is kept only for legacy data and migration, and its webhook is disabled unless explicitly configured.
+
+## Tech stack
+
+| Layer | Technology |
 |---|---|
-| API / Orquestrador | TypeScript + Node LTS + Hono + LangGraph JS/TS |
-| Banco / Fila | Postgres (+ **pgvector**) + Redis + BullMQ |
-| Memória vetorial | Embeddings locais (Transformers.js, `all-MiniLM-L6-v2`, 384 dims, CPU) + pgvector |
-| LLM Gateway | LiteLLM (aliases: `cheap_fast`, `research`, `strong_coder`, `heavy_coder`, `critic`) |
-| Integração via MCP | `apps/mcp-server` (stdio, fachada da REST API) |
-| Infra | Proxmox — 4 VMs na subnet `10.10.0.x` (vmbr1) |
-| Observabilidade | Grafana + Prometheus + Loki |
-| Acesso externo | Tailscale |
+| API and orchestration | TypeScript, Node.js 22, Hono, LangGraph JS |
+| Database and queue | Postgres with pgvector, Drizzle ORM, Redis, BullMQ |
+| Vector memory | Local embeddings with Transformers.js (`all-MiniLM-L6-v2`, 384 dimensions, CPU) and pgvector |
+| LLM gateway | LiteLLM with role-based model aliases |
+| Code execution | `worker-code` runner with git worktrees, command allowlist and ephemeral Docker sandboxes |
+| Integrations | Plane, GitHub, MCP (`apps/mcp-server`) |
+| Observability | Grafana, Prometheus, Loki |
+| Deployment | Docker Compose stacks per service; reference deployment on Proxmox with Tailscale for remote access |
+| Tooling | pnpm workspaces, Biome, Vitest |
 
-## Arquitetura
+## Getting started
 
-```
-Plane (primary card provider) → Orchestrator API → agent-runners → GitHub PR/merge → Plane report
-                                   ↓
-                            LiteLLM Gateway
-                                   ↓
-                      Verboo / OmniRoute combos
-```
-
-Linear remains only as legacy/migration-only compatibility for retained rows and
-explicit rollback scenarios; new work uses Plane.
-
-Mapa de documentação vivo: [`docs/README.md`](docs/README.md)
-Visão completa (deploy + fluxo + mapa dos cards): [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
-Fluxo detalhado do agente: [`docs/decisions/FLOW-agent-workflow.md`](docs/decisions/FLOW-agent-workflow.md)
-
-## VMs
-
-| CTID/VMID | Hostname | IP | Tipo | Papel |
-|---|---|---|---|---|
-| 200 | agent-gateway | `10.10.0.10` | LXC | LiteLLM + Caddy |
-| 201 | agent-orchestrator | `10.10.0.11` | LXC | API + LangGraph + Postgres + Redis |
-| 202 | agent-runners | `10.10.0.12` | VM | Execução isolada de código |
-| 203 | agent-observability | `10.10.0.13` | LXC | Grafana + Prometheus + Loki |
-
-Rede `10.10.0.x` isolada da LAN doméstica via `vmbr1` (bridge interna Proxmox com NAT).
-
-## Setup rápido
+Prerequisites: Node.js 22 (see `.nvmrc`), pnpm through Corepack, and Postgres with pgvector, Redis and a LiteLLM gateway for a running system.
 
 ```bash
-# No host Proxmox
-git clone https://github.com/raniellimontagna/agent-platform
+git clone https://github.com/raniellimontagna/agent-platform.git
 cd agent-platform
-
-# 1. Editar IPs/IDs conforme seu ambiente
-nano infra/proxmox/config.sh
-
-# 2. Criar bridge vmbr1 e configurar NAT
-bash infra/proxmox/setup-network.sh
-
-# 3. Provisionar as 4 VMs
-bash infra/proxmox/provision-all.sh
+corepack enable
+pnpm install
+pnpm build
+pnpm test
 ```
 
-Guia completo: [`docs/runbooks/proxmox-setup.md`](docs/runbooks/proxmox-setup.md)
+Each app reads its configuration from environment variables. Start from `apps/orchestrator-api/.env.example` and `apps/worker-code/.env.example`; [docs/runbooks/secrets.md](docs/runbooks/secrets.md) lists every secret and how to rotate it.
 
-## Estrutura
-
+```bash
+pnpm --filter @agent-platform/orchestrator-api db:migrate   # apply database migrations
+pnpm dev                                                     # run every app in watch mode
 ```
+
+### Scripts
+
+| Script | What it does |
+|---|---|
+| `pnpm build` | Builds every workspace package and app |
+| `pnpm dev` | Runs every app in watch mode |
+| `pnpm test` | Runs the Vitest suite |
+| `pnpm typecheck` | Type-checks every workspace |
+| `pnpm lint` / `pnpm lint:fix` | Biome checks |
+| `pnpm eval` / `pnpm eval:regression` | Deterministic worker evals, with regression failure |
+| `pnpm skills:sync` / `pnpm skills:check` | Syncs or checks the local agent skill registry |
+| `pnpm verify` | Full gate: skills check, lint, build, tests, evals and eval regression |
+
+### Self-hosting
+
+The platform runs as four Docker Compose stacks under [`infra/compose/`](infra/compose): `gateway` (LiteLLM), `orchestrator` (API, Postgres with pgvector, Redis), `runners` (code execution) and `observability` (Grafana, Prometheus, Loki). Each stack has its own `.env.example`.
+
+The reference deployment provisions one Proxmox container or VM per stack on an isolated network ([`infra/proxmox/`](infra/proxmox)) and deploys each service with `bash infra/deploy/deploy.sh <gateway|orchestrator|runners|observability>`. Plane webhooks reach the orchestrator through Tailscale Funnel. Step-by-step instructions and operational notes are in the [runbooks](docs/runbooks/README.md), starting with [proxmox-setup](docs/runbooks/proxmox-setup.md) and [webhook-tailscale](docs/runbooks/webhook-tailscale.md).
+
+## Project structure
+
+```text
 agent-platform/
   apps/
-    orchestrator-api/     # API Hono + LangGraph (+ registries, vector memory, scheduler)
-    worker-code/          # Executor de código (sandbox + self-correction)
-    mcp-server/           # Fachada MCP (stdio) sobre a REST API
+    orchestrator-api/   # Hono API + LangGraph (webhooks, registries, vector memory, scheduler)
+    worker-code/        # Code runner (worktrees, sandbox, validation, self-correction, evals)
+    mcp-server/         # MCP stdio facade over the REST API
   packages/
-    cards/                # Abstração comum de providers de cards
-    graph/                # State machines
-    llm/                  # Cliente LiteLLM
-    plane/                # Integração Plane (provider primário)
-    linear/               # Integração Linear (legado/migração, não ativa por default)
-    github/               # Integração GitHub
-    memory/               # Memória dos agentes
-    policy/               # Políticas de aprovação/custo
+    cards/              # Common card-provider abstraction
+    graph/              # LangGraph state machine and role nodes
+    llm/                # LiteLLM client and model aliases
+    plane/              # Plane integration (active provider)
+    linear/             # Linear integration (legacy and migration only)
+    github/             # GitHub integration
+    memory/             # Agent lesson memory
+    policy/             # Approval and cost policies
+  agent-skills/         # Reviewed prompt skills injected per agent key
   infra/
-    proxmox/              # Scripts de provisionamento
-    compose/              # Docker Compose por VM
+    compose/            # Docker Compose stack per service
+    proxmox/            # Provisioning scripts for the reference deployment
+    deploy/             # Deploy scripts
   docs/
-    decisions/            # ADRs + fluxos
-    runbooks/             # Guias operacionais
+    decisions/          # ADRs and agent flow
+    runbooks/           # Operator guides
 ```
 
-## ADRs
+## Documentation
 
-- [ADR-0001](docs/decisions/ADR-0001-stack-typescript-hono-drizzle.md) — Stack TypeScript/Hono/Drizzle
-- [ADR-0002](docs/decisions/ADR-0002-infra-proxmox-4-vms.md) — Infra Proxmox 4 VMs
-- [ADR-0003](docs/decisions/ADR-0003-llm-gateway-litellm-model-aliases.md) — LiteLLM + model aliases
-- [ADR-0004](docs/decisions/ADR-0004-security-tailscale-env-human-approval.md) — Segurança + aprovação humana
-- [ADR-0005](docs/decisions/ADR-0005-linear-github-agent-workflow.md) — Workflow Linear + GitHub (histórico; Plane-first hoje)
-- [ADR-0006](docs/decisions/ADR-0006-llm-via-omniroute-oauth.md) — LLM via OmniRoute (OAuth)
+Most documentation is written in Portuguese.
 
-## Runbooks
+- [Documentation map](docs/README.md): what is current and what is historical.
+- [Current state](docs/CURRENT.md): active flow, ownership boundaries and verification gate.
+- [Architecture](docs/ARCHITECTURE.md): deployment topology, end-to-end flow and component map.
+- [Agent workflow](docs/decisions/FLOW-agent-workflow.md): detailed agent flow.
+- [Runbooks index](docs/runbooks/README.md): operator tasks, including:
+  - [proxmox-setup](docs/runbooks/proxmox-setup.md): provisioning the reference deployment
+  - [webhook-tailscale](docs/runbooks/webhook-tailscale.md): exposing the Plane webhook; Linear compatibility stays disabled by default
+  - [grafana-lan-access](docs/runbooks/grafana-lan-access.md): reaching Grafana from the local network
+  - [litellm-guardrails](docs/runbooks/litellm-guardrails.md): gateway budgets and rate limits
+  - [secrets](docs/runbooks/secrets.md): secret inventory and rotation
 
-Comece pelo índice de runbooks: [`docs/runbooks/README.md`](docs/runbooks/README.md).
+Architecture decisions:
 
-- [proxmox-setup](docs/runbooks/proxmox-setup.md) — provisionamento das 4 VMs
-- [proxmox-estado-atual](docs/runbooks/proxmox-estado-atual.md) — estado vivo da infra + gotchas
-- [webhook-tailscale](docs/runbooks/webhook-tailscale.md) — webhook Plane ativo e compatibilidade Linear desabilitada por default
-- [grafana-lan-access](docs/runbooks/grafana-lan-access.md) — acessar o Grafana pela LAN (sem ssh)
-- [litellm-guardrails](docs/runbooks/litellm-guardrails.md) — budgets e rate limits do gateway
-- [secrets](docs/runbooks/secrets.md) — inventário e rotação de secrets
+- [ADR-0001](docs/decisions/ADR-0001-stack-typescript-hono-drizzle.md): TypeScript, Hono and Drizzle stack
+- [ADR-0002](docs/decisions/ADR-0002-infra-proxmox-4-vms.md): Proxmox infrastructure with four VMs
+- [ADR-0003](docs/decisions/ADR-0003-llm-gateway-litellm-model-aliases.md): LiteLLM gateway and model aliases
+- [ADR-0004](docs/decisions/ADR-0004-security-tailscale-env-human-approval.md): security, Tailscale and human approval
+- [ADR-0005](docs/decisions/ADR-0005-linear-github-agent-workflow.md): Linear and GitHub workflow (historical; Plane is current)
+- [ADR-0006](docs/decisions/ADR-0006-llm-via-omniroute-oauth.md): LLM access through OmniRoute (OAuth)
+
+## License
+
+Released under the [MIT License](LICENSE).
