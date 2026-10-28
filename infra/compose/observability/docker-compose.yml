@@ -47,7 +47,7 @@ services:
     ports:
       - "9187:9187"
     environment:
-      DATA_SOURCE_NAME: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@<agent-orchestrator-ip>:5432/${POSTGRES_DB}?sslmode=disable
+      DATA_SOURCE_NAME: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@agent-orchestrator:5432/${POSTGRES_DB}?sslmode=disable
       PG_EXPORTER_EXTEND_QUERY_PATH: /etc/postgres_exporter/queries.yml
     volumes:
       - ./postgres-exporter-queries.yml:/etc/postgres_exporter/queries.yml:ro

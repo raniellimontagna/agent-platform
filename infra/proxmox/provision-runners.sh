@@ -67,7 +67,7 @@ sleep 60
 RUNNER_IP=$(echo $IP | cut -d'/' -f1)
 
 echo "==> Configurando via SSH..."
-ssh -o StrictHostKeyChecking=no runner@$RUNNER_IP << 'ENDSSH'
+ssh -o StrictHostKeyChecking=no runner@$RUNNER_IP "ORCHESTRATOR_IP=${IP_ORCHESTRATOR%/*} bash -s" << 'ENDSSH'
 set -e
 
 # Docker
@@ -97,7 +97,7 @@ sudo chown -R runner:runner /srv/agent-runners
 sudo apt-get install -y ufw -qq
 sudo ufw default deny incoming
 sudo ufw allow 22
-sudo ufw allow from <agent-orchestrator-ip> to any port 8080
+sudo ufw allow from "$ORCHESTRATOR_IP" to any port 8080
 echo "y" | sudo ufw enable
 ENDSSH
 

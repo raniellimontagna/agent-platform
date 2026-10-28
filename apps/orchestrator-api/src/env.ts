@@ -29,7 +29,7 @@ const envSchema = z.object({
   CARD_PRIMARY_PROVIDER: z.enum(['plane', 'linear']).default('plane'),
   CARD_EXTRA_PROVIDERS: z.string().default(''),
 
-  PLANE_BASE_URL: z.string().url().default('http://<plane-ip>:8080'),
+  PLANE_BASE_URL: z.string().url().default('http://plane.local:8080'),
   PLANE_API_KEY: optionalNonEmptyString,
   PLANE_WORKSPACE_SLUG: z.string().default('attodev'),
   PLANE_PROJECT_ID: optionalNonEmptyString,
@@ -83,7 +83,7 @@ const envSchema = z.object({
   LINEAR_SCHEDULED_LABEL_ID: optionalNonEmptyString,
   // Auto-merge (MAC-67): label de opt-in + estado "Done" do time p/ fechar a issue.
   LINEAR_AUTO_MERGE_LABEL_ID: optionalNonEmptyString,
-  LINEAR_DONE_STATE_ID: z.string().default('<uuid>'),
+  LINEAR_DONE_STATE_ID: z.string().default(''),
 
   // Agent Registry (MAC-42): key do agente default (catálogo/seed/resolução).
   AGENT_KEY: z.string().default('coder-agent'),

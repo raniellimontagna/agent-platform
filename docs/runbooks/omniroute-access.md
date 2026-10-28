@@ -25,6 +25,7 @@ O serviço encaminha `<proxmox-lan-ip>:20128` para `<agent-gateway-ip>:20128`. S
 recriar manualmente:
 
 ```bash
+printf 'PROXMOX_LAN_IP=<proxmox-lan-ip>\nAGENT_GATEWAY_IP=<agent-gateway-ip>\n' > /etc/default/agent-platform-proxy
 rtk cp infra/proxmox/agent-gateway-omniroute-proxy.service /etc/systemd/system/
 rtk systemctl daemon-reload
 rtk systemctl enable --now agent-gateway-omniroute-proxy

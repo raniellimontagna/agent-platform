@@ -12,15 +12,15 @@ scrape_configs:
       module: [http_2xx]
     static_configs:
       - targets:
-          - http://<agent-orchestrator-ip>:3000/health
+          - http://agent-orchestrator:3000/health
         labels:
           service: orchestrator-api
       - targets:
-          - http://<agent-gateway-ip>:4000/health/liveliness
+          - http://agent-gateway:4000/health/liveliness
         labels:
           service: litellm-gateway
       - targets:
-          - http://<agent-runners-ip>:8080/health
+          - http://agent-runners:8080/health
         labels:
           service: agent-runners
       - targets:
@@ -45,10 +45,10 @@ scrape_configs:
 
   - job_name: node
     static_configs:
-      - targets: ["<agent-orchestrator-ip>:9100"]
+      - targets: ["agent-orchestrator:9100"]
         labels:
           service: orchestrator-lxc-201
-      - targets: ["<agent-runners-ip>:9100"]
+      - targets: ["agent-runners:9100"]
         labels:
           service: runners-vm-202
 
