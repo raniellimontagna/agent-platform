@@ -16,7 +16,7 @@
   "candidate": {
     "branch": "test/mac-86-review-recode-required",
     "authorName": "Ranielli Montagna",
-    "authorEmail": "raniellimontagna@hotmail.com",
+    "authorEmail": "70357520+raniellimontagna@users.noreply.github.com",
     "commitMessage": "test(eval): apply critic recode changes before pr\n\nRef: MAC-86\nCo-authored-by: Codex <noreply@openai.com>"
   },
   "workerDryRun": {
@@ -75,7 +75,7 @@
     },
     "commit": {
       "authorName": "Ranielli Montagna",
-      "authorEmail": "raniellimontagna@hotmail.com",
+      "authorEmail": "70357520+raniellimontagna@users.noreply.github.com",
       "containsRef": true,
       "containsCoAuthoredBy": true,
       "mustInclude": ["Ref:", "Co-authored-by: Codex <noreply@openai.com>"]

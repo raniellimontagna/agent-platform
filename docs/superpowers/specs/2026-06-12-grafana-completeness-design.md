@@ -107,7 +107,7 @@ Deploy: redeploy `orchestrator` (migration via `db:deploy` + persistência) +
 
 Dashboards (JSON) e SQL não têm unit test. A verificação é:
 - Build do orchestrator (cobre migration + código de persistência).
-- **Visual na UI do Grafana** (`ssh -L 8088:10.10.0.13:3000 ...` → http://localhost:8088):
+- **Visual na UI do Grafana** (`ssh -L 8088:<agent-observability-ip>:3000 ...` → http://localhost:8088):
   confirmar que os 3 dashboards renderizam e as queries retornam dados. Esta
   verificação UI também estava pendente para o dashboard atual (MAC-35).
 

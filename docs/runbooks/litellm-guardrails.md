@@ -117,7 +117,7 @@ pct exec 201 -- nano /opt/agent-platform/repo/infra/compose/orchestrator/.env
 No runner:
 
 ```bash
-ssh runner@10.10.0.12 'nano /home/runner/agent-platform/repo/infra/compose/runners/.env'
+ssh runner@<agent-runners-ip> 'nano /home/runner/agent-platform/repo/infra/compose/runners/.env'
 ```
 
 Depois reinicie os serviços afetados pelos envs.

@@ -70,7 +70,7 @@ describe('normalizeScenarioFixture', () => {
           commitRequiresRef: true,
           commitRequiresCoAuthoredBy: true,
           commitAuthorName: 'Ranielli Montagna',
-          commitAuthorEmail: 'raniellimontagna@hotmail.com',
+          commitAuthorEmail: '70357520+raniellimontagna@users.noreply.github.com',
         },
       }),
     ).toMatchObject({
@@ -104,7 +104,7 @@ describe('normalizeScenarioFixture', () => {
           requiresRef: true,
           requiresCoAuthoredBy: true,
           authorName: 'Ranielli Montagna',
-          authorEmail: 'raniellimontagna@hotmail.com',
+          authorEmail: '70357520+raniellimontagna@users.noreply.github.com',
         },
       },
     });

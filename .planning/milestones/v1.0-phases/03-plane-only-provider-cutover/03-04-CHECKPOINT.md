@@ -30,13 +30,13 @@ Collected from LXC 201 and the deployed Linear API key without mutating deployed
   - `CARD_PRIMARY_PROVIDER=plane`
   - `CARD_EXTRA_PROVIDERS=linear`
   - `LINEAR_API_KEY` is present.
-- Tailscale Funnel on `agent-orchestrator.tail85607e.ts.net` exposes:
+- Tailscale Funnel on `agent-orchestrator.<tailnet>.ts.net` exposes:
   - `/webhooks/plane -> http://127.0.0.1:3000/webhooks/plane`
   - `/webhooks/linear -> http://127.0.0.1:3000/webhooks/linear`
 - Linear GraphQL `webhooks` returned one enabled webhook:
-  - id: `7876188c-7893-41e5-be1d-f2f099b6b7eb`
+  - id: `<uuid>`
   - label: `agent-platform ai-ready`
-  - URL path: `https://agent-orchestrator.tail85607e.ts.net/webhooks/linear`
+  - URL path: `https://agent-orchestrator.<tailnet>.ts.net/webhooks/linear`
   - enabled: `true`
   - resource types: `Issue`
   - created and updated: `2026-06-12T02:14:33.830Z`
@@ -57,7 +57,7 @@ User approved removing Linear from live exposure. The following changes were app
 
 - `CARD_EXTRA_PROVIDERS=` is now empty in the deployed compose env and in the recreated `orchestrator-api-1` container.
 - Tailscale Funnel now exposes only `/webhooks/plane`.
-- Linear webhook `7876188c-7893-41e5-be1d-f2f099b6b7eb` now has `enabled=false`.
+- Linear webhook `<uuid>` now has `enabled=false`.
 - API health returned 200 after the API container was recreated.
 
 ## Final State

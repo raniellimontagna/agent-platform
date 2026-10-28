@@ -21,7 +21,7 @@
     },
     "agent": {
       "name": "Ranielli Montagna",
-      "email": "raniellimontagna@hotmail.com"
+      "email": "70357520+raniellimontagna@users.noreply.github.com"
     },
     "commit": {
       "sha": "3333333333333333333333333333333333333333",
@@ -103,7 +103,7 @@
     },
     "commit": {
       "authorName": "Ranielli Montagna",
-      "authorEmail": "raniellimontagna@hotmail.com",
+      "authorEmail": "70357520+raniellimontagna@users.noreply.github.com",
       "mustInclude": ["Ref: MAC-86", "Co-authored-by: Codex <noreply@openai.com>"]
     },
     "isolation": {

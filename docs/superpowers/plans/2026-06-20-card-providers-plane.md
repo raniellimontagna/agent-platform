@@ -902,7 +902,7 @@ In `apps/orchestrator-api/src/env.ts`, add:
   CARD_PRIMARY_PROVIDER: z.enum(['plane', 'linear']).default('plane'),
   CARD_EXTRA_PROVIDERS: z.string().default('linear'),
 
-  PLANE_BASE_URL: z.string().url().default('http://10.10.0.14:8080'),
+  PLANE_BASE_URL: z.string().url().default('http://<plane-ip>:8080'),
   PLANE_API_KEY: z.string().optional(),
   PLANE_WORKSPACE_SLUG: z.string().default('attodev'),
   PLANE_PROJECT_ID: z.string().optional(),
@@ -2003,7 +2003,7 @@ Add:
 ```dotenv
 CARD_PRIMARY_PROVIDER=plane
 CARD_EXTRA_PROVIDERS=linear
-PLANE_BASE_URL=http://10.10.0.14:8080
+PLANE_BASE_URL=http://<plane-ip>:8080
 PLANE_API_KEY=change-me
 PLANE_WORKSPACE_SLUG=attodev
 PLANE_PROJECT_ID=change-me
@@ -2084,10 +2084,10 @@ Expected JSON includes:
 
 ```json
 {
-  "projectId": "00000000-0000-0000-0000-000000000000",
+  "projectId": "<uuid>",
   "labelIds": {
-    "ai-ready": "11111111-1111-1111-1111-111111111111",
-    "approved": "22222222-2222-2222-2222-222222222222"
+    "ai-ready": "<uuid>",
+    "approved": "<uuid>"
   }
 }
 ```

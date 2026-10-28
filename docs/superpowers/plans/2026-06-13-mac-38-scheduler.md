@@ -590,7 +590,7 @@ No `envSchema`, após `AGENT_MAX_REVIEW_ROUNDS`, adicione:
 Append em `apps/orchestrator-api/.env.example`:
 ```
 # Scheduler (MAC-38)
-LINEAR_TEAM_ID=043897b1-4201-46d2-bf1a-ec0af0cda65f
+LINEAR_TEAM_ID=<uuid>
 SCHEDULER_TZ=UTC
 LINEAR_SCHEDULED_LABEL_ID=
 ```

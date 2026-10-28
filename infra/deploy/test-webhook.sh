@@ -8,7 +8,7 @@ set -euo pipefail
 
 SECRET="${1:?uso: test-webhook.sh <secret> <issue-uuid> [url]}"
 ISSUE_ID="${2:?informe o UUID da issue}"
-URL="${3:-http://10.10.0.11:3000/webhooks/linear}"
+URL="${3:-http://agent-orchestrator:3000/webhooks/linear}"
 
 BODY=$(printf '%s' "{\"type\":\"Issue\",\"action\":\"update\",\"data\":{\"id\":\"$ISSUE_ID\",\"identifier\":\"TEST\",\"title\":\"Teste fluxo ai-ready\",\"labels\":[{\"name\":\"ai-ready\"}]}}")
 

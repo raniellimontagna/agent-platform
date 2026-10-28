@@ -545,12 +545,12 @@ rtk git commit -m "feat(memory): ?query= na busca de lições + MCP list_lessons
 
 > Atenção: este deploy MEXE NA IMAGEM DO POSTGRES (`16-alpine` → `pgvector/pgvector:pg16`). Mesmo PG16, volume compatível, mas é o passo de maior cuidado. Backup do volume antes é prudente.
 
-1. **Deploy (host 192.168.0.10):**
+1. **Deploy (host <proxmox-lan-ip>):**
    ```bash
    cd ~/agent-platform && git pull && bash infra/deploy/deploy.sh orchestrator
    ```
    Recria o container do Postgres com a imagem pgvector; aplica migrations pendentes (0006 agents + 0007 tools + 0008 vector — `CREATE EXTENSION vector` + coluna + hnsw); sobe a API (1º run baixa o modelo de embedding pro volume `/opt/agent-platform/hf-cache`).
-2. **Túnel REST:** `ssh -fN -L 3000:10.10.0.11:3000 root@192.168.0.10`
+2. **Túnel REST:** `ssh -fN -L 3000:<agent-orchestrator-ip>:3000 root@<proxmox-lan-ip>`
 3. **Verificar:**
    - Postgres com pgvector: `GET /lessons?repo=raniellimontagna/agent-platform` responde (não erra).
    - Indexação: disparar um run que reprove/falhe validação → lição gravada com embedding (checar log `embed`/`lição registrada`; `psql` em `lessons` mostra `embedding` não-nulo).

@@ -4,10 +4,12 @@
 # Requer reinicialização ou reload de rede ao final.
 set -euo pipefail
 
-BRIDGE="vmbr1"
-BRIDGE_IP="10.10.0.1/24"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/config.sh"
+
+BRIDGE_IP="$BRIDGE_IP/24"
 LAN_BRIDGE="vmbr0"           # Bridge da LAN existente
-AGENT_SUBNET="10.10.0.0/24"
+AGENT_SUBNET="$SUBNET"
 
 echo "==> Configurando $BRIDGE (agent-platform network)"
 
@@ -52,13 +54,13 @@ echo "✓ $BRIDGE configurado: $BRIDGE_IP"
 echo "  NAT: $AGENT_SUBNET → $LAN_BRIDGE"
 echo ""
 echo "Topologia:"
-echo "  Internet → vmbr0 (192.168.0.x LAN)"
-echo "           → vmbr1 (10.10.0.x agent-platform) [NAT via Proxmox host]"
+echo "  Internet → vmbr0 (LAN)"
+echo "           → vmbr1 ($AGENT_SUBNET agent-platform) [NAT via Proxmox host]"
 echo ""
 echo "IPs agent-platform:"
-echo "  10.10.0.10  agent-gateway      (CTID 200)"
-echo "  10.10.0.11  agent-orchestrator (CTID 201)"
-echo "  10.10.0.12  agent-runners      (VMID 202)"
-echo "  10.10.0.13  agent-observability(CTID 203)"
+echo "  ${IP_GATEWAY%/*}  agent-gateway      (CTID $CTID_GATEWAY)"
+echo "  ${IP_ORCHESTRATOR%/*}  agent-orchestrator (CTID $CTID_ORCHESTRATOR)"
+echo "  ${IP_RUNNERS%/*}  agent-runners      (VMID $VMID_RUNNERS)"
+echo "  ${IP_OBSERVABILITY%/*}  agent-observability(CTID $CTID_OBSERVABILITY)"
 echo ""
 echo "Acesso externo: instalar Tailscale em cada VM após provisionamento."

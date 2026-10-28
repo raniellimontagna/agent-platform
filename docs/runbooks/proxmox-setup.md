@@ -41,16 +41,16 @@ Variáveis a ajustar:
 | Variável | Padrão | Descrição |
 |---|---|---|
 | `BRIDGE` | `vmbr1` | Bridge interna (criar no passo 2) |
-| `GATEWAY_IP` | `10.10.0.1` | IP do host Proxmox na nova bridge |
-| `DNS` | `192.168.0.14` | Pi-hole ou DNS da sua LAN |
+| `GATEWAY_IP` | `<bridge-ip>` | IP do host Proxmox na nova bridge |
+| `DNS` | `<lan-dns-ip>` | Pi-hole ou DNS da sua LAN |
 | `STORAGE_GATEWAY` | `local-lvm` | Storage do agent-gateway |
 | `STORAGE_ORCHESTRATOR` | `local-lvm` | Storage do agent-orchestrator |
 | `STORAGE_RUNNERS` | `backup-hd` | Storage do agent-runners (carga grande) |
 | `STORAGE_OBSERVABILITY` | `backup-hd` | Storage da observability (logs) |
-| `IP_GATEWAY` | `10.10.0.10/24` | IP do agent-gateway |
-| `IP_ORCHESTRATOR` | `10.10.0.11/24` | IP do agent-orchestrator |
-| `IP_RUNNERS` | `10.10.0.12/24` | IP do agent-runners |
-| `IP_OBSERVABILITY` | `10.10.0.13/24` | IP do agent-observability |
+| `IP_GATEWAY` | `<agent-gateway-ip>/24` | IP do agent-gateway |
+| `IP_ORCHESTRATOR` | `<agent-orchestrator-ip>/24` | IP do agent-orchestrator |
+| `IP_RUNNERS` | `<agent-runners-ip>/24` | IP do agent-runners |
+| `IP_OBSERVABILITY` | `<agent-observability-ip>/24` | IP do agent-observability |
 | `CTID_GATEWAY` | `200` | ID do container no Proxmox |
 | `SSH_KEY_PATH` | `~/.ssh/id_ed25519.pub` | Chave pública para cloud-init (runners) |
 
@@ -69,7 +69,7 @@ Variáveis a ajustar:
 1. Proxmox → nó → **Network** → **Create** → **Linux Bridge**
 2. Preencher:
    - **Name:** `vmbr1`
-   - **IPv4/CIDR:** `10.10.0.1/24`
+   - **IPv4/CIDR:** `<bridge-ip>/24`
    - **Bridge ports:** deixar vazio (bridge interna)
 3. Clicar **Create** → **Apply Configuration**
 
@@ -152,13 +152,13 @@ Após autenticar, as VMs ficam acessíveis via Tailscale de qualquer lugar sem e
 
 ## Passo 6 — Configurar DNS interno
 
-No Pi-hole (`192.168.0.14`), adicionar em **Local DNS Records**:
+No Pi-hole (`<lan-dns-ip>`), adicionar em **Local DNS Records**:
 
 | Domain | IP |
 |---|---|
-| `llm.agent.local` | `10.10.0.10` |
-| `api.agent.local` | `10.10.0.11` |
-| `grafana.agent.local` | `10.10.0.13` |
+| `llm.agent.local` | `<agent-gateway-ip>` |
+| `api.agent.local` | `<agent-orchestrator-ip>` |
+| `grafana.agent.local` | `<agent-observability-ip>` |
 
 ---
 
@@ -166,12 +166,12 @@ No Pi-hole (`192.168.0.14`), adicionar em **Local DNS Records**:
 
 ```bash
 # Do host Proxmox ou de uma VM na vmbr1
-curl http://10.10.0.10:4000/health   # LiteLLM
-curl http://10.10.0.11:3000/health   # Orchestrator API
-curl http://10.10.0.13:3000          # Grafana
+curl http://<agent-gateway-ip>:4000/health   # LiteLLM
+curl http://<agent-orchestrator-ip>:3000/health   # Orchestrator API
+curl http://<agent-observability-ip>:3000          # Grafana
 
 # Verificar NAT (internet a partir de uma VM)
-ssh deploy@10.10.0.10 "curl -s https://icanhazip.com"
+ssh deploy@<agent-gateway-ip> "curl -s https://icanhazip.com"
 ```
 
 ---
@@ -182,15 +182,15 @@ ssh deploy@10.10.0.10 "curl -s https://icanhazip.com"
 Internet
     │
     ▼
-TP-Link Router (192.168.0.1)
+TP-Link Router (<lan-gateway-ip>)
     │
     ▼
-Proxmox Host (192.168.0.10 / vmbr0)
+Proxmox Host (<proxmox-lan-ip> / vmbr0)
     │
-    ├── vmbr0  192.168.0.x  ← LAN doméstica (serviços existentes)
+    ├── vmbr0  <lan>  ← LAN doméstica (serviços existentes)
     │          .11 Nextcloud, .12 Home Assistant, .13 Jellyfin ...
     │
-    └── vmbr1  10.10.0.x   ← agent-platform (isolado, NAT via host)
+    └── vmbr1  <agent-subnet>   ← agent-platform (isolado, NAT via host)
                .10 agent-gateway       (CTID 200)
                .11 agent-orchestrator  (CTID 201)
                .12 agent-runners       (VMID 202)

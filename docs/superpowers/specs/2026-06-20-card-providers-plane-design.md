@@ -2,7 +2,7 @@
 
 ## Context
 
-The platform currently treats Linear issues as the only source of work cards. That assumption appears in the package boundary (`packages/linear`), graph dependencies, worker, webhook route, scheduler, reports, run persistence, docs, and environment variables. The current Plane MCP configuration points to `http://10.10.0.14:8080`, workspace `attodev`, but the configured API key sees no existing projects in that workspace. The migration will therefore create a new Plane project for this repository before moving cards.
+The platform currently treats Linear issues as the only source of work cards. That assumption appears in the package boundary (`packages/linear`), graph dependencies, worker, webhook route, scheduler, reports, run persistence, docs, and environment variables. The current Plane MCP configuration points to `http://<plane-ip>:8080`, workspace `attodev`, but the configured API key sees no existing projects in that workspace. The migration will therefore create a new Plane project for this repository before moving cards.
 
 The target state is multi-provider card support with Plane as the primary provider for this project and Linear kept as an optional legacy/extra provider. Existing Linear-triggered runs and database rows must remain readable.
 
@@ -152,7 +152,7 @@ New environment variables:
 
 - `CARD_PRIMARY_PROVIDER=plane`
 - `CARD_EXTRA_PROVIDERS=linear`
-- `PLANE_BASE_URL=http://10.10.0.14:8080`
+- `PLANE_BASE_URL=http://<plane-ip>:8080`
 - `PLANE_API_KEY`
 - `PLANE_WORKSPACE_SLUG=attodev`
 - `PLANE_PROJECT_ID`

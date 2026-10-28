@@ -98,7 +98,7 @@ Use uma assinatura inválida para confirmar que o Funnel chega ao orchestrator e
 que a validação HMAC está ativa:
 
 ```bash
-curl -i -X POST https://agent-orchestrator.tail85607e.ts.net/webhooks/plane \
+curl -i -X POST https://agent-orchestrator.<tailnet>.ts.net/webhooks/plane \
   -H 'content-type: application/json' \
   -H 'x-plane-event: work_item' \
   -H 'x-plane-signature: invalid' \
@@ -140,7 +140,7 @@ protegido por bearer:
 TOKEN="$(pct exec 201 -- docker exec orchestrator-api-1 printenv RUNNER_AUTH_TOKEN)"
 curl -fsS \
   -H "authorization: Bearer $TOKEN" \
-  "http://10.10.0.11:3000/admin/card-runs?provider=plane&cardId=<work-item-id>"
+  "http://<agent-orchestrator-ip>:3000/admin/card-runs?provider=plane&cardId=<work-item-id>"
 ```
 
 Esse endpoint não consulta o Plane; ele mostra o histórico persistido no

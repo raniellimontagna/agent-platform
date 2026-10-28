@@ -6,7 +6,7 @@ import type { CommandResult } from '../types.js';
 
 const DEFAULT_ALLOWLIST = ['node', 'npm', 'pnpm', 'corepack', 'git'];
 const EVAL_GIT_USER_NAME = 'Ranielli Montagna';
-const EVAL_GIT_USER_EMAIL = 'raniellimontagna@hotmail.com';
+const EVAL_GIT_USER_EMAIL = '70357520+raniellimontagna@users.noreply.github.com';
 
 export function runShell(command: string, cwd: string): Promise<CommandResult> {
   const start = Date.now();

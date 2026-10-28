@@ -72,7 +72,7 @@ próprio container).
 
 - `deploy.sh orchestrator` já rodado com a imagem que inclui `apps/mcp-server/dist`
   (ver `build(mcp): builda o mcp-server na imagem do orchestrator`).
-- Acesso SSH ao host Proxmox (`root@192.168.0.10`).
+- Acesso SSH ao host Proxmox (`root@<proxmox-lan-ip>`).
 
 ## Registrar no Claude Code
 
@@ -81,7 +81,7 @@ Remover o registro antigo (local + túnel), se existir, e adicionar o remoto:
 \`\`\`bash
 claude mcp remove agent-platform -s user 2>/dev/null || true
 claude mcp add agent-platform -s user -- \
-  ssh -T root@192.168.0.10 pct exec 201 -- \
+  ssh -T root@<proxmox-lan-ip> pct exec 201 -- \
   docker exec -i -e ORCHESTRATOR_BASE_URL=http://localhost:3000 \
   orchestrator-api-1 node /app/apps/mcp-server/dist/index.js
 \`\`\`
@@ -102,7 +102,7 @@ Esperado: `agent-platform: ✔ Connected` (handshake). A primeira chamada de too
 - **stdout sujo / handshake falha:** algum estágio imprimiu lixo no stdout. O
   `ssh -T` (sem tty) já evita MOTD. Se persistir, testar a cadeia manual e
   inspecionar a primeira linha:
-  `ssh -T root@192.168.0.10 pct exec 201 -- docker exec -i orchestrator-api-1 node /app/apps/mcp-server/dist/index.js < /dev/null`
+  `ssh -T root@<proxmox-lan-ip> pct exec 201 -- docker exec -i orchestrator-api-1 node /app/apps/mcp-server/dist/index.js < /dev/null`
   (deve sair sem imprimir nada no stdout além de erro de env, se houver).
 - **Nome do container diferente:** o nome `orchestrator-api-1` vem de
   project (dir `orchestrator`) + service (`api`). Conferir com
@@ -117,7 +117,7 @@ Esperado: `agent-platform: ✔ Connected` (handshake). A primeira chamada de too
 Quando a fonte está no laptop (dev), dá pra rodar local apontando pro túnel:
 
 \`\`\`bash
-ssh -fN -L 3000:10.10.0.11:3000 root@192.168.0.10
+ssh -fN -L 3000:<agent-orchestrator-ip>:3000 root@<proxmox-lan-ip>
 claude mcp add agent-platform -s user \
   -e ORCHESTRATOR_BASE_URL=http://localhost:3000 \
   -e RUNNER_AUTH_TOKEN=<token> \
@@ -180,7 +180,7 @@ rtk git push
 
 - [ ] **Step 2: Redeploy do orchestrator (host Proxmox)**
 
-No host `192.168.0.10`:
+No host `<proxmox-lan-ip>`:
 ```bash
 cd ~/agent-platform && git pull && bash infra/deploy/deploy.sh orchestrator
 ```
@@ -197,7 +197,7 @@ Expected: imprime o caminho (arquivo existe no container em prod).
 ```bash
 claude mcp remove agent-platform -s user 2>/dev/null || true
 claude mcp add agent-platform -s user -- \
-  ssh -T root@192.168.0.10 pct exec 201 -- \
+  ssh -T root@<proxmox-lan-ip> pct exec 201 -- \
   docker exec -i -e ORCHESTRATOR_BASE_URL=http://localhost:3000 \
   orchestrator-api-1 node /app/apps/mcp-server/dist/index.js
 ```
@@ -211,7 +211,7 @@ Expected: `agent-platform: ✔ Connected`.
 
 - [ ] **Step 6: E2E sem túnel (laptop)**
 
-Garantir que NÃO há túnel de pé (`pkill -f '3000:10.10.0.11:3000'` se houver),
+Garantir que NÃO há túnel de pé (`pkill -f '3000:<agent-orchestrator-ip>:3000'` se houver),
 depois rodar a tool `list_runs` via Claude Code.
 Expected: retorna os runs reais (ex.: MAC-49..MAC-62) — provando zero-túnel.
 

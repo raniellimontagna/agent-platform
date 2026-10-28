@@ -153,11 +153,11 @@ Read-only evidence collected from LXC 201:
   - failed: 4
   - paused: 0
 - Missing-provider `plan` payloads were found only in `failed` jobs:
-  - job `95`, run `bc862f50-6c82-4999-b7e4-dd0e60b3e9ac`, `issueId` present, `cardProvider` missing, failed after 2 attempts with duplicate-key error.
-  - job `96`, run `76cf6388-9bce-45e1-b3d9-d612f5d856dd`, `issueId` present, `cardProvider` missing, failed after 2 attempts with connection error.
+  - job `95`, run `<uuid>`, `issueId` present, `cardProvider` missing, failed after 2 attempts with duplicate-key error.
+  - job `96`, run `<uuid>`, `issueId` present, `cardProvider` missing, failed after 2 attempts with connection error.
 - The referenced Postgres rows both have persisted compatibility fields:
   - `card_provider=linear`
-  - `card_id=9958f3cc-67b7-448d-8bba-42195142a174`
+  - `card_id=<uuid>`
   - `card_identifier=MAC-86`
   - `status=failed`
 

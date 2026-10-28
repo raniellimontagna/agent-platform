@@ -101,7 +101,7 @@ User approved removing Linear from live exposure. Changes applied on LXC 201:
 - Recreated `orchestrator-api-1` with `docker compose up -d api`.
 - Reset and recreated Tailscale Funnel with only:
   - `/webhooks/plane -> http://127.0.0.1:3000/webhooks/plane`
-- Disabled Linear webhook `7876188c-7893-41e5-be1d-f2f099b6b7eb` via Linear GraphQL `webhookUpdate(enabled: false)`.
+- Disabled Linear webhook `<uuid>` via Linear GraphQL `webhookUpdate(enabled: false)`.
 
 ## Verification
 

@@ -31,7 +31,7 @@
     "commitMessage": "test(eval): cover critic rejection gate\n\nRef: MAC-86\n\nCo-authored-by: Codex <noreply@openai.com>",
     "commitAuthor": {
       "name": "Ranielli Montagna",
-      "email": "raniellimontagna@hotmail.com"
+      "email": "70357520+raniellimontagna@users.noreply.github.com"
     },
     "commitTrailers": ["Co-authored-by: Codex <noreply@openai.com>"],
     "review": {
@@ -87,7 +87,7 @@
     "commit": {
       "author": {
         "name": "Ranielli Montagna",
-        "email": "raniellimontagna@hotmail.com"
+        "email": "70357520+raniellimontagna@users.noreply.github.com"
       },
       "messageIncludes": ["Ref: MAC-86"],
       "trailersInclude": ["Co-authored-by: Codex <noreply@openai.com>"]

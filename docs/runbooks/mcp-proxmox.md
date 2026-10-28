@@ -9,7 +9,7 @@ próprio container).
 
 - `deploy.sh orchestrator` já rodado com a imagem que inclui `apps/mcp-server/dist`
   (ver commit `build(mcp): builda o mcp-server na imagem do orchestrator`).
-- Acesso SSH ao host Proxmox (`root@192.168.0.10`).
+- Acesso SSH ao host Proxmox (`root@<proxmox-lan-ip>`).
 
 ## Registrar no Claude Code
 
@@ -18,7 +18,7 @@ Remover o registro antigo (local + túnel), se existir, e adicionar o remoto:
 ```bash
 claude mcp remove agent-platform -s user 2>/dev/null || true
 claude mcp add agent-platform -s user -- \
-  ssh -T root@192.168.0.10 pct exec 201 -- \
+  ssh -T root@<proxmox-lan-ip> pct exec 201 -- \
   docker exec -i -e ORCHESTRATOR_BASE_URL=http://localhost:3000 \
   orchestrator-api-1 node /app/apps/mcp-server/dist/index.js
 ```
@@ -42,7 +42,7 @@ Esperado: `agent-platform: ✔ Connected` (handshake). A primeira chamada de too
   inspecionar a saída:
 
   ```bash
-  ssh -T root@192.168.0.10 pct exec 201 -- \
+  ssh -T root@<proxmox-lan-ip> pct exec 201 -- \
     docker exec -i orchestrator-api-1 node /app/apps/mcp-server/dist/index.js < /dev/null
   ```
 
@@ -59,7 +59,7 @@ Esperado: `agent-platform: ✔ Connected` (handshake). A primeira chamada de too
 Quando a fonte está no laptop (dev), dá pra rodar local apontando pro túnel:
 
 ```bash
-ssh -fN -L 3000:10.10.0.11:3000 root@192.168.0.10
+ssh -fN -L 3000:<agent-orchestrator-ip>:3000 root@<proxmox-lan-ip>
 claude mcp add agent-platform -s user \
   -e ORCHESTRATOR_BASE_URL=http://localhost:3000 \
   -e RUNNER_AUTH_TOKEN=<token> \

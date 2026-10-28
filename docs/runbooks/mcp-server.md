@@ -40,7 +40,7 @@ env = { ORCHESTRATOR_BASE_URL = "http://localhost:3000", RUNNER_AUTH_TOKEN = "<t
 
 ## Reachability
 
-O orchestrator (`10.10.0.11:3000`) está na rede isolada `vmbr1`. O processo do
+O orchestrator (`<agent-orchestrator-ip>:3000`) está na rede isolada `vmbr1`. O processo do
 MCP server precisa alcançá-lo. Duas formas:
 
 ### A. Local (laptop alcança o orchestrator)
@@ -73,8 +73,8 @@ interna. Mantém a API fora da LAN.
     "agent-platform": {
       "command": "ssh",
       "args": [
-        "root@192.168.0.10",
-        "ORCHESTRATOR_BASE_URL=http://10.10.0.11:3000 RUNNER_AUTH_TOKEN=<token> node /opt/agent-platform/apps/mcp-server/dist/index.js"
+        "root@<proxmox-lan-ip>",
+        "ORCHESTRATOR_BASE_URL=http://<agent-orchestrator-ip>:3000 RUNNER_AUTH_TOKEN=<token> node /opt/agent-platform/apps/mcp-server/dist/index.js"
       ]
     }
   }

@@ -264,7 +264,7 @@ No objeto retornado por `createLinearGateway` (depois de `comment`):
 ```ts
   // Auto-merge (MAC-67): label de opt-in + estado "Done" do time p/ fechar a issue.
   LINEAR_AUTO_MERGE_LABEL_ID: z.string().optional(),
-  LINEAR_DONE_STATE_ID: z.string().default('79e3b949-6f1f-469d-902d-71d135d18cae'),
+  LINEAR_DONE_STATE_ID: z.string().default('<uuid>'),
 ```
 
 - [ ] **Step 3: Build**
@@ -478,12 +478,12 @@ Em `apps/orchestrator-api/.env.example` (perto das `LINEAR_*`):
 ```
 # Auto-merge (MAC-67): label de opt-in + estado Done do time
 LINEAR_AUTO_MERGE_LABEL_ID=
-LINEAR_DONE_STATE_ID=79e3b949-6f1f-469d-902d-71d135d18cae
+LINEAR_DONE_STATE_ID=<uuid>
 ```
 Em `infra/compose/orchestrator/docker-compose.yml`, na lista `environment:` do serviço `api` (estilo map):
 ```yaml
       LINEAR_AUTO_MERGE_LABEL_ID: ${LINEAR_AUTO_MERGE_LABEL_ID}
-      LINEAR_DONE_STATE_ID: ${LINEAR_DONE_STATE_ID:-79e3b949-6f1f-469d-902d-71d135d18cae}
+      LINEAR_DONE_STATE_ID: ${LINEAR_DONE_STATE_ID:-<uuid>}
 ```
 
 - [ ] **Step 3: Suíte completa** — `rtk pnpm -r build && rtk pnpm test` → PASS (todos + novos: shouldAutoMerge 6, github gateway 4, merging 3). Reportar a contagem.

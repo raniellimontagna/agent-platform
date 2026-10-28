@@ -1,11 +1,11 @@
 # Acesso ao Grafana pela LAN (sem ssh tunnel)
 
-Por padrão o Grafana fica na rede isolada `vmbr1` (`10.10.0.13:3000`), atrás do
+Por padrão o Grafana fica na rede isolada `vmbr1` (`<agent-observability-ip>:3000`), atrás do
 NAT **de saída** do host Proxmox — não há rota de entrada da LAN doméstica
-(`192.168.0.x`) para `10.10.0.x`. Por isso o acesso original exigia um túnel:
+(`<lan>`) para `<agent-subnet>`. Por isso o acesso original exigia um túnel:
 
 ```bash
-ssh -L 8088:10.10.0.13:3000 root@192.168.0.10   # → http://localhost:8088
+ssh -L 8088:<agent-observability-ip>:3000 root@<proxmox-lan-ip>   # → http://localhost:8088
 ```
 
 Este runbook expõe **somente o Grafana** na LAN via um DNAT no host, preservando o
@@ -15,27 +15,27 @@ de fora).
 ## Topologia relevante
 
 ```
-TP-Link (192.168.0.1)
-   └── Proxmox host (192.168.0.10 em vmbr0 · 10.10.0.1 em vmbr1)
-         ├── vmbr0  192.168.0.x  ← LAN doméstica
-         └── vmbr1  10.10.0.x    ← agent-platform (isolada, NAT de saída)
+TP-Link (<lan-gateway-ip>)
+   └── Proxmox host (<proxmox-lan-ip> em vmbr0 · <bridge-ip> em vmbr1)
+         ├── vmbr0  <lan>  ← LAN doméstica
+         └── vmbr1  <agent-subnet>    ← agent-platform (isolada, NAT de saída)
                      └── agent-observability .13 · Grafana :3000
 ```
 
-O host é gateway da `vmbr1` (`10.10.0.1`), então o tráfego de volta passa por ele —
+O host é gateway da `vmbr1` (`<bridge-ip>`), então o tráfego de volta passa por ele —
 o conntrack reescreve a resposta sozinho. Não precisa de SNAT.
 
 ## Passo 1 — DNAT no host Proxmox
 
-Roda no host (`192.168.0.10`):
+Roda no host (`<proxmox-lan-ip>`):
 
 ```bash
 # Encaminha LAN:3000 (no IP do host) → Grafana na vmbr1
-iptables -t nat -A PREROUTING -i vmbr0 -p tcp -d 192.168.0.10 --dport 3000 \
-  -j DNAT --to-destination 10.10.0.13:3000
+iptables -t nat -A PREROUTING -i vmbr0 -p tcp -d <proxmox-lan-ip> --dport 3000 \
+  -j DNAT --to-destination <agent-observability-ip>:3000
 
 # Libera o forward vmbr0 → vmbr1 só para esse destino/porta
-iptables -A FORWARD -i vmbr0 -o vmbr1 -p tcp -d 10.10.0.13 --dport 3000 \
+iptables -A FORWARD -i vmbr0 -o vmbr1 -p tcp -d <agent-observability-ip> --dport 3000 \
   -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
 ```
 
@@ -50,22 +50,22 @@ iptables-save > /etc/iptables/rules.v4
 
 ## Passo 3 — DNS no Pi-hole
 
-No Pi-hole (`192.168.0.14`) → **Local DNS Records**, apontar o registro existente
+No Pi-hole (`<lan-dns-ip>`) → **Local DNS Records**, apontar o registro existente
 para o **host** (que faz o DNAT), não mais para o IP interno:
 
 | Domínio | Era | Vira |
 |---|---|---|
-| `grafana.agent.local` | `10.10.0.13` | `192.168.0.10` |
+| `grafana.agent.local` | `<agent-observability-ip>` | `<proxmox-lan-ip>` |
 
 ## Passo 4 — Testar
 
 De qualquer device da LAN:
 
 ```bash
-curl -I http://192.168.0.10:3000        # espera 302/200 do Grafana
+curl -I http://<proxmox-lan-ip>:3000        # espera 302/200 do Grafana
 ```
 
-Navegador: **http://grafana.agent.local:3000** (ou `http://192.168.0.10:3000`).
+Navegador: **http://grafana.agent.local:3000** (ou `http://<proxmox-lan-ip>:3000`).
 Login `admin` / `GRAFANA_PASSWORD` (no `.env` do observability). Pasta de
 dashboards: **Agent Platform**.
 

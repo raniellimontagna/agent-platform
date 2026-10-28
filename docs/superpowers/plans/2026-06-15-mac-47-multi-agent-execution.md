@@ -368,12 +368,12 @@ rtk git commit -m "feat(multi-agent): painel Grafana de runs ativos (MAC-47)"
 
 > Agrupável com MAC-42/43/45. Orchestrator-only + observability (Grafana recarrega o JSON). Runners NÃO mudam.
 
-1. **Deploy (host 192.168.0.10):**
+1. **Deploy (host <proxmox-lan-ip>):**
    ```bash
    cd ~/agent-platform && git pull && bash infra/deploy/deploy.sh orchestrator && bash infra/deploy/deploy.sh observability
    ```
    Aplica migrations pendentes (0006..0009); sobe a API com `AGENT_MAX_CONCURRENCY=3`; Grafana recarrega o dashboard.
-2. **Túnel REST:** `ssh -fN -L 3000:10.10.0.11:3000 root@192.168.0.10`
+2. **Túnel REST:** `ssh -fN -L 3000:<agent-orchestrator-ip>:3000 root@<proxmox-lan-ip>`
 3. **Verificar:**
    - `curl -H "authorization: Bearer $RUNNER_AUTH_TOKEN" http://localhost:3000/admin/concurrency` → `{limit:3, active, byStatus}`.
    - Paralelo: labelar 2-3 issues `ai-ready` quase juntas → ver runs rodando simultâneos (logs + `/admin/concurrency` active>1 + `/runs`).

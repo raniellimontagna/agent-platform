@@ -4,7 +4,9 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-ExecStart=/usr/bin/socat TCP-LISTEN:20128,bind=192.168.0.10,fork,reuseaddr TCP:10.10.0.10:20128
+# PROXMOX_LAN_IP e AGENT_GATEWAY_IP vêm de /etc/default/agent-platform-proxy.
+EnvironmentFile=/etc/default/agent-platform-proxy
+ExecStart=/usr/bin/socat TCP-LISTEN:20128,bind=${PROXMOX_LAN_IP},fork,reuseaddr TCP:${AGENT_GATEWAY_IP}:20128
 Restart=always
 RestartSec=2
 
