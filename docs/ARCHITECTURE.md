@@ -1,7 +1,7 @@
 # Arquitetura — visão completa
 
 Mapa único do sistema: o que está no ar, o fluxo ponta a ponta, e como cada
-card do Plane (workspace `attodev`, projeto **Agent Platform** / `AGP`) se
+card do Plane (projeto **Agent Platform** / `AGP`) se
 encaixa na estrutura. Plane é o único provider ativo para trabalho novo; Linear
 fica como compatibilidade legado/migração para dados antigos e rollback
 explícito, sem exposição pública por default.
@@ -30,15 +30,15 @@ explícito, sem exposição pública por default.
 
 ```mermaid
 flowchart TB
-  subgraph LAN["LAN <lan> — vmbr0 (doméstica)"]
-    PIHOLE["Pi-hole DNS<br/>.14"]
+  subgraph LAN["LAN doméstica — vmbr0"]
+    PIHOLE["Pi-hole DNS"]
   end
 
-  subgraph AGENT["agent-platform <agent-subnet> — vmbr1 (isolada, NAT via host)"]
-    GW["agent-gateway · .10 · LXC 200<br/>LiteLLM :4000 · Caddy · OmniRoute :20128 · Postgres"]
-    ORCH["agent-orchestrator · .11 · LXC 201<br/>API Hono :3000 · LangGraph · Postgres+pgvector · Redis/BullMQ · embeddings locais"]
-    RUN["agent-runners · .12 · VM 202<br/>worker-code :8080 · git worktrees · sandbox"]
-    OBS["agent-observability · .13 · LXC 203<br/>Grafana :3000 · Prometheus · Loki · Promtail"]
+  subgraph AGENT["agent-platform — vmbr1 (rede interna isolada, NAT via host)"]
+    GW["agent-gateway · LXC 200<br/>LiteLLM :4000 · Caddy · OmniRoute :20128 · Postgres"]
+    ORCH["agent-orchestrator · LXC 201<br/>API Hono :3000 · LangGraph · Postgres+pgvector · Redis/BullMQ · embeddings locais"]
+    RUN["agent-runners · VM 202<br/>worker-code :8080 · git worktrees · sandbox"]
+    OBS["agent-observability · LXC 203<br/>Grafana :3000 · Prometheus · Loki · Promtail"]
   end
 
   PLANE["Plane (primary card provider)"]
@@ -164,7 +164,7 @@ explicit rollback.
 | Vector Memory | MAC-45 | `apps/orchestrator-api` (`embeddings.ts`/`lessonLoader.ts`), pgvector, migration 0008 | ✅ busca semântica de lições + fallback recência |
 | MCP server | MAC-46 | `apps/mcp-server` (stdio facade) | ✅ rodando zero-túnel no Proxmox (docker exec) |
 | Multi-Agent Execution | MAC-47 | `apps/orchestrator-api` (worker `concurrency`, `/admin/concurrency`), migration 0009 | ✅ N runs em paralelo + dedup de issue ativa |
-| Identidade de commits do agente | pós MAC-67 | `apps/worker-code/src/executor/runJob.ts`, compose runners | ✅ autor `Ranielli Montagna <70357520+raniellimontagna@users.noreply.github.com>` + `Co-authored-by: Codex <noreply@openai.com>` |
+| Identidade de commits do agente | pós MAC-67 | `apps/worker-code/src/executor/runJob.ts`, compose runners | ✅ autor = conta do dono (`GIT_AUTHOR_NAME`/`GIT_AUTHOR_EMAIL` nos runners) + `Co-authored-by: Codex <noreply@openai.com>` |
 | Scraping policy + Playwright controlado | AGP-8/AGP-9 | `apps/worker-code/src/executor/scrapingPolicy.ts`, `playwrightResearch.ts` | ✅ policy compartilhada; Playwright só por pedido explícito |
 | Auditoria de webhooks Plane | AGP follow-up | `apps/orchestrator-api/src/routes/webhooks.ts`, `/admin/card-runs` | ✅ skips com `reason` + histórico por card |
 
