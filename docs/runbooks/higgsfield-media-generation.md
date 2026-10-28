@@ -40,7 +40,7 @@ fora dos worktrees efêmeros, no volume `HIGGSFIELD_HOME`.
 Depois do deploy do runner:
 
 ```bash
-rtk ssh -o StrictHostKeyChecking=no runner@10.10.0.12
+rtk ssh -o StrictHostKeyChecking=no runner@<agent-runners-ip>
 docker exec -it runners-runner-api-1 sh
 HOME=/srv/agent-runners/higgsfield \
 XDG_CONFIG_HOME=/srv/agent-runners/higgsfield/.config \

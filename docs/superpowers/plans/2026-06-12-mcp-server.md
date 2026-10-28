@@ -467,7 +467,7 @@ Servidor MCP (stdio) que expõe o orchestrator a clientes MCP como o Claude Desk
 
 | Var | Exemplo |
 |---|---|
-| `ORCHESTRATOR_BASE_URL` | `http://10.10.0.11:3000` |
+| `ORCHESTRATOR_BASE_URL` | `http://<agent-orchestrator-ip>:3000` |
 | `RUNNER_AUTH_TOKEN` | token compartilhado orchestrator↔runner |
 
 ## Build
@@ -487,7 +487,7 @@ pnpm --filter @agent-platform/mcp-server build
       "command": "node",
       "args": ["/ABS/PATH/agent-platform/apps/mcp-server/dist/index.js"],
       "env": {
-        "ORCHESTRATOR_BASE_URL": "http://10.10.0.11:3000",
+        "ORCHESTRATOR_BASE_URL": "http://<agent-orchestrator-ip>:3000",
         "RUNNER_AUTH_TOKEN": "<token>"
       }
     }
@@ -495,7 +495,7 @@ pnpm --filter @agent-platform/mcp-server build
 }
 ```
 
-Se a máquina do Claude Desktop não alcança a rede isolada `10.10.0.x`, rodar via
+Se a máquina do Claude Desktop não alcança a rede isolada `<agent-subnet>`, rodar via
 ssh num host que alcança — ver `docs/runbooks/mcp-server.md`.
 ````
 
@@ -509,7 +509,7 @@ Expõe o orchestrator ao Claude Desktop via MCP (stdio). Detalhes e tools:
 
 ## Reachability
 
-O orchestrator (`10.10.0.11:3000`) está na rede isolada `vmbr1`. O processo do
+O orchestrator (`<agent-orchestrator-ip>:3000`) está na rede isolada `vmbr1`. O processo do
 MCP server precisa alcançá-lo. Duas formas:
 
 ### A. Local (laptop alcança o orchestrator)
@@ -542,8 +542,8 @@ localhost da rede interna. Mantém a API fora da LAN.
     "agent-platform": {
       "command": "ssh",
       "args": [
-        "root@192.168.0.10",
-        "ORCHESTRATOR_BASE_URL=http://10.10.0.11:3000 RUNNER_AUTH_TOKEN=<token> node /opt/agent-platform/apps/mcp-server/dist/index.js"
+        "root@<proxmox-lan-ip>",
+        "ORCHESTRATOR_BASE_URL=http://<agent-orchestrator-ip>:3000 RUNNER_AUTH_TOKEN=<token> node /opt/agent-platform/apps/mcp-server/dist/index.js"
       ]
     }
   }

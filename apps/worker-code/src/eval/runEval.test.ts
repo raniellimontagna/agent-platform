@@ -100,7 +100,7 @@ describe('normalizeScenarioFixture', () => {
           commitRequiresRef: true,
           commitRequiresCoAuthoredBy: true,
           commitAuthorName: 'Ranielli Montagna',
-          commitAuthorEmail: 'raniellimontagna@hotmail.com',
+          commitAuthorEmail: '70357520+raniellimontagna@users.noreply.github.com',
           isolation: {
             allowNetwork: false,
             allowGitHub: false,
@@ -137,7 +137,7 @@ describe('normalizeScenarioFixture', () => {
         commitRequiresRef: true,
         commitRequiresCoAuthoredBy: true,
         commitAuthorName: 'Ranielli Montagna',
-        commitAuthorEmail: 'raniellimontagna@hotmail.com',
+        commitAuthorEmail: '70357520+raniellimontagna@users.noreply.github.com',
         isolation: {
           allowNetwork: false,
           allowGitHub: false,
@@ -158,7 +158,7 @@ describe('normalizeScenarioFixture', () => {
           requiresRef: true,
           requiresCoAuthoredBy: true,
           authorName: 'Ranielli Montagna',
-          authorEmail: 'raniellimontagna@hotmail.com',
+          authorEmail: '70357520+raniellimontagna@users.noreply.github.com',
         },
       },
       id: 'critic-max-rounds-3',
@@ -188,7 +188,7 @@ describe('renderMarkdown', () => {
             commitMessage:
               'fix(worker): adjust critic loop\n\nRef: MAC-85\n\nCo-authored-by: Codex <noreply@openai.com>',
             commitAuthorName: 'Ranielli Montagna',
-            commitAuthorEmail: 'raniellimontagna@hotmail.com',
+            commitAuthorEmail: '70357520+raniellimontagna@users.noreply.github.com',
             branch: 'eval/auto-merge-blocked',
             pushed: false,
             fixAttempts: 3,
@@ -206,7 +206,7 @@ describe('renderMarkdown', () => {
     expect(markdown).toContain('Review outcome: recode');
     expect(markdown).toContain('Critic rounds: 3/3');
     expect(markdown).toContain(
-      'Commit policy: author Ranielli Montagna <raniellimontagna@hotmail.com>; Ref: present; Co-authored-by: present',
+      'Commit policy: author Ranielli Montagna <70357520+raniellimontagna@users.noreply.github.com>; Ref: present; Co-authored-by: present',
     );
   });
 
@@ -301,7 +301,11 @@ describe('renderMarkdown', () => {
             check(true, 'eval verdict', 'APROVADO'),
             check(true, 'auto-merge expectation', 'yes'),
             check(true, 'critic rounds limit', '3/3'),
-            check(true, 'commit author', 'Ranielli Montagna <raniellimontagna@hotmail.com>'),
+            check(
+              true,
+              'commit author',
+              'Ranielli Montagna <70357520+raniellimontagna@users.noreply.github.com>',
+            ),
             check(true, 'commit Ref trailer', 'present'),
             check(true, 'commit Co-authored-by trailer', 'present'),
             check(
@@ -318,7 +322,7 @@ describe('renderMarkdown', () => {
     expect(markdown).toContain('Expected auto-merge: yes');
     expect(markdown).toContain('Critic rounds: 3/3');
     expect(markdown).toContain(
-      'Commit policy: author Ranielli Montagna <raniellimontagna@hotmail.com>; Ref: present; Co-authored-by: present',
+      'Commit policy: author Ranielli Montagna <70357520+raniellimontagna@users.noreply.github.com>; Ref: present; Co-authored-by: present',
     );
     expect(markdown).toContain(
       '- FAIL isolation policy: allowNetwork=no; allowGitHub=no; allowLinear=no; allowLiteLLM=no; externalCalls=1',

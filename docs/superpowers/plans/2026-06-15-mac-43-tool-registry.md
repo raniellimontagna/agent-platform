@@ -789,13 +789,13 @@ rtk git commit -m "feat(tools): tools MCP list_tools/get_tool (MAC-43)"
 
 > Não é tarefa de código. Pode agrupar com o deploy do MAC-42 (ambos só orchestrator).
 
-1. **Deploy (host 192.168.0.10):**
+1. **Deploy (host <proxmox-lan-ip>):**
    ```bash
    cd ~/agent-platform && git pull && bash infra/deploy/deploy.sh orchestrator
    ```
    Aplica as migrations pendentes (0006 do MAC-42 + 0007 do MAC-43) + sobe a API com os seeds no boot. Runners NÃO mudam.
 
-2. **Túnel REST (laptop):** `ssh -fN -L 3000:10.10.0.11:3000 root@192.168.0.10`
+2. **Túnel REST (laptop):** `ssh -fN -L 3000:<agent-orchestrator-ip>:3000 root@<proxmox-lan-ip>`
 
 3. **Verificar:**
    - `curl http://localhost:3000/tools` → lista as 5 tools (git/pnpm/npm/npx/node) com risk/scopes.

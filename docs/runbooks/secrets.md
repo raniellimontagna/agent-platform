@@ -18,7 +18,7 @@ Política e procedimento de rotação dos segredos do agent-platform.
 
 - `CARD_PRIMARY_PROVIDER=plane`
 - `CARD_EXTRA_PROVIDERS=`
-- `PLANE_BASE_URL=http://10.10.0.14:8080`
+- `PLANE_BASE_URL=http://<plane-ip>:8080`
 - `PLANE_WORKSPACE_SLUG=attodev`
 - `PLANE_PROJECT_ID=change-me`
 - `PLANE_AI_READY_LABEL_ID=change-me`
@@ -58,7 +58,7 @@ Geral: editar o `.env` do serviço, salvar, redeployar/reiniciar o container.
 1. **Gerar/obter o novo valor** (PAT novo, `openssl rand -hex 24`, etc.).
 2. **Atualizar o `.env`** no serviço:
    - LXC: `pct exec <CTID> -- nano /opt/agent-platform/.../.env`
-   - VM runner: `ssh runner@10.10.0.12 'nano ~/agent-platform/repo/infra/compose/runners/.env'`
+   - VM runner: `ssh runner@<agent-runners-ip> 'nano ~/agent-platform/repo/infra/compose/runners/.env'`
 3. **Propagar** se o secret é compartilhado (ex.: `RUNNER_AUTH_TOKEN` e
    `LITELLM_API_KEY` ficam no orchestrator E no runner — trocar nos dois).
 4. **Reiniciar**: `bash infra/deploy/deploy.sh <serviço>` ou

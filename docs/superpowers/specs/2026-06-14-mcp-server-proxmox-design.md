@@ -8,7 +8,7 @@
 
 O `apps/mcp-server` (facade stdio sobre a REST API do orchestrator) hoje roda
 **localmente no laptop** e só funciona com um túnel SSH manual de pé
-(`ssh -fN -L 3000:10.10.0.11:3000 root@192.168.0.10`). O túnel:
+(`ssh -fN -L 3000:<agent-orchestrator-ip>:3000 root@<proxmox-lan-ip>`). O túnel:
 
 - cai a cada restart do orchestrator (passo manual recorrente);
 - expõe a porta 3000 no laptop;
@@ -70,7 +70,7 @@ Config MCP do Claude Code no laptop:
 command: ssh
 args:
   - -T
-  - root@192.168.0.10
+  - root@<proxmox-lan-ip>
   - pct
   - exec
   - "201"

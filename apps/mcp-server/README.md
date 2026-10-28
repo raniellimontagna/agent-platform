@@ -28,7 +28,7 @@ Servidor MCP (stdio) que expõe o orchestrator a clientes MCP como o Claude Desk
 
 | Var | Exemplo |
 |---|---|
-| `ORCHESTRATOR_BASE_URL` | `http://10.10.0.11:3000` |
+| `ORCHESTRATOR_BASE_URL` | `http://<agent-orchestrator-ip>:3000` |
 | `RUNNER_AUTH_TOKEN` | token compartilhado orchestrator↔runner |
 
 ## Build
@@ -48,7 +48,7 @@ pnpm --filter @agent-platform/mcp-server build
       "command": "node",
       "args": ["/ABS/PATH/agent-platform/apps/mcp-server/dist/index.js"],
       "env": {
-        "ORCHESTRATOR_BASE_URL": "http://10.10.0.11:3000",
+        "ORCHESTRATOR_BASE_URL": "http://<agent-orchestrator-ip>:3000",
         "RUNNER_AUTH_TOKEN": "<token>"
       }
     }
@@ -56,7 +56,7 @@ pnpm --filter @agent-platform/mcp-server build
 }
 ```
 
-Se a máquina do Claude Desktop não alcança a rede isolada `10.10.0.x`, rodar via
+Se a máquina do Claude Desktop não alcança a rede isolada `<agent-subnet>`, rodar via
 ssh num host que alcança — ver [`docs/runbooks/mcp-server.md`](../../docs/runbooks/mcp-server.md).
 
 ## Rodar no Proxmox (zero-túnel)

@@ -24,7 +24,7 @@ describe('createHarnessChecks', () => {
       {
         passed: true,
         name: 'commit author',
-        detail: 'Ranielli Montagna <raniellimontagna@hotmail.com>',
+        detail: 'Ranielli Montagna <70357520+raniellimontagna@users.noreply.github.com>',
       },
       {
         passed: true,
@@ -67,7 +67,7 @@ const scenario: EvalScenario = {
     commit: {
       author: {
         name: 'Ranielli Montagna',
-        email: 'raniellimontagna@hotmail.com',
+        email: '70357520+raniellimontagna@users.noreply.github.com',
       },
       messageIncludes: ['Ref:'],
       trailersInclude: ['Co-authored-by: Codex <noreply@openai.com>'],
@@ -97,7 +97,7 @@ const dryRun: WorkerDryRunResult = {
   commitMessage:
     'fix(eval): harness policy\n\nRef: MAC-85\n\nCo-authored-by: Codex <noreply@openai.com>',
   commitAuthorName: 'Ranielli Montagna',
-  commitAuthorEmail: 'raniellimontagna@hotmail.com',
+  commitAuthorEmail: '70357520+raniellimontagna@users.noreply.github.com',
   allowNetwork: false,
   allowGitHub: false,
   allowLinear: false,

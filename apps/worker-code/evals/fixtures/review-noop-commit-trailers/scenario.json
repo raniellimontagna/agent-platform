@@ -21,7 +21,7 @@
     },
     "agent": {
       "name": "Ranielli Montagna",
-      "email": "raniellimontagna@hotmail.com"
+      "email": "70357520+raniellimontagna@users.noreply.github.com"
     },
     "commit": {
       "message": "test(eval): preserve approved no-op review\n\nRef: MAC-86\n\nCo-authored-by: Codex <noreply@openai.com>",
@@ -72,7 +72,7 @@
     },
     "commit": {
       "authorName": "Ranielli Montagna",
-      "authorEmail": "raniellimontagna@hotmail.com",
+      "authorEmail": "70357520+raniellimontagna@users.noreply.github.com",
       "mustInclude": ["Ref: MAC-86", "Co-authored-by: Codex <noreply@openai.com>"]
     },
     "isolation": {

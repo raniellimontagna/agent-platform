@@ -73,7 +73,7 @@ describe('scoreScenario', () => {
                 'feat(eval): add local fixture\n\nRef: MAC-84\n\nCo-authored-by: Codex <noreply@openai.com>',
               author: {
                 name: 'Ranielli Montagna',
-                email: 'raniellimontagna@hotmail.com',
+                email: '70357520+raniellimontagna@users.noreply.github.com',
               },
             },
             isolation: {
@@ -102,7 +102,7 @@ describe('scoreScenario', () => {
             maxCriticRounds: 3,
             commitMessageIncludes: ['Ref: MAC-84'],
             authorName: 'Ranielli Montagna',
-            authorEmail: 'raniellimontagna@hotmail.com',
+            authorEmail: '70357520+raniellimontagna@users.noreply.github.com',
             coAuthorTrailer: 'Co-authored-by: Codex <noreply@openai.com>',
             isolation: {
               allowNetwork: false,
@@ -149,7 +149,7 @@ describe('scoreScenario', () => {
                 'fix(worker): harden critic loop\n\nRef: MAC-85\n\nCo-authored-by: Codex <noreply@openai.com>',
               author: {
                 name: 'Ranielli Montagna',
-                email: 'raniellimontagna@hotmail.com',
+                email: '70357520+raniellimontagna@users.noreply.github.com',
               },
             },
             isolation: {
@@ -178,7 +178,7 @@ describe('scoreScenario', () => {
             maxCriticRounds: 3,
             commitMessageIncludes: ['Ref: MAC-85'],
             authorName: 'Ranielli Montagna',
-            authorEmail: 'raniellimontagna@hotmail.com',
+            authorEmail: '70357520+raniellimontagna@users.noreply.github.com',
             coAuthorTrailer: 'Co-authored-by: Codex <noreply@openai.com>',
             isolation: {
               allowNetwork: false,
@@ -226,7 +226,7 @@ describe('scoreScenario', () => {
                 'test(eval): add blocker fixture\n\nRef: MAC-85\n\nCo-authored-by: Codex <noreply@openai.com>',
               author: {
                 name: 'Ranielli Montagna',
-                email: 'raniellimontagna@hotmail.com',
+                email: '70357520+raniellimontagna@users.noreply.github.com',
               },
             },
             isolation: {
@@ -255,7 +255,7 @@ describe('scoreScenario', () => {
             maxCriticRounds: 3,
             commitMessageIncludes: ['Ref: MAC-85'],
             authorName: 'Ranielli Montagna',
-            authorEmail: 'raniellimontagna@hotmail.com',
+            authorEmail: '70357520+raniellimontagna@users.noreply.github.com',
             coAuthorTrailer: 'Co-authored-by: Codex <noreply@openai.com>',
             isolation: {
               allowNetwork: false,
@@ -304,7 +304,7 @@ describe('scoreScenario', () => {
               message: 'feat(eval): missing trailer\n\nRef: MAC-84',
               author: {
                 name: 'Ranielli Montagna',
-                email: 'raniellimontagna@hotmail.com',
+                email: '70357520+raniellimontagna@users.noreply.github.com',
               },
             },
             isolation: {
@@ -333,7 +333,7 @@ describe('scoreScenario', () => {
             maxCriticRounds: 3,
             commitMessageIncludes: ['Ref: MAC-84'],
             authorName: 'Ranielli Montagna',
-            authorEmail: 'raniellimontagna@hotmail.com',
+            authorEmail: '70357520+raniellimontagna@users.noreply.github.com',
             coAuthorTrailer: 'Co-authored-by: Codex <noreply@openai.com>',
             isolation: {
               allowNetwork: false,

@@ -25,7 +25,7 @@ describe('renderMarkdown', () => {
             commitMessage:
               'fix(eval): block merge\n\nRef: MAC-85\n\nCo-authored-by: Codex <noreply@openai.com>',
             commitAuthorName: 'Ranielli Montagna',
-            commitAuthorEmail: 'raniellimontagna@hotmail.com',
+            commitAuthorEmail: '70357520+raniellimontagna@users.noreply.github.com',
           },
           checks: [check(false, 'isolation policy', 'allowNetwork=no; externalCalls=1')],
         }),
@@ -47,7 +47,7 @@ describe('renderMarkdown', () => {
     expect(markdown).toContain('Dry-run fixes: 3');
     expect(markdown).toContain('Dry-run commit: abc123');
     expect(markdown).toContain(
-      'Commit policy: author Ranielli Montagna <raniellimontagna@hotmail.com>; Ref: present; Co-authored-by: present',
+      'Commit policy: author Ranielli Montagna <70357520+raniellimontagna@users.noreply.github.com>; Ref: present; Co-authored-by: present',
     );
     expect(markdown).toContain('- FAIL isolation policy: allowNetwork=no; externalCalls=1');
   });

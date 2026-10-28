@@ -501,7 +501,7 @@ rtk git push
 
 1. **Redeploy `orchestrator`** (`bash infra/deploy/deploy.sh orchestrator`) — aplica a migration `0002` (colunas) + a persistência.
 2. **Redeploy `observability`** (`bash infra/deploy/deploy.sh observability`) — Grafana recarrega os dashboards (provider lê `*.json` a cada 30s; redeploy garante).
-3. **Verificar na UI** (`ssh -L 8088:10.10.0.13:3000 root@192.168.0.10` → http://localhost:8088, pasta "Agent Platform"): os 3 dashboards renderizam; queries retornam dados. Custo/aprovações populam de runs existentes; qualidade (validação/fix/veredito) só popula para runs NOVOS pós-migration.
+3. **Verificar na UI** (`ssh -L 8088:<agent-observability-ip>:3000 root@<proxmox-lan-ip>` → http://localhost:8088, pasta "Agent Platform"): os 3 dashboards renderizam; queries retornam dados. Custo/aprovações populam de runs existentes; qualidade (validação/fix/veredito) só popula para runs NOVOS pós-migration.
 
 ---
 

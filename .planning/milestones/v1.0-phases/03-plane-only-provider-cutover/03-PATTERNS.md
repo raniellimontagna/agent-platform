@@ -98,7 +98,7 @@ LINEAR_API_KEY: optionalNonEmptyString,
 LINEAR_WEBHOOK_SECRET: optionalNonEmptyString,
 CARD_PRIMARY_PROVIDER: z.enum(['plane', 'linear']).default('plane'),
 CARD_EXTRA_PROVIDERS: z.string().default(''),
-PLANE_BASE_URL: z.string().url().default('http://10.10.0.14:8080'),
+PLANE_BASE_URL: z.string().url().default('http://<plane-ip>:8080'),
 PLANE_API_KEY: optionalNonEmptyString,
 PLANE_WORKSPACE_SLUG: z.string().default('attodev'),
 PLANE_PROJECT_ID: optionalNonEmptyString,
@@ -1153,7 +1153,7 @@ CARD_PRIMARY_PROVIDER=plane
 CARD_EXTRA_PROVIDERS=linear
 
 # Plane (provider principal)
-PLANE_BASE_URL=http://10.10.0.14:8080
+PLANE_BASE_URL=http://<plane-ip>:8080
 PLANE_API_KEY=change-me
 PLANE_WORKSPACE_SLUG=attodev
 PLANE_PROJECT_ID=change-me
@@ -1178,7 +1178,7 @@ CARD_PRIMARY_PROVIDER=plane
 CARD_EXTRA_PROVIDERS=linear
 
 # Plane (provider principal)
-PLANE_BASE_URL=http://10.10.0.14:8080
+PLANE_BASE_URL=http://<plane-ip>:8080
 PLANE_API_KEY=change-me
 PLANE_WORKSPACE_SLUG=attodev
 PLANE_PROJECT_ID=change-me
@@ -1274,7 +1274,7 @@ protegido por bearer:
 TOKEN="$(pct exec 201 -- docker exec orchestrator-api-1 printenv RUNNER_AUTH_TOKEN)"
 curl -fsS \
   -H "authorization: Bearer $TOKEN" \
-  "http://10.10.0.11:3000/admin/card-runs?provider=plane&cardId=<work-item-id>"
+  "http://<agent-orchestrator-ip>:3000/admin/card-runs?provider=plane&cardId=<work-item-id>"
 ```
 ````
 
@@ -1286,7 +1286,7 @@ Planner instruction: make Plane the only active webhook exposure. Keep Linear we
 
 - `CARD_PRIMARY_PROVIDER=plane`
 - `CARD_EXTRA_PROVIDERS=linear`
-- `PLANE_BASE_URL=http://10.10.0.14:8080`
+- `PLANE_BASE_URL=http://<plane-ip>:8080`
 - `PLANE_WORKSPACE_SLUG=attodev`
 - `PLANE_PROJECT_ID=change-me`
 - `PLANE_AI_READY_LABEL_ID=change-me`

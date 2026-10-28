@@ -885,13 +885,13 @@ rtk git commit -m "chore(agents): AGENT_KEY no .env.example + compose do orchest
 
 > Não é tarefa de código. Sequência pro usuário rodar no host Proxmox após o merge na main.
 
-1. **Deploy (host 192.168.0.10):**
+1. **Deploy (host <proxmox-lan-ip>):**
    ```bash
    cd ~/agent-platform && git pull && bash infra/deploy/deploy.sh orchestrator
    ```
    Aplica a migration `0006` (db:deploy) + sobe a API com o seed no boot. Runners NÃO mudam.
 
-2. **Túnel REST (laptop):** `ssh -fN -L 3000:10.10.0.11:3000 root@192.168.0.10`
+2. **Túnel REST (laptop):** `ssh -fN -L 3000:<agent-orchestrator-ip>:3000 root@<proxmox-lan-ip>`
 
 3. **Verificar:**
    - `curl http://localhost:3000/agents` → deve listar `coder-agent v1` (seed) com `status: active`.

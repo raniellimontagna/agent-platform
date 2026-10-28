@@ -95,7 +95,7 @@ Adicionar ao `GithubGateway`:
 Adicionar ao `LinearGateway`:
 - `setIssueState(issueId: string, stateId: string): Promise<void>`
   → SDK `client.updateIssue(issueId, { stateId })`.
-- Env nova `LINEAR_DONE_STATE_ID` (default `79e3b949-6f1f-469d-902d-71d135d18cae` =
+- Env nova `LINEAR_DONE_STATE_ID` (default `<uuid>` =
   estado "Done" do time MAC) em env.ts + .env.example + compose. Injetada como
   `doneStateId` nas deps do nó `merging` (via `agent.ts`/`build.ts`).
 

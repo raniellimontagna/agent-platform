@@ -18,17 +18,17 @@ que ocupam 100–115 e 400 — **não tocar nesses**).
 
 | ID  | Serviço             | Tipo | IP (vmbr1)   | Storage    | Recursos          | Estado                          |
 |-----|---------------------|------|--------------|------------|-------------------|---------------------------------|
-| 200 | agent-gateway       | LXC  | 10.10.0.10   | local-lvm  | 1 vCPU / 1GB / 8GB  | running + Docker, snapshot ✅   |
-| 201 | agent-orchestrator  | LXC  | 10.10.0.11   | local-lvm  | 2 vCPU / 2GB / 20GB | running + Docker, snapshot ✅   |
-| 202 | agent-runners       | VM   | 10.10.0.12   | backup-hd  | 2 vCPU / 4GB / 40GB | running + Docker/node/pnpm, vzdump ✅ |
-| 203 | agent-observability | LXC  | 10.10.0.13   | backup-hd  | 1 vCPU / 2GB / 16GB | running + Docker, vzdump ✅     |
+| 200 | agent-gateway       | LXC  | <agent-gateway-ip>   | local-lvm  | 1 vCPU / 1GB / 8GB  | running + Docker, snapshot ✅   |
+| 201 | agent-orchestrator  | LXC  | <agent-orchestrator-ip>   | local-lvm  | 2 vCPU / 2GB / 20GB | running + Docker, snapshot ✅   |
+| 202 | agent-runners       | VM   | <agent-runners-ip>   | backup-hd  | 2 vCPU / 4GB / 40GB | running + Docker/node/pnpm, vzdump ✅ |
+| 203 | agent-observability | LXC  | <agent-observability-ip>   | backup-hd  | 1 vCPU / 2GB / 16GB | running + Docker, vzdump ✅     |
 
 Sizing centralizado em `infra/proxmox/config.sh`.
 
 ### Rede
 
-- Bridge interna **vmbr1** = `10.10.0.1/24` (host faz de gateway).
-- **NAT** `10.10.0.0/24 → vmbr0` via iptables (regra persistida em `/etc/iptables/rules.v4`).
+- Bridge interna **vmbr1** = `<bridge-ip>/24` (host faz de gateway).
+- **NAT** `<agent-subnet>/24 → vmbr0` via iptables (regra persistida em `/etc/iptables/rules.v4`).
 - `ip_forward=1` permanente em `/etc/sysctl.conf`.
 - Validado: gateway e runner alcançam a internet pela NAT.
 - Criado por `infra/proxmox/setup-network.sh` (idempotente — checa se a bridge já existe).
@@ -90,7 +90,7 @@ não source o `~/.bashrc` → dá `node: command not found`.
 
 ```bash
 # Sempre carregar o nvm antes de usar node em comando remoto:
-ssh runner@10.10.0.12 'source ~/.nvm/nvm.sh; node --version; pnpm --version'
+ssh runner@<agent-runners-ip> 'source ~/.nvm/nvm.sh; node --version; pnpm --version'
 ```
 
 Versões instaladas: Node v24 LTS + pnpm.
@@ -113,7 +113,7 @@ quando o pós-provisionamento por SSH tenta `apt-get`. Resultado: VM fica pela m
 Correção — esperar o cloud-init terminar e então completar manualmente:
 
 ```bash
-ssh runner@10.10.0.12 'cloud-init status --wait'   # bloqueia até 'done'
+ssh runner@<agent-runners-ip> 'cloud-init status --wait'   # bloqueia até 'done'
 # então re-rodar o bloco de pós-provisionamento (docker + tools + ufw) via SSH
 ```
 
@@ -168,7 +168,7 @@ qm destroy <ID>        # VM
 >
 > **Identidade de commits do agente:** runner em produção recebe
 > `GIT_AUTHOR_NAME=Ranielli Montagna`,
-> `GIT_AUTHOR_EMAIL=raniellimontagna@hotmail.com`,
+> `GIT_AUTHOR_EMAIL=70357520+raniellimontagna@users.noreply.github.com`,
 > `GIT_COAUTHOR_NAME=Codex` e `GIT_COAUTHOR_EMAIL=noreply@openai.com`.
 > Commit real validado: `ff9460f` em `MAC-85`, com autor/committer corretos e
 > trailer `Co-authored-by: Codex <noreply@openai.com>`.
@@ -184,7 +184,7 @@ qm destroy <ID>        # VM
 > (`orchestrator` e `runners`).
 >
 > Resposta manual se alerta de disco disparar:
-> `pct exec 201 -- docker system df` / `ssh runner@10.10.0.12 docker system df`;
+> `pct exec 201 -- docker system df` / `ssh runner@<agent-runners-ip> docker system df`;
 > se o consumo for `Build Cache`, rodar `docker builder prune -af`. Não apagar
 > `/opt/agent-platform/postgres`, `/opt/agent-platform/redis` nem volumes de dados.
 
@@ -223,9 +223,9 @@ Bloqueios originais antes do primeiro deploy dos composes em `infra/compose/<vm>
 Passos interativos ainda pendentes (não automatizáveis sem o usuário):
 
 - **Tailscale** em cada VM (`tailscale up` — login interativo).
-- **DNS interno** no Pi-hole (`192.168.0.14`): `llm.agent.local → 10.10.0.10`,
-  `api.agent.local → 10.10.0.11`. O `grafana.agent.local` aponta para o **host**
-  (`192.168.0.10`), que faz DNAT da porta 3000 para `10.10.0.13` — assim o Grafana
+- **DNS interno** no Pi-hole (`<lan-dns-ip>`): `llm.agent.local → <agent-gateway-ip>`,
+  `api.agent.local → <agent-orchestrator-ip>`. O `grafana.agent.local` aponta para o **host**
+  (`<proxmox-lan-ip>`), que faz DNAT da porta 3000 para `<agent-observability-ip>` — assim o Grafana
   é acessível na LAN sem ssh. Ver [`grafana-lan-access.md`](./grafana-lan-access.md).
 
 Sequência de deploy por VM: ver [proxmox-setup.md → Passo 4](./proxmox-setup.md).

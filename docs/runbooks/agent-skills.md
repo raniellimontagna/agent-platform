@@ -23,7 +23,7 @@ codegen conforme o agente selecionado.
 - `apps/orchestrator-api/src/workflows.ts`: fonte dos labels de workflow, como
   `workflow:landing-page`; os IDs de labels Plane ficam em
   `docs/runbooks/plane-migration-2026-06-20.md`.
-- UI LAN do registry: `http://192.168.0.10:8088/registry` proxy para o
+- UI LAN do registry: `http://<proxmox-lan-ip>:8088/registry` proxy para o
   orchestrator via `infra/systemd/agent-registry-proxy.*`.
 - Skills locais usam `agent-skills/<skill>/SKILL.md`. Skills compartilhadas
   apontam para o vendor e preferem `BRIEF.md` no prompt, com fallback para
