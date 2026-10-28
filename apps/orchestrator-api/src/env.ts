@@ -22,9 +22,9 @@ const envSchema = z.object({
   LINEAR_API_KEY: optionalNonEmptyString,
   LINEAR_WEBHOOK_SECRET: optionalNonEmptyString,
   // ID da label ai-ready no Linear — usado quando o webhook manda labelIds (não nomes).
-  LINEAR_AI_READY_LABEL_ID: z.string().default('<uuid>'),
+  LINEAR_AI_READY_LABEL_ID: z.string().default(''),
   // ID da label `approved` — aprova o run pausado pela própria UI do Linear (MAC-22).
-  LINEAR_APPROVED_LABEL_ID: z.string().default('<uuid>'),
+  LINEAR_APPROVED_LABEL_ID: z.string().default(''),
 
   CARD_PRIMARY_PROVIDER: z.enum(['plane', 'linear']).default('plane'),
   CARD_EXTRA_PROVIDERS: z.string().default(''),
