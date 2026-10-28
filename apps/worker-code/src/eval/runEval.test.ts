@@ -301,7 +301,11 @@ describe('renderMarkdown', () => {
             check(true, 'eval verdict', 'APROVADO'),
             check(true, 'auto-merge expectation', 'yes'),
             check(true, 'critic rounds limit', '3/3'),
-            check(true, 'commit author', 'Ranielli Montagna <70357520+raniellimontagna@users.noreply.github.com>'),
+            check(
+              true,
+              'commit author',
+              'Ranielli Montagna <70357520+raniellimontagna@users.noreply.github.com>',
+            ),
             check(true, 'commit Ref trailer', 'present'),
             check(true, 'commit Co-authored-by trailer', 'present'),
             check(
