@@ -1,5 +1,8 @@
 # Agent Platform
 
+> [!WARNING]
+> **Discontinued.** This project is no longer maintained and the homelab it ran on has been decommissioned. The code is kept as a reference only: dependencies are not updated and known vulnerabilities will not be fixed.
+
 A self-hosted AI-agent platform that turns a labeled card into a reviewed GitHub pull request: planning, human approval, coding, validation, review and reporting, with governance built in.
 
 [![License: MIT](https://img.shields.io/github/license/raniellimontagna/agent-platform)](LICENSE)
